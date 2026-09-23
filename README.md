@@ -1,0 +1,120 @@
+# Thumbnail Factory
+
+A single-file, offline thumbnail generator. Drop in a frame, type a two-line
+headline, and download a finished image sized for the platform you're posting to.
+
+Open `index.html` in a browser. There is no build step and no network call —
+the logo, the demo frame, and all the logic are embedded in the one file.
+
+## Platforms
+
+| Preset | Size |
+| --- | --- |
+| YouTube thumbnail | 1280 × 720 |
+| YouTube Shorts cover | 1080 × 1920 |
+| TikTok cover | 1080 × 1920 |
+| Instagram Reel or Story | 1080 × 1920 |
+| Instagram post | 1080 × 1080 |
+| X card | 1600 × 900 |
+| Facebook link image | 1200 × 630 |
+| LinkedIn post image | 1200 × 627 |
+| Twitch thumbnail | 1280 × 720 |
+| Podcast cover art | 3000 × 3000 |
+| Blog or link preview | 1200 × 630 |
+| Custom size | 64–8000 px per side |
+
+**Download all 11 sizes** renders the whole list in one pass, one PNG per preset.
+
+## Branding
+
+The tool opens on the KreativeKorna look: the K mark in the corner, a white top
+line, and the purple-to-warm gradient on the bottom line. None of it is fixed.
+
+- **Logo** — *Replace* swaps in any PNG, JPG or SVG. *Use default* puts the K
+  back. *Show it on the thumbnail* hides the logo without discarding your file.
+- **Top line** — the swatch beside the text field sets its colour.
+- **Bottom line** — a tray of swatches under the field. The first row holds six
+  ready-made looks, starting with KreativeKorna, plus a dashed one that opens
+  three colour wells for a gradient of your own and then previews it in place of
+  the dashes. The second row is read out of your own files: one swatch for the
+  image on the canvas, one for the logo. Both recompute whenever you upload
+  something new.
+
+Your logo and colours are remembered in `localStorage` along with the text and
+the chosen size. A logo large enough to exceed the storage quota still works for
+the session, it just is not saved between visits.
+
+### Colours read from an image
+
+`paletteFromImage()` scales the source to 72x72, converts each pixel to HSL, and
+drops the ones that cannot carry a hue: anything under 50% alpha, anything
+crushed below 6% or blown past 96% lightness, and anything under 12% saturation.
+What survives is binned into 24 hue buckets, weighted towards saturated
+mid-tones, because a photo's darkest and lightest pixels say less about its
+character than its middle does.
+
+It then takes the three strongest buckets that sit at least 22 degrees apart, so
+the result reads as a gradient rather than one colour repeated. Fewer than three
+distinct hues and it derives the rest by shifting the dominant one; no hues at
+all, as in a greyscale photo, and it returns light neutrals. The three are
+ordered dominant-first and then along the shorter way round the colour wheel.
+
+Saturation is clamped to 50–95% and lightness pinned to 76/72/69%. That last
+step matters: these stops sit on a darkened photo behind a drop shadow, so a
+faithful sample of a dark image would be illegible where it lands. The colours
+are taken from your image, not matched to it.
+
+Add a ready-made look by extending `PALETTES`:
+
+```js
+{ id:'forest', name:'Forest', stops:['#5ee7a0','#3bb78f','#0bab64'] }
+```
+
+The three stops land at 0%, 45% and 100% of the headline's width. Two stops are
+not enough for a gradient that has to pass through a particular middle colour,
+which is why there are three.
+
+## The starting image
+
+There is no photo baked into this file. The backdrop you see on first load is
+drawn at run time by `makeDefaultFrame()` — a gradient with a few soft blobs —
+so the file stays small and ships nobody's screenshot. Drop in your own image
+and it is replaced.
+
+## Safe areas
+
+Each preset carries a safe-area rectangle — the region left clear of the
+platform's own interface, such as TikTok's action rail, a Story's caption
+band, or YouTube's duration badge. The headline, logo, and play badge are
+anchored to that rectangle rather than to the canvas edge, so a layout that
+works on a 16:9 thumbnail also works on a 9:16 cover.
+
+Tick **Show safe areas** to see the rectangle while composing. The guides are
+drawn on the preview only and never appear in an exported file.
+
+## Adding a preset
+
+Presets live in the `PRESETS` array at the top of the script:
+
+```js
+{ id:'pinterest', short:'Pinterest', label:'Pinterest pin', w:1000, h:1500,
+  play:false, safe:{ t:.06, r:.06, b:.10, l:.06 } }
+```
+
+`safe` values are fractions of the canvas (`t`/`b` of the height, `l`/`r` of
+the width). `play` decides whether the red play badge is offered for that
+platform, and `short` is the label under its tile in the size chart. The tile
+files itself under Wide, Tall or Square from its own aspect ratio. Every other
+measurement (type size, logo size, badge radius, shadow blur) is derived from
+the target dimensions, so nothing else needs changing.
+
+## Controls
+
+- Pick a size from the chart at the top; the tiles are drawn at true proportion,
+  so the shape tells you what you are about to make
+- Choose an image, drag one onto the canvas, or paste a screenshot with ⌘V
+- Drag the canvas to reposition the frame; the offset is stored as a fraction,
+  so it survives a switch between presets
+- Zoom and Vignette sliders adjust the crop and the darkening behind the text
+- Headline text, colours, your logo, the selected platform, and any custom size
+  persist in `localStorage`

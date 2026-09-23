@@ -89,6 +89,8 @@
     transition:opacity .12s linear;
   }
   canvas.dragging{ cursor:grabbing; }
+  /* Ink would disappear against the well, so the canvas ring uses the mark. */
+  canvas:focus-visible{ outline:2px solid var(--mark); outline-offset:3px; }
   canvas.resizing{ opacity:.25; }
   .drop-hint{
     position:absolute; inset:6px; display:flex; align-items:center; justify-content:center;
@@ -122,8 +124,9 @@
   /* ---- size chart: the point of the page ---- */
   .sizes{
     display:flex; flex-wrap:wrap; gap:18px 26px; align-items:stretch;
-    border-top:1px solid var(--ink); border-bottom:1px solid var(--ink);
-    padding:16px 0 18px; margin-bottom:22px;
+    /* reset the fieldset UA styles before restoring the band's own rules */
+    border:0; border-top:1px solid var(--ink); border-bottom:1px solid var(--ink);
+    padding:16px 0 18px; margin:0 0 22px; min-width:0;
   }
   .sizegroup{ min-width:0; }
   .sizegroup + .sizegroup{ border-left:1px solid var(--ink); padding-left:26px; margin-left:0; }
@@ -131,7 +134,13 @@
   .tile{ width:86px; }
   .sizegroup.customgroup .tile{ width:54px; }
   .tile{ position:relative; display:flex; flex-direction:column; align-items:flex-start; gap:5px; cursor:pointer; }
-  .tile input{ position:absolute; opacity:0; width:0; height:0; }
+  /* Visually hidden, not zero-sized: a 0x0 input is still focusable but some
+     assistive tech and tooling treat it as invisible and skip it. The 1px clip
+     keeps it in the accessibility tree. Same for the palette radios below. */
+  .tile input, .pal input{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+  }
   .chipbox{ height:40px; display:flex; align-items:flex-end; }
   .chip{
     display:block; background:var(--paper); border:1px solid var(--ink); border-radius:1px;
@@ -139,7 +148,7 @@
   }
   .tile.custom .chip{ border-style:dashed; display:flex; align-items:center; justify-content:center;
     font-size:17px; font-weight:700; line-height:1; color:var(--ink); }
-  .tile:hover .chip{ background:#fff; box-shadow:0 0 0 2px var(--bench-lo); }
+  @media (hover: hover){ .tile:hover .chip{ background:#fff; box-shadow:0 0 0 2px var(--bench-lo); } }
   .tile input:checked ~ .chipbox .chip{ background:var(--mark); box-shadow:0 0 0 2px var(--ink); }
   .tile input:focus-visible ~ .chipbox .chip{ outline:2px solid var(--ink); outline-offset:3px; }
   .tile .name{ font-size:12.5px; font-weight:500; line-height:1.15; }
@@ -179,7 +188,7 @@
   input[type=range]:focus-visible{ outline:2px solid var(--ink); outline-offset:4px; }
 
   .toggles{ display:flex; flex-direction:column; gap:9px; }
-  .tog{ display:flex; align-items:center; gap:9px; font-size:14px; cursor:pointer; }
+  .tog{ display:flex; align-items:center; gap:9px; font-size:14px; cursor:pointer; min-height:24px; }
   .tog input{ width:16px; height:16px; margin:0; accent-color:var(--ink); }
   .tog.off{ opacity:.5; cursor:default; }
   .note{ font-size:12.5px; margin:-2px 0 0 25px; max-width:34ch; }
@@ -197,12 +206,11 @@
   .palettes{ display:flex; flex-wrap:wrap; gap:6px; margin-top:3px; }
   .pal{ position:relative; cursor:pointer; line-height:0; }
   .pal[hidden]{ display:none; }
-  .pal input{ position:absolute; opacity:0; width:0; height:0; }
   .palchip{
-    display:block; width:34px; height:20px; border:1px solid var(--ink); border-radius:1px;
+    display:block; width:34px; height:24px; border:1px solid var(--ink); border-radius:1px;
     transition:box-shadow .14s linear;
   }
-  .pal:hover .palchip{ box-shadow:0 0 0 2px var(--bench-lo); }
+  @media (hover: hover){ .pal:hover .palchip{ box-shadow:0 0 0 2px var(--bench-lo); } }
   .pal input:checked ~ .palchip{ box-shadow:0 0 0 2px var(--ink); }
   .pal input:focus-visible ~ .palchip{ outline:2px solid var(--ink); outline-offset:3px; }
   .pal.customp .palchip{
@@ -244,14 +252,16 @@
     transition-duration:.14s;
     transition-timing-function:cubic-bezier(0.2, 0, 0, 1);
   }
-  .btn:hover{ background:#fff; }
+  @media (hover: hover){ .btn:hover{ background:#fff; } }
   .btn:active:not(:disabled){ transform:scale(0.96); }
   .btn:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
   .btn-go{ background:var(--mark); font-size:16px; padding:13px 14px; }
-  .btn-go:hover{ background:var(--mark-lo); }
+  @media (hover: hover){ .btn-go:hover{ background:var(--mark-lo); } }
   .btn:disabled{ opacity:.5; cursor:default; }
-  .btn:disabled:hover{ background:var(--paper); }
-  .btn-go:disabled:hover{ background:var(--mark); }
+  @media (hover: hover){
+    .btn:disabled:hover{ background:var(--paper); }
+    .btn-go:disabled:hover{ background:var(--mark); }
+  }
   .actions{ display:flex; flex-direction:column; gap:9px; }
 
   .status{ font-size:13px; min-height:19px; font-weight:500; }
@@ -299,27 +309,32 @@
     <p class="lede">Make a thumbnail sized for wherever you are posting it. Nothing leaves this tab.</p>
   </header>
 
-  <section class="sizes" id="sizes">
-    <h2 class="sr-only">Size</h2>
-  </section>
+  <main>
+  <!-- A fieldset, so the twelve radios announce as one named group without ARIA. -->
+  <fieldset class="sizes" id="sizes">
+    <legend class="sr-only">Size</legend>
+  </fieldset>
 
   <div class="layout">
     <div class="stage">
+      <h2 class="sr-only">Preview</h2>
       <div class="canvas-wrap" id="wrap">
-        <canvas id="cv" width="1280" height="720" aria-label="Thumbnail preview"></canvas>
+        <canvas id="cv" width="1280" height="720" role="img" tabindex="0"
+                aria-label="Thumbnail preview" aria-describedby="howto"></canvas>
         <div class="drop-hint">Drop the image here</div>
       </div>
       <p class="readout">
         <span class="what" id="what">YouTube thumbnail</span>
         <span class="dims" id="dims">1280 &times; 720</span>
       </p>
-      <div class="howto">
-        <p>Drag the image to move it inside the frame.</p>
+      <div class="howto" id="howto">
+        <p>Drag the image to move it inside the frame, or focus it and use the arrow keys.</p>
         <p>Paste a screenshot with &#8984;V, or drop a file anywhere on the preview.</p>
       </div>
     </div>
 
     <div class="bench">
+      <h2 class="sr-only">Options</h2>
       <div class="fields">
         <div class="field">
           <span class="legend" id="imgLabel">Image</span>
@@ -383,6 +398,7 @@
       </div>
     </div>
   </div>
+  </main>
 </div>
 
 <script>
@@ -759,6 +775,7 @@
       var lab = document.createElement('label'); lab.htmlFor = f[0]; lab.textContent = f[1];
       var inp = document.createElement('input');
       inp.type = 'number'; inp.id = f[0]; inp.min = '64'; inp.max = '8000'; inp.step = '1';
+      inp.inputMode = 'numeric';
       inp.value = f[2];
       field.appendChild(lab); field.appendChild(inp); customRow.appendChild(field);
       if (f[0] === 'cw') cwEl = inp; else chEl = inp;
@@ -771,6 +788,10 @@
     var input = document.createElement('input');
     input.type = 'radio'; input.name = 'preset'; input.value = p.id;
     input.checked = (p.id === state.preset);
+    // The label's own text runs the name and the pixels together
+    // ("YouTube1280x720"), so state it properly for a screen reader.
+    input.setAttribute('aria-label', isCustom ? p.label
+      : p.label + ', ' + p.w + ' by ' + p.h + ' pixels');
     var box = document.createElement('span'); box.className = 'chipbox';
     var chip = document.createElement('span'); chip.className = 'chip';
     sizeChip(chip, p);
@@ -798,6 +819,7 @@
     if (!members.length) return;
     var sec = document.createElement('section'); sec.className = 'sizegroup';
     var h = document.createElement('h2'); h.textContent = g.name;
+    sec.setAttribute('aria-labelledby', (h.id = 'sizegroup-' + g.name.toLowerCase()));
     var tiles = document.createElement('div'); tiles.className = 'tiles';
     members.forEach(function(p){ tiles.appendChild(buildTile(p, !g.test)); });
     sec.appendChild(h); sec.appendChild(tiles);
@@ -930,8 +952,12 @@
 
   bind('line1', function(e){ state.line1 = e.target.value; persist(); draw(); });
   bind('line2', function(e){ state.line2 = e.target.value; persist(); draw(); });
-  bind('zoom', function(e){ state.zoom = e.target.value/100; draw(); });
-  bind('vig', function(e){ state.vig = (e.target.value/100)*0.7; draw(); });
+  // Without this both sliders announce a bare number; they are percentages.
+  var zoomEl = document.getElementById('zoom'), vigEl = document.getElementById('vig');
+  function sayPercent(el){ el.setAttribute('aria-valuetext', el.value + '%'); }
+  sayPercent(zoomEl); sayPercent(vigEl);
+  bind('zoom', function(e){ state.zoom = e.target.value/100; sayPercent(e.target); draw(); });
+  bind('vig', function(e){ state.vig = (e.target.value/100)*0.7; sayPercent(e.target); draw(); });
   document.getElementById('showLogo').addEventListener('change', function(e){ state.logo = e.target.checked; draw(); });
   playEl.addEventListener('change', function(e){ state.play = e.target.checked; draw(); });
   var safeNote = document.getElementById('safeNote');
@@ -998,6 +1024,19 @@
     state.panY = spy + (e.clientY - sy) / dragH;
     if (panRaf) return;
     panRaf = requestAnimationFrame(function(){ panRaf = 0; draw(); });
+  });
+
+  // Dragging is the only way to reframe the image, so it needs a keyboard path.
+  // Shift takes bigger steps, the way nudging works elsewhere.
+  var PAN_KEYS = { ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1] };
+  cv.addEventListener('keydown', function(e){
+    var d = PAN_KEYS[e.key];
+    if (!d || e.metaKey || e.ctrlKey || e.altKey) return;
+    e.preventDefault();
+    var step = e.shiftKey ? 0.05 : 0.01;
+    state.panX += d[0] * step;
+    state.panY += d[1] * step;
+    draw();
   });
   ['pointerup','pointercancel'].forEach(function(ev){
     cv.addEventListener(ev, function(){

@@ -1,0 +1,55 @@
+  <main>
+    <h1>What happens to your image</h1>
+    <p class="lede">Nothing. It never leaves the tab you opened. This page explains how
+    that works and what the tool does store.</p>
+
+    <section class="prose">
+      <h2>The short version</h2>
+      <p>Thumbnail Factory has no server to upload anything to. The whole tool is one
+      HTML file served as a static page. When you choose a picture, the browser reads it
+      off your own disk and draws it onto a canvas in the page. The finished thumbnail is
+      produced by that same canvas and handed straight to your downloads folder. At no
+      point does the image travel anywhere.</p>
+      <p>There is no account, no sign-in, no analytics script, and no tracking pixel.</p>
+
+      <h2>How to check, rather than take my word for it</h2>
+      <p>Open your browser's developer tools, switch to the Network tab, and use the tool
+      normally. Choose a picture, type a headline, download the result. You will see
+      requests for the page itself and for the font, and nothing else. No request carries
+      your image, because no such request is ever made.</p>
+      <p>You can also disconnect from the internet after the page loads. Everything keeps
+      working, which is only possible because the work happens on your device.</p>
+
+      <h2>What is stored, and where</h2>
+      <p>The tool remembers a few things between visits so you do not have to set them up
+      again. They are kept in <code>localStorage</code>, which is a store your browser
+      keeps on your own machine, scoped to this site. It is not sent anywhere, and it is
+      not readable by other sites.</p>
+      <ul>
+        <li>The two lines of headline text</li>
+        <li>The size you last picked, and any custom width and height</li>
+        <li>Your headline colours</li>
+        <li>A logo you uploaded, if you replaced the default one</li>
+      </ul>
+      <p>The picture you are working on is <em>not</em> stored. It lives in memory while
+      the tab is open and is gone when you close it.</p>
+      <p>To clear everything, clear this site's data in your browser settings, or use a
+      private window, where nothing is kept once you close it.</p>
+
+      <h2>What the page does load from elsewhere</h2>
+      <p>One stylesheet, from Google Fonts, for the typeface the headlines are set in.
+      That request tells Google the font was requested from this site, in the ordinary way
+      any web font does. It carries nothing about your image or your text. If you would
+      rather avoid it, the page still works with that request blocked; the headline simply
+      falls back to a system typeface.</p>
+
+      <h2>Why it is built this way</h2>
+      <p>Most free thumbnail tools upload your picture to process it. That is a reasonable
+      engineering choice and it is also how you end up agreeing to terms about what may be
+      done with what you uploaded. Drawing on a canvas in the browser avoids the question
+      entirely. There is no copy of your work to keep, so there is no policy needed about
+      keeping it.</p>
+      <p><a href="../">Go and make one</a>.</p>
+    </section>
+  </main>
+<!--FOOTER-->

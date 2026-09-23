@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<meta name="description" content="{{DESC}}">
+
+<link rel="icon" href="{{PREFIX}}favicon.svg" type="image/svg+xml">
+<link rel="icon" href="{{PREFIX}}favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="{{PREFIX}}apple-touch-icon.png">
+<meta name="theme-color" content="#a9adac">
+
+<!-- Crawlers do not resolve relative paths, so everything below is absolute. -->
+<link rel="canonical" href="{{URL}}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Thumbnail Factory">
+<meta property="og:title" content="{{OGTITLE}}">
+<meta property="og:description" content="{{DESC}}">
+<meta property="og:url" content="{{URL}}">
+<meta property="og:image" content="https://thumbnailsfactory.kreativekorna.com/og.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The words Thumbnail Factory over a dark gradient, with three outlined rectangles showing wide, square and tall thumbnail shapes.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{OGTITLE}}">
+<meta name="twitter:description" content="{{DESC}}">
+<meta name="twitter:image" content="https://thumbnailsfactory.kreativekorna.com/og.png">
+
+{{SCHEMA}}
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=Archivo+Black&display=swap">
+<!--STYLE-->
+</head>
+<body>
+
+<div class="shell">
+  <header>
+    <div class="wordmark">
+      <a class="home" href="{{PREFIX}}"><img src="{{PREFIX}}favicon.svg" alt="" width="26" height="26"><span>Thumbnail Factory</span></a>
+    </div>
+    <nav aria-label="Pages">
+      <a href="{{PREFIX}}"{{NAV_TOOL}}>Make one</a>
+      <a href="{{PREFIX}}sizes/"{{NAV_SIZES}}>Sizes</a>
+      <a href="{{PREFIX}}privacy/"{{NAV_PRIVACY}}>Privacy</a>
+    </nav>
+  </header>

@@ -196,7 +196,6 @@
   logo.onload = function(){ ready.logo = true; updateLogoThumb(); refreshDerived('logo', logo); draw(); };
   logo.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
   logo.src = state.logoSrc || DEFAULT_LOGO;
-  document.getElementById('logoImg').src = DEFAULT_LOGO;
   if (document.fonts && document.fonts.ready) {
     document.fonts.load('88px "Archivo Black"').then(function(){ ready.font = true; draw(); });
     document.fonts.ready.then(function(){ ready.font = true; draw(); });

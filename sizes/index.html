@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Social Media Image Sizes and Safe Areas for 12 Formats</title>
+<meta name="description" content="Every social image size in one place, with the part of each frame TikTok, Reels, Shorts and YouTube cover with their own buttons and captions.">
+
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#a9adac">
+
+<!-- Crawlers do not resolve relative paths, so everything below is absolute. -->
+<link rel="canonical" href="https://thumbnailsfactory.kreativekorna.com/sizes/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Thumbnail Factory">
+<meta property="og:title" content="Social media image sizes, with safe areas">
+<meta property="og:description" content="Every social image size in one place, with the part of each frame TikTok, Reels, Shorts and YouTube cover with their own buttons and captions.">
+<meta property="og:url" content="https://thumbnailsfactory.kreativekorna.com/sizes/">
+<meta property="og:image" content="https://thumbnailsfactory.kreativekorna.com/og.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The words Thumbnail Factory over a dark gradient, with three outlined rectangles showing wide, square and tall thumbnail shapes.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Social media image sizes, with safe areas">
+<meta name="twitter:description" content="Every social image size in one place, with the part of each frame TikTok, Reels, Shorts and YouTube cover with their own buttons and captions.">
+<meta name="twitter:image" content="https://thumbnailsfactory.kreativekorna.com/og.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is a safe area on a thumbnail?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The part of the frame the platform will not cover with its own interface. Anything outside it may sit behind a caption, a button or a duration badge, so keep your headline and logo inside it."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why do TikTok and Reels cover more of the frame than YouTube?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Vertical formats put their controls on top of the video rather than beside it. TikTok keeps roughly the right fifth of the frame for its action rail and the bottom fifth for the caption, while a landscape YouTube thumbnail only loses a duration badge in one corner."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does the dashed safe-area box appear in the image I download?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It is drawn on the preview only. The exported PNG contains your artwork and nothing else."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What size should an Instagram post be?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "1080 by 1350 pixels, a 4:5 portrait. Square at 1080 by 1080 still works and is included as its own preset, but the 4:5 takes up more of the screen on a phone."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do my images get uploaded anywhere?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Everything is drawn in your browser on your own device. No image, and nothing you type, is ever sent to a server."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=Archivo+Black&display=swap">
+<style>
+  :root{
+    --page:#a9adac;      /* grey card the whole tool sits on */
+    --bench:#929695;     /* machine body */
+    --bench-lo:#7d8180;  /* recessed edge */
+    --well:#232626;      /* the dark well the canvas sits in */
+    --paper:#f4f4f2;     /* input surfaces */
+    --ink:#141716;
+    --mark:#ffc400;      /* action and active state, nothing else */
+    --mark-lo:#d9a600;
+    --alert:#8f1a14;
+    --ok:#14543a;
+    --ui:"Archivo",-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Concentric radii: every outer radius is its inner radius plus its own
+       padding, so nested corners stay parallel instead of pinching.
+       --r        controls sitting on the bench (buttons, inputs, images)
+       --r-panel  the bench itself: 3 + 18 padding
+       --r-well   the canvas well: 0 (square canvas) + 14 padding */
+    --r:3px; --r-panel:21px; --r-well:14px;
+  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    margin:0; background:var(--page); color:var(--ink);
+    font-family:var(--ui); font-size:15px; line-height:1.45;
+    font-variant-numeric:tabular-nums;
+    padding:0 20px 56px;
+  }
+  .shell{ max-width:1200px; margin:0 auto; }
+
+  /* ---- masthead and site nav ---- */
+  header{
+    display:flex; align-items:center; gap:16px 24px; flex-wrap:wrap;
+    padding:20px 0 18px; border-bottom:1px solid var(--ink); margin-bottom:26px;
+  }
+  .home{ display:flex; align-items:center; gap:9px; text-decoration:none; color:var(--ink); }
+  .home img{ display:block; border-radius:5px; }
+  .home span{ font-size:16px; font-weight:700; font-stretch:112%; letter-spacing:-.005em; }
+  .home:focus-visible{ outline:2px solid var(--ink); outline-offset:3px; border-radius:2px; }
+  header nav{ margin-left:auto; display:flex; gap:18px; }
+  header nav a{ color:var(--ink); font-size:14.5px; font-weight:600; text-decoration:none;
+    padding:3px 0; border-bottom:2px solid transparent; }
+  @media (hover: hover){ header nav a:hover{ border-bottom-color:var(--ink); } }
+  header nav a[aria-current="page"]{ border-bottom-color:var(--mark); }
+  header nav a:focus-visible{ outline:2px solid var(--ink); outline-offset:3px; }
+
+  h1{
+    font-size:clamp(27px,3.9vw,38px); line-height:1.05;
+    font-weight:700; font-stretch:125%; letter-spacing:-.015em;
+    margin:0 0 12px; max-width:22ch;
+  }
+  .lede{ margin:0 0 24px; font-size:16.5px; max-width:52ch; }
+
+  /* ---- long-form pages ---- */
+  .prose{ max-width:68ch; }
+  .prose h2{ font-size:19px; font-weight:700; font-stretch:112%; margin:26px 0 8px; }
+  .prose p, .prose li{ font-size:15px; margin:0 0 12px; }
+  .prose ul{ margin:0 0 14px; padding-left:20px; }
+  .prose li{ margin:0 0 5px; }
+  .prose code{ font-size:14px; background:var(--paper); padding:1px 5px; border-radius:2px; }
+  .prose a, .sizeref a, .safeareas a, .seealso a, footer a{ color:var(--ink); }
+  .seealso{ margin:30px 0 0; max-width:68ch; }
+  .seealso h2{ font-size:19px; font-weight:700; font-stretch:112%; margin:0 0 8px; }
+  .seealso p{ font-size:14.5px; margin:0; }
+
+  footer{
+    margin:40px 0 0; padding:18px 0 0; border-top:1px solid var(--ink); font-size:14px;
+  }
+  footer p{ margin:0 0 6px; }
+  footer .by{ font-size:13px; }
+
+  /* ---- layout ---- */
+  .layout{ display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:22px; align-items:start; }
+
+  /* ---- stage ---- */
+  .stage{ min-width:0; }
+  .canvas-wrap{
+    position:relative; background:var(--well);
+    border:1px solid var(--ink); border-radius:var(--r-well);
+    display:flex; align-items:center; justify-content:center;
+    min-height:260px; padding:14px;
+  }
+  canvas{
+    display:block; max-width:100%; max-height:66vh; width:auto; height:auto;
+    cursor:grab; touch-action:none; background:#000;
+    transition:opacity .12s linear;
+  }
+  canvas.dragging{ cursor:grabbing; }
+  /* Ink would disappear against the well, so the canvas ring uses the mark. */
+  canvas:focus-visible{ outline:2px solid var(--mark); outline-offset:3px; }
+  canvas.resizing{ opacity:.25; }
+  .drop-hint{
+    position:absolute; inset:6px; display:flex; align-items:center; justify-content:center;
+    background:rgba(20,23,22,.86); color:var(--paper); font-size:16px; font-weight:600;
+    text-align:center; padding:20px; border:2px dashed var(--mark);
+    border-radius:8px;   /* inset 6px inside a 14px well */
+    pointer-events:none; opacity:0; transition:opacity .12s linear;
+  }
+  .canvas-wrap.dropping .drop-hint{ opacity:1; }
+
+  .readout{
+    display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+    border-bottom:1px solid var(--ink); padding:12px 2px 8px; margin-top:14px;
+  }
+  .readout .what{ font-weight:700; }
+  .readout .dims{ margin-left:auto; font-weight:500; }
+  .howto{ margin:12px 2px 0; max-width:56ch; }
+  .howto p{ margin:0 0 3px; }
+
+  /* ---- control bench ---- */
+  .bench{
+    background:var(--bench); border:1px solid var(--ink); border-radius:var(--r-panel);
+    padding:18px; display:flex; flex-direction:column; gap:20px; min-width:0;
+  }
+  .bench h2, .sizegroup h2{
+    font-size:13px; font-weight:700; margin:0 0 10px;
+    font-stretch:112%; letter-spacing:.01em;
+  }
+  .rule{ height:1px; background:var(--ink); opacity:.45; }
+
+  /* ---- size chart: the point of the page ---- */
+  .sizes{
+    display:flex; flex-wrap:wrap; gap:18px 26px; align-items:stretch;
+    /* reset the fieldset UA styles before restoring the band's own rules */
+    border:0; border-top:1px solid var(--ink); border-bottom:1px solid var(--ink);
+    padding:16px 0 18px; margin:0 0 22px; min-width:0;
+  }
+  .sizegroup{ min-width:0; }
+  .sizegroup + .sizegroup{ border-left:1px solid var(--ink); padding-left:26px; margin-left:0; }
+  .tiles{ display:flex; flex-wrap:wrap; gap:14px; max-width:286px; }
+  .tile{ width:86px; }
+  .sizegroup.customgroup .tile{ width:54px; }
+  .tile{ position:relative; display:flex; flex-direction:column; align-items:flex-start; gap:5px; cursor:pointer; }
+  /* Visually hidden, not zero-sized: a 0x0 input is still focusable but some
+     assistive tech and tooling treat it as invisible and skip it. The 1px clip
+     keeps it in the accessibility tree. Same for the palette radios below. */
+  .tile input, .pal input{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+  }
+  .chipbox{ height:40px; display:flex; align-items:flex-end; }
+  .chip{
+    display:block; background:var(--paper); border:1px solid var(--ink); border-radius:1px;
+    transition:background .14s linear, box-shadow .14s linear;
+  }
+  .tile.custom .chip{ border-style:dashed; display:flex; align-items:center; justify-content:center;
+    font-size:17px; font-weight:700; line-height:1; color:var(--ink); }
+  @media (hover: hover){ .tile:hover .chip{ background:#fff; box-shadow:0 0 0 2px var(--bench-lo); } }
+  .tile input:checked ~ .chipbox .chip{ background:var(--mark); box-shadow:0 0 0 2px var(--ink); }
+  .tile input:focus-visible ~ .chipbox .chip{ outline:2px solid var(--ink); outline-offset:3px; }
+  .tile .name{ font-size:12.5px; font-weight:500; line-height:1.15; }
+  .tile.custom .name{ display:none; }
+  .tile input:checked ~ .name{ font-weight:700; }
+  .tile .size{ font-size:11px; line-height:1; }
+
+  /* ---- fields ---- */
+  .fields{ display:flex; flex-direction:column; gap:14px; }
+  .field{ display:flex; flex-direction:column; gap:5px; min-width:0; }
+  .field > label, .legend{ font-size:13px; font-weight:600; }
+  .hint{ font-size:12.5px; }
+  input[type=text], input[type=number]{
+    font-family:var(--ui); font-size:15px; font-variant-numeric:tabular-nums;
+    background:var(--paper); color:var(--ink);
+    border:1px solid var(--ink); border-radius:var(--r); padding:9px 10px; width:100%;
+  }
+  input[type=text]:focus-visible, input[type=number]:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .row{ display:flex; gap:10px; }
+  .row .field{ flex:1; }
+  .row[hidden]{ display:none; }
+  .customgroup .row{ width:190px; }
+  .customgroup .row .field{ gap:4px; }
+
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; width:100%; background:transparent; margin:7px 0;
+  }
+  input[type=range]::-webkit-slider-runnable-track{ height:3px; background:var(--ink); }
+  input[type=range]::-moz-range-track{ height:3px; background:var(--ink); }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:17px; height:17px; border-radius:50%;
+    background:var(--paper); border:2px solid var(--ink); margin-top:-7px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:13px; height:13px; border-radius:50%; background:var(--paper); border:2px solid var(--ink);
+  }
+  input[type=range]:focus-visible{ outline:2px solid var(--ink); outline-offset:4px; }
+
+  .toggles{ display:flex; flex-direction:column; gap:9px; }
+  .tog{ display:flex; align-items:center; gap:9px; font-size:14px; cursor:pointer; min-height:24px; }
+  .tog input{ width:16px; height:16px; margin:0; accent-color:var(--ink); }
+  .tog.off{ opacity:.5; cursor:default; }
+  .note{ font-size:12.5px; margin:-2px 0 0 25px; max-width:34ch; }
+  .note[hidden]{ display:none; }
+
+  /* ---- brand controls ---- */
+  .inline{ display:flex; gap:8px; align-items:center; }
+  .inline input[type=text]{ flex:1; min-width:0; }
+  input[type=color]{
+    flex:0 0 auto; width:38px; height:38px; padding:2px; cursor:pointer;
+    background:var(--paper); border:1px solid var(--ink);
+    border-radius:2px;   /* square swatch + 2px padding */
+  }
+  input[type=color]:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .palettes{ display:flex; flex-wrap:wrap; gap:6px; margin-top:3px; }
+  .pal{ position:relative; cursor:pointer; line-height:0; }
+  .pal[hidden]{ display:none; }
+  .palchip{
+    display:block; width:34px; height:24px; border:1px solid var(--ink); border-radius:1px;
+    transition:box-shadow .14s linear;
+  }
+  @media (hover: hover){ .pal:hover .palchip{ box-shadow:0 0 0 2px var(--bench-lo); } }
+  .pal input:checked ~ .palchip{ box-shadow:0 0 0 2px var(--ink); }
+  .pal input:focus-visible ~ .palchip{ outline:2px solid var(--ink); outline-offset:3px; }
+  .pal.customp .palchip{
+    background:var(--paper); display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:700; line-height:1; border-style:dashed;
+  }
+  .stops{ display:flex; gap:6px; margin-top:7px; }
+  .stops[hidden]{ display:none; }
+
+  .logorow{ display:flex; gap:10px; align-items:center; }
+  .logopreview{
+    flex:0 0 auto; width:66px; height:40px; background:var(--well);
+    border:1px solid var(--ink);
+    border-radius:5px; padding:5px;   /* square logo + 5px padding */
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  /* Dark well behind it, so the outline is white at low opacity. A tinted
+     neutral here picks up the surface and reads as dirt on the image edge. */
+  .logopreview img{
+    max-width:56px; max-height:30px; display:block;
+    outline:1px solid oklch(1 0 0 / 0.1); outline-offset:-1px;
+  }
+  .logobtns{ display:flex; gap:6px; flex:1; min-width:0; }
+  /* .btn is width:100% for the full-width actions; inside this row that basis
+     makes both buttons shrink to equal halves and wrap. Size to content, and
+     let Replace take whatever is left over. */
+  .logobtns .btn{ width:auto; white-space:nowrap; }
+  .logobtns #logoPick{ flex:1 1 auto; }
+  .logobtns #logoReset{ flex:0 0 auto; }
+  .btn-sm{ padding:7px 10px; font-size:13px; font-weight:600; }
+  .btn-sm[hidden]{ display:none; }
+
+  /* ---- buttons ---- */
+  .btn{
+    font-family:var(--ui); font-size:15px; font-weight:700; cursor:pointer;
+    border:1px solid var(--ink); border-radius:var(--r); padding:11px 14px; width:100%;
+    background:var(--paper); color:var(--ink);
+    transition-property:background-color, transform;
+    transition-duration:.14s;
+    transition-timing-function:cubic-bezier(0.2, 0, 0, 1);
+  }
+  @media (hover: hover){ .btn:hover{ background:#fff; } }
+  .btn:active:not(:disabled){ transform:scale(0.96); }
+  .btn:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .btn-go{ background:var(--mark); font-size:16px; padding:13px 14px; }
+  @media (hover: hover){ .btn-go:hover{ background:var(--mark-lo); } }
+  .btn:disabled{ opacity:.5; cursor:default; }
+  @media (hover: hover){
+    .btn:disabled:hover{ background:var(--paper); }
+    .btn-go:disabled:hover{ background:var(--mark); }
+  }
+  .actions{ display:flex; flex-direction:column; gap:9px; }
+
+  .status{ font-size:13px; min-height:19px; font-weight:500; }
+  .status.ok{ color:var(--ok); }
+  .status.err{ color:var(--alert); }
+
+  .fallback[hidden]{ display:none; }
+  .fallback p{ font-size:13px; margin:0 0 8px; }
+  .fallback img{
+    max-width:100%; border-radius:var(--r); display:block;
+    outline:1px solid oklch(0 0 0 / 0.1); outline-offset:-1px;
+  }
+
+  /* ---- size reference: the preset table, generated at build time ---- */
+  .sizeref{ margin:30px 0 0; }
+  .sizeref h2{ font-size:19px; font-weight:700; font-stretch:112%; letter-spacing:-.005em; margin:0 0 8px; }
+  .sizeref > p{ margin:0 0 16px; max-width:66ch; font-size:14.5px; }
+  .sizeref table{ border-collapse:collapse; width:100%; font-size:14px; }
+  .sizeref th, .sizeref td{ text-align:left; padding:9px 14px 9px 0; vertical-align:top;
+    border-bottom:1px solid var(--ink); }
+  .sizeref thead th{ font-size:12px; font-weight:700; letter-spacing:.01em; }
+  .sizeref tbody th{ font-weight:600; }
+  .sizeref tbody tr:last-child th, .sizeref tbody tr:last-child td{ border-bottom:0; }
+  @media (max-width:560px){
+    .sizeref table{ font-size:13px; }
+    .sizeref th, .sizeref td{ padding:8px 8px 8px 0; }
+  }
+
+  /* ---- safe-area explainer and questions ---- */
+  .safeareas, .faq{ margin:34px 0 0; }
+  .safeareas h2, .faq h2{ font-size:19px; font-weight:700; font-stretch:112%;
+    letter-spacing:-.005em; margin:0 0 8px; }
+  .safeareas p{ margin:0 0 14px; max-width:66ch; font-size:14.5px; }
+  .figs{ display:flex; flex-wrap:wrap; gap:22px; margin:20px 0 22px; }
+  .safefig{ margin:0; }
+  .safefig svg{ display:block; border:1px solid var(--ink); border-radius:3px; height:200px; width:auto; }
+  .safefig figcaption{ margin-top:8px; font-size:13px; max-width:19ch; line-height:1.35; }
+  .safefig figcaption b{ display:block; font-weight:700; }
+  .safefig figcaption span{ display:block; }
+  .faq .qa{ border-top:1px solid var(--ink); padding:14px 0 2px; max-width:68ch; }
+  .faq h3{ font-size:15px; font-weight:700; margin:0 0 5px; }
+  .faq .qa p{ margin:0 0 10px; font-size:14.5px; }
+
+  .sr-only{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+  }
+
+  @media (max-width:900px){
+    .layout{ grid-template-columns:minmax(0,1fr); }
+    /* one scrolling row, so the preview is still on the first screen */
+    .sizes{ flex-wrap:nowrap; overflow-x:auto; gap:0 18px; padding-bottom:14px; }
+    .sizegroup{ flex:0 0 auto; }
+    .sizegroup + .sizegroup{ padding-left:18px; }
+    .tiles{ flex-wrap:nowrap; max-width:none; gap:12px; }
+    .customgroup .row{ width:150px; }
+    .canvas-wrap{ min-height:0; padding:10px; border-radius:10px; }
+    header{ padding:24px 0 18px; }
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{ transition-duration:0ms !important; animation-duration:0ms !important; }
+    .btn:active:not(:disabled){ transform:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <header>
+    <div class="wordmark">
+      <a class="home" href="/"><img src="/favicon.svg" alt="" width="26" height="26"><span>Thumbnail Factory</span></a>
+    </div>
+    <nav aria-label="Pages">
+      <a href="/">Make one</a>
+      <a href="/sizes/" aria-current="page">Sizes</a>
+      <a href="/privacy/">Privacy</a>
+    </nav>
+  </header>
+  <main>
+    <h1>Social media image sizes, with safe areas</h1>
+    <p class="lede">Every size this tool makes, the pixels each one needs, and the part of
+    the frame each platform covers with its own buttons and captions.</p>
+
+      <section class="sizeref">
+        <h2>Every size this makes</h2>
+        <p>Each one is ready to pick above. <em>Keep clear</em> is the part of the
+        frame that platform covers with its own buttons and captions, so anything
+        you put there may not be seen.</p>
+        <table>
+          <thead>
+            <tr><th>Platform</th><th>Pixels</th><th>Shape</th><th>Keep clear</th></tr>
+          </thead>
+          <tbody>
+          <tr>
+            <th scope="row">YouTube thumbnail</th>
+            <td>1280 &times; 720</td>
+            <td>Wide 16:9</td>
+            <td>Edges only</td>
+          </tr>
+          <tr>
+            <th scope="row">YouTube Shorts cover</th>
+            <td>1080 &times; 1920</td>
+            <td>Tall 9:16</td>
+            <td>right 17%, bottom 20%</td>
+          </tr>
+          <tr>
+            <th scope="row">TikTok cover</th>
+            <td>1080 &times; 1920</td>
+            <td>Tall 9:16</td>
+            <td>top 10%, right 20%, bottom 22%</td>
+          </tr>
+          <tr>
+            <th scope="row">Instagram Reel or Story</th>
+            <td>1080 &times; 1920</td>
+            <td>Tall 9:16</td>
+            <td>top 12%, right 17%, bottom 20%</td>
+          </tr>
+          <tr>
+            <th scope="row">Instagram post</th>
+            <td>1080 &times; 1350</td>
+            <td>Tall 4:5</td>
+            <td>Edges only</td>
+          </tr>
+          <tr>
+            <th scope="row">Instagram square</th>
+            <td>1080 &times; 1080</td>
+            <td>Square 1:1</td>
+            <td>Edges only</td>
+          </tr>
+          <tr>
+            <th scope="row">X card</th>
+            <td>1600 &times; 900</td>
+            <td>Wide 16:9</td>
+            <td>Edges only</td>
+          </tr>
+          <tr>
+            <th scope="row">Facebook link image</th>
+            <td>1200 &times; 630</td>
+            <td>Wide</td>
+            <td>Edges only</td>
+          </tr>
+          <tr>
+            <th scope="row">LinkedIn post image</th>
+            <td>1200 &times; 627</td>
+            <td>Wide</td>
+            <td>Edges only</td>
+          </tr>
+          <tr>
+            <th scope="row">Twitch thumbnail</th>
+            <td>1280 &times; 720</td>
+            <td>Wide 16:9</td>
+            <td>bottom 10%</td>
+          </tr>
+          <tr>
+            <th scope="row">Podcast cover art</th>
+            <td>3000 &times; 3000</td>
+            <td>Square 1:1</td>
+            <td>bottom 9%</td>
+          </tr>
+          <tr>
+            <th scope="row">Blog or link preview</th>
+            <td>1200 &times; 630</td>
+            <td>Wide</td>
+            <td>Edges only</td>
+          </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="safeareas">
+        <h2>Where each platform covers your thumbnail</h2>
+        <p>A safe area is the part of the frame you can count on people seeing.
+        Everything outside it still gets saved in the file, but the app you post to
+        draws its own interface on top: a caption, a row of buttons down one side, a
+        profile photo, a duration badge.</p>
+        <p>Landscape thumbnails lose almost nothing, which is why a YouTube thumbnail
+        can run text close to the edge. Vertical covers are the opposite. TikTok,
+        Reels and Shorts all stack controls down the right and captions along the
+        bottom, so a headline centred in the frame ends up behind a share button.</p>
+        <div class="figs">
+          <figure class="safefig">
+            <svg viewBox="0 0 112 200" role="img" aria-labelledby="fig-youtube-shorts">
+              <title id="fig-youtube-shorts">YouTube Shorts cover, 1080 by 1920 pixels. The platform covers right 17%, bottom 20%, leaving the dashed area clear.</title>
+              <rect width="112" height="200" fill="#565c60"/>
+              <g fill="#14171a" opacity=".88"><rect x="0" y="0" width="112" height="16.0"/><rect x="0" y="160.0" width="112" height="40.0"/><rect x="0" y="16.0" width="6.7" height="144.0"/><rect x="93.0" y="16.0" width="19.0" height="144.0"/></g>
+              <rect x="6.7" y="16.0" width="86.2" height="144.0"
+                    fill="none" stroke="var(--mark)" stroke-width="2" stroke-dasharray="6 4"/>
+            </svg>
+            <figcaption><b>YouTube Shorts cover</b><span>Covers right 17%, bottom 20%</span></figcaption>
+          </figure>
+          <figure class="safefig">
+            <svg viewBox="0 0 112 200" role="img" aria-labelledby="fig-tiktok">
+              <title id="fig-tiktok">TikTok cover, 1080 by 1920 pixels. The platform covers top 10%, right 20%, bottom 22%, leaving the dashed area clear.</title>
+              <rect width="112" height="200" fill="#565c60"/>
+              <g fill="#14171a" opacity=".88"><rect x="0" y="0" width="112" height="20.0"/><rect x="0" y="156.0" width="112" height="44.0"/><rect x="0" y="20.0" width="6.7" height="136.0"/><rect x="89.6" y="20.0" width="22.4" height="136.0"/></g>
+              <rect x="6.7" y="20.0" width="82.9" height="136.0"
+                    fill="none" stroke="var(--mark)" stroke-width="2" stroke-dasharray="6 4"/>
+            </svg>
+            <figcaption><b>TikTok cover</b><span>Covers top 10%, right 20%, bottom 22%</span></figcaption>
+          </figure>
+          <figure class="safefig">
+            <svg viewBox="0 0 112 200" role="img" aria-labelledby="fig-instagram-reel">
+              <title id="fig-instagram-reel">Instagram Reel or Story, 1080 by 1920 pixels. The platform covers top 12%, right 17%, bottom 20%, leaving the dashed area clear.</title>
+              <rect width="112" height="200" fill="#565c60"/>
+              <g fill="#14171a" opacity=".88"><rect x="0" y="0" width="112" height="24.0"/><rect x="0" y="160.0" width="112" height="40.0"/><rect x="0" y="24.0" width="6.7" height="136.0"/><rect x="93.0" y="24.0" width="19.0" height="136.0"/></g>
+              <rect x="6.7" y="24.0" width="86.2" height="136.0"
+                    fill="none" stroke="var(--mark)" stroke-width="2" stroke-dasharray="6 4"/>
+            </svg>
+            <figcaption><b>Instagram Reel or Story</b><span>Covers top 12%, right 17%, bottom 20%</span></figcaption>
+          </figure>
+          <figure class="safefig">
+            <svg viewBox="0 0 160 200" role="img" aria-labelledby="fig-instagram-post">
+              <title id="fig-instagram-post">Instagram post, 1080 by 1350 pixels. The platform covers edges only, leaving the dashed area clear.</title>
+              <rect width="160" height="200" fill="#565c60"/>
+              <g fill="#14171a" opacity=".88"><rect x="0" y="0" width="160" height="12.0"/><rect x="0" y="184.0" width="160" height="16.0"/><rect x="0" y="12.0" width="9.6" height="172.0"/><rect x="150.4" y="12.0" width="9.6" height="172.0"/></g>
+              <rect x="9.6" y="12.0" width="140.8" height="172.0"
+                    fill="none" stroke="var(--mark)" stroke-width="2" stroke-dasharray="6 4"/>
+            </svg>
+            <figcaption><b>Instagram post</b><span>Covers Edges only</span></figcaption>
+          </figure>
+          <figure class="safefig">
+            <svg viewBox="0 0 356 200" role="img" aria-labelledby="fig-twitch">
+              <title id="fig-twitch">Twitch thumbnail, 1280 by 720 pixels. The platform covers bottom 10%, leaving the dashed area clear.</title>
+              <rect width="356" height="200" fill="#565c60"/>
+              <g fill="#14171a" opacity=".88"><rect x="0" y="0" width="356" height="11.0"/><rect x="0" y="180.0" width="356" height="20.0"/><rect x="0" y="11.0" width="17.8" height="169.0"/><rect x="338.2" y="11.0" width="17.8" height="169.0"/></g>
+              <rect x="17.8" y="11.0" width="320.4" height="169.0"
+                    fill="none" stroke="var(--mark)" stroke-width="2" stroke-dasharray="6 4"/>
+            </svg>
+            <figcaption><b>Twitch thumbnail</b><span>Covers bottom 10%</span></figcaption>
+          </figure>
+          <figure class="safefig">
+            <svg viewBox="0 0 200 200" role="img" aria-labelledby="fig-podcast">
+              <title id="fig-podcast">Podcast cover art, 3000 by 3000 pixels. The platform covers bottom 9%, leaving the dashed area clear.</title>
+              <rect width="200" height="200" fill="#565c60"/>
+              <g fill="#14171a" opacity=".88"><rect x="0" y="0" width="200" height="14.0"/><rect x="0" y="182.0" width="200" height="18.0"/><rect x="0" y="14.0" width="14.0" height="168.0"/><rect x="186.0" y="14.0" width="14.0" height="168.0"/></g>
+              <rect x="14.0" y="14.0" width="172.0" height="168.0"
+                    fill="none" stroke="var(--mark)" stroke-width="2" stroke-dasharray="6 4"/>
+            </svg>
+            <figcaption><b>Podcast cover art</b><span>Covers bottom 9%</span></figcaption>
+          </figure>
+        </div>
+        <p>Each size in this tool carries its own safe rectangle, and the numbers in
+        the table above are those rectangles written out. Tick <b>Show safe areas</b>
+        while you work and the same box is drawn on the preview. It is a guide only,
+        and never appears in the file you download.</p>
+      </section>
+
+      <section class="platforms">
+        <h2>Platform by platform</h2>
+          <div class="plat">
+            <h3>YouTube thumbnail</h3>
+            <p class="spec">1280 &times; 720 &middot; 16:9 &middot; Edges only</p>
+            <p>The one everybody means by “thumbnail”. A duration badge sits in the bottom-right corner over the top of it, and on a phone the title runs underneath rather than across, so the frame itself stays almost entirely yours.</p>
+          </div>
+          <div class="plat">
+            <h3>YouTube Shorts cover</h3>
+            <p class="spec">1080 &times; 1920 &middot; 9:16 &middot; right 17%, bottom 20%</p>
+            <p>Taken from the video rather than uploaded separately, so pick the frame you want. The right edge carries the like, comment and share column and the bottom carries the title.</p>
+          </div>
+          <div class="plat">
+            <h3>TikTok cover</h3>
+            <p class="spec">1080 &times; 1920 &middot; 9:16 &middot; top 10%, right 20%, bottom 22%</p>
+            <p>The busiest chrome of any format here. The action rail runs down the right, the caption and handle sit along the bottom, and the For You and Following tabs cross the top.</p>
+          </div>
+          <div class="plat">
+            <h3>Instagram Reel or Story</h3>
+            <p class="spec">1080 &times; 1920 &middot; 9:16 &middot; top 12%, right 17%, bottom 20%</p>
+            <p>The cover is cropped to a square in the profile grid, so anything that has to survive both views belongs in the middle of the frame.</p>
+          </div>
+          <div class="plat">
+            <h3>Instagram post</h3>
+            <p class="spec">1080 &times; 1350 &middot; 4:5 &middot; Edges only</p>
+            <p>Instagram's feed default is the 4:5 portrait, not the square. It takes up more of a phone screen, which is most of why it performs better.</p>
+          </div>
+          <div class="plat">
+            <h3>Instagram square</h3>
+            <p class="spec">1080 &times; 1080 &middot; 1:1 &middot; Edges only</p>
+            <p>Still valid, and still the shape of the profile grid. Reach for it when a design genuinely wants to be square.</p>
+          </div>
+          <div class="plat">
+            <h3>X card</h3>
+            <p class="spec">1600 &times; 900 &middot; 16:9 &middot; Edges only</p>
+            <p>Shown as a 16:9 card in the timeline. Cards get cropped aggressively on some clients, so keep anything that matters away from the edges.</p>
+          </div>
+          <div class="plat">
+            <h3>Facebook link image</h3>
+            <p class="spec">1200 &times; 630 &middot; Edges only</p>
+            <p>The link-preview image. Facebook re-crops it depending on where it appears, which is the usual reason text near an edge disappears.</p>
+          </div>
+          <div class="plat">
+            <h3>LinkedIn post image</h3>
+            <p class="spec">1200 &times; 627 &middot; Edges only</p>
+            <p>The link-preview image, at 1.91:1 like Facebook's. Feed images posted directly are a different shape again.</p>
+          </div>
+          <div class="plat">
+            <h3>Twitch thumbnail</h3>
+            <p class="spec">1280 &times; 720 &middot; 16:9 &middot; bottom 10%</p>
+            <p>Shown with a live badge and a viewer count over the lower part of the frame.</p>
+          </div>
+          <div class="plat">
+            <h3>Podcast cover art</h3>
+            <p class="spec">3000 &times; 3000 &middot; 1:1 &middot; bottom 9%</p>
+            <p>Apple and Spotify both want a large square. It gets displayed at every size from a full screen down to a 40-pixel row, so anything small vanishes.</p>
+          </div>
+          <div class="plat">
+            <h3>Blog or link preview</h3>
+            <p class="spec">1200 &times; 630 &middot; Edges only</p>
+            <p>The Open Graph image, used whenever a link to your page is shared anywhere. 1200 by 630 is the size every platform accepts.</p>
+          </div>
+      </section>
+
+      <section class="faq">
+        <h2>Questions</h2>
+          <div class="qa">
+            <h3>What is a safe area on a thumbnail?</h3>
+            <p>The part of the frame the platform will not cover with its own interface. Anything outside it may sit behind a caption, a button or a duration badge, so keep your headline and logo inside it.</p>
+          </div>
+          <div class="qa">
+            <h3>Why do TikTok and Reels cover more of the frame than YouTube?</h3>
+            <p>Vertical formats put their controls on top of the video rather than beside it. TikTok keeps roughly the right fifth of the frame for its action rail and the bottom fifth for the caption, while a landscape YouTube thumbnail only loses a duration badge in one corner.</p>
+          </div>
+          <div class="qa">
+            <h3>Does the dashed safe-area box appear in the image I download?</h3>
+            <p>No. It is drawn on the preview only. The exported PNG contains your artwork and nothing else.</p>
+          </div>
+          <div class="qa">
+            <h3>What size should an Instagram post be?</h3>
+            <p>1080 by 1350 pixels, a 4:5 portrait. Square at 1080 by 1080 still works and is included as its own preset, but the 4:5 takes up more of the screen on a phone.</p>
+          </div>
+          <div class="qa">
+            <h3>Do my images get uploaded anywhere?</h3>
+            <p>No. Everything is drawn in your browser on your own device. No image, and nothing you type, is ever sent to a server.</p>
+          </div>
+      </section>
+
+    <section class="prose">
+      <h2>Make one at any of these sizes</h2>
+      <p>The tool on the <a href="../">front page</a> renders all of them, draws the safe
+      box on the preview while you work, and will export every size in one pass. Nothing
+      you open in it is uploaded.</p>
+    </section>
+  </main>
+  <footer>
+    <p><a href="/">Make a thumbnail</a> &middot;
+       <a href="/sizes/">Every size, with safe areas</a> &middot;
+       <a href="/privacy/">What happens to your image</a></p>
+    <p class="by">A free tool by <a href="https://kreativekorna.com/">KreativeKorna</a>. Nothing you open here is uploaded.</p>
+  </footer>
+</div>
+
+
+</body>
+</html>

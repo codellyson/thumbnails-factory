@@ -93,7 +93,7 @@ def table(ps):
 # Only the presets whose chrome takes a real bite are worth drawing. Below ~15%
 # on every edge the inset is an ordinary margin and the diagram says nothing.
 FIG_H = 200
-DRAWN = ("youtube-shorts", "tiktok", "instagram-reel")
+DRAWN = ("youtube-shorts", "tiktok", "instagram-reel", "instagram-post", "twitch", "podcast")
 
 
 def figure(p):
@@ -150,6 +150,58 @@ def safe_areas(ps):
     )
 
 
+
+# --- per-platform detail --------------------------------------------------
+NOTES = {
+    "youtube": "The one everybody means by \u201cthumbnail\u201d. A duration badge sits in the "
+               "bottom-right corner over the top of it, and on a phone the title runs "
+               "underneath rather than across, so the frame itself stays almost entirely yours.",
+    "youtube-shorts": "Taken from the video rather than uploaded separately, so pick the frame "
+                      "you want. The right edge carries the like, comment and share column and "
+                      "the bottom carries the title.",
+    "tiktok": "The busiest chrome of any format here. The action rail runs down the right, the "
+              "caption and handle sit along the bottom, and the For You and Following tabs "
+              "cross the top.",
+    "instagram-reel": "The cover is cropped to a square in the profile grid, so anything that "
+                      "has to survive both views belongs in the middle of the frame.",
+    "instagram-post": "Instagram's feed default is the 4:5 portrait, not the square. It takes up "
+                      "more of a phone screen, which is most of why it performs better.",
+    "instagram-square": "Still valid, and still the shape of the profile grid. Reach for it when "
+                        "a design genuinely wants to be square.",
+    "x": "Shown as a 16:9 card in the timeline. Cards get cropped aggressively on some clients, "
+         "so keep anything that matters away from the edges.",
+    "facebook": "The link-preview image. Facebook re-crops it depending on where it appears, "
+                "which is the usual reason text near an edge disappears.",
+    "linkedin": "The link-preview image, at 1.91:1 like Facebook's. Feed images posted directly "
+                "are a different shape again.",
+    "twitch": "Shown with a live badge and a viewer count over the lower part of the frame.",
+    "podcast": "Apple and Spotify both want a large square. It gets displayed at every size from "
+               "a full screen down to a 40-pixel row, so anything small vanishes.",
+    "blog-og": "The Open Graph image, used whenever a link to your page is shared anywhere. "
+               "1200 by 630 is the size every platform accepts.",
+}
+
+
+def per_platform(ps):
+    items = []
+    for p in ps:
+        note = NOTES.get(p["id"])
+        if not note:
+            continue
+        r = ratio(p["w"], p["h"])
+        items.append(
+            '          <div class="plat">\n'
+            f'            <h3>{p["label"]}</h3>\n'
+            f'            <p class="spec">{p["w"]} &times; {p["h"]}'
+            f'{(" &middot; " + r) if r else ""} &middot; {keep_clear(p)}</p>\n'
+            f"            <p>{note}</p>\n"
+            "          </div>"
+        )
+    return ('      <section class="platforms">\n'
+            "        <h2>Platform by platform</h2>\n"
+            + "\n".join(items) + "\n      </section>")
+
+
 # --- questions, asked once and used twice ------------------------------------
 FAQ = [
     ("What is a safe area on a thumbnail?",
@@ -200,24 +252,122 @@ def faq_schema():
             + json.dumps(data, indent=2) + "\n</script>")
 
 
+SITE = "https://thumbnailsfactory.kreativekorna.com"
+
+APP_SCHEMA = """<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Thumbnail Factory",
+  "url": "https://thumbnailsfactory.kreativekorna.com/",
+  "description": "A browser tool that makes a thumbnail sized for any social platform. Everything renders on your own device; no image is uploaded.",
+  "applicationCategory": "DesignApplication",
+  "operatingSystem": "Any modern web browser",
+  "browserRequirements": "Requires JavaScript and HTML canvas",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "featureList": [
+    "{{COUNT}} platform presets plus any custom size",
+    "Safe-area guides per platform",
+    "Export every size in one pass",
+    "Replaceable logo and headline colours",
+    "Runs entirely on device with no upload"
+  ],
+  "publisher": { "@type": "Organization", "name": "KreativeKorna", "url": "https://kreativekorna.com/" }
+}
+</script>"""
+
+# path, source body, title, description, og title, schema, nav key
+PAGES = [
+    dict(out="index.html", src="page.html", prefix="", url=SITE + "/", nav="tool",
+         title="Thumbnail Maker for Every Platform &mdash; Nothing Uploads",
+         ogtitle="Thumbnail Factory",
+         desc="Make a thumbnail sized for YouTube, TikTok, Instagram, LinkedIn and more. "
+              "{{COUNT}} ready sizes with safe-area guides, batch export, and nothing ever uploaded.",
+         schema="APP"),
+    dict(out="sizes/index.html", src="sizes.html", prefix="/", url=SITE + "/sizes/", nav="sizes",
+         title="Social Media Image Sizes and Safe Areas for {{COUNT}} Formats",
+         ogtitle="Social media image sizes, with safe areas",
+         desc="Every social image size in one place, with the part of each frame TikTok, "
+              "Reels, Shorts and YouTube cover with their own buttons and captions.",
+         schema="FAQ"),
+    dict(out="privacy/index.html", src="privacy.html", prefix="/", url=SITE + "/privacy/", nav="privacy",
+         title="What Happens to Your Image &mdash; Thumbnail Factory",
+         ogtitle="What happens to your image",
+         desc="Thumbnail Factory has no server to upload to. Your picture is read off your own "
+              "disk, drawn in your browser, and never sent anywhere. Here is how to verify that.",
+         schema=""),
+]
+
+
+def sitemap():
+    urls = "\n".join(
+        "  <url>\n"
+        f"    <loc>{pg['url']}</loc>\n"
+        f"    <changefreq>monthly</changefreq>\n"
+        f"    <priority>{'1.0' if pg['nav'] == 'tool' else '0.8'}</priority>\n"
+        "  </url>"
+        for pg in PAGES
+    )
+    return ('<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            + urls + "\n</urlset>\n")
+
+
 def main():
-    markup = (SRC / "page.html").read_text()
+    head = (SRC / "head.html").read_text()
+    footer = (SRC / "footer.html").read_text()
+    style = "<style>\n" + (SRC / "style.css").read_text() + "</style>"
     logo = (SRC / "logo.txt").read_text()
     script = (SRC / "app.js").read_text()
-
     ps = presets(script)
-    for slot in ("<!--SIZE-REFERENCE-->", "<!--SAFE-AREAS-->", "<!--FAQ-->", "<!--FAQ-SCHEMA-->"):
-        if slot not in markup:
-            raise SystemExit(f"src/page.html is missing the {slot} placeholder")
-    markup = markup.replace("<!--SIZE-REFERENCE-->", table(ps))
-    markup = markup.replace("<!--SAFE-AREAS-->", safe_areas(ps))
-    markup = markup.replace("<!--FAQ-->", faq_markup())
-    markup = markup.replace("<!--FAQ-SCHEMA-->", faq_schema())
-    markup = markup.replace("{{COUNT}}", str(len(ps)))
 
-    OUT.write_text(markup + logo + script)
-    print(f"index.html written - {len(ps)} presets, {len(DRAWN)} diagrams, "
-          f"{len(FAQ)} questions, {OUT.stat().st_size // 1024}KB")
+    for pg in PAGES:
+        body = (SRC / pg["src"]).read_text()
+        schema = []
+        if "APP" in pg["schema"]:
+            schema.append(APP_SCHEMA)
+        if "FAQ" in pg["schema"]:
+            schema.append(faq_schema())
+
+        page = head.replace("{{SCHEMA}}", "\n\n".join(schema)) + body
+        page = page.replace("<!--FOOTER-->", footer)
+        page = page.replace("<!--STYLE-->", style)
+        page = page.replace("<!--SIZE-REFERENCE-->", table(ps))
+        page = page.replace("<!--SAFE-AREAS-->", safe_areas(ps))
+        page = page.replace("<!--PER-PLATFORM-->", per_platform(ps))
+        page = page.replace("<!--FAQ-->", faq_markup())
+        for key, val in (("TITLE", pg["title"]), ("DESC", pg["desc"]),
+                         ("OGTITLE", pg["ogtitle"]), ("URL", pg["url"]),
+                         ("PREFIX", pg["prefix"])):
+            page = page.replace("{{" + key + "}}", val)
+        for key in ("tool", "sizes", "privacy"):
+            page = page.replace("{{NAV_" + key.upper() + "}}",
+                                ' aria-current="page"' if key == pg["nav"] else "")
+        page = page.replace("{{COUNT}}", str(len(ps)))
+
+        # Only the tool page carries the app; the content pages close out here.
+        if pg["src"] == "page.html":
+            page = page + logo + script
+        else:
+            page = page + "\n</body>\n</html>\n"
+
+        dest = ROOT / pg["out"]
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(page)
+
+    (ROOT / "sitemap.xml").write_text(sitemap())
+
+    leftovers = {pg["out"]: re.findall(r"\{\{[A-Z_]+\}\}|<!--(?:STYLE|FOOTER|FAQ|SAFE-AREAS|SIZE-REFERENCE|PER-PLATFORM)-->",
+                                       (ROOT / pg["out"]).read_text()) for pg in PAGES}
+    for out, miss in leftovers.items():
+        if miss:
+            raise SystemExit(f"{out}: unreplaced {sorted(set(miss))}")
+
+    for pg in PAGES:
+        kb = (ROOT / pg["out"]).stat().st_size // 1024
+        print(f"  {pg['out']:<20} {kb}KB")
+    print(f"built {len(PAGES)} pages, {len(ps)} presets, sitemap.xml")
 
 
 if __name__ == "__main__":

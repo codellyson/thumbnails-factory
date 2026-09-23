@@ -6,18 +6,17 @@
 <title>Thumbnail Maker for Every Platform &mdash; Nothing Uploads</title>
 <meta name="description" content="Make a thumbnail sized for YouTube, TikTok, Instagram, LinkedIn and more. 12 ready sizes with safe-area guides, batch export, and nothing ever uploaded.">
 
-<!-- Relative, so the icons still resolve when index.html is opened on its own. -->
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#a9adac">
 
-<!-- Crawlers need an absolute URL here; they do not resolve relative paths. -->
+<!-- Crawlers do not resolve relative paths, so everything below is absolute. -->
 <link rel="canonical" href="https://thumbnailsfactory.kreativekorna.com/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Thumbnail Factory">
 <meta property="og:title" content="Thumbnail Factory">
-<meta property="og:description" content="12 ready sizes for YouTube, TikTok, Instagram, LinkedIn and more. No account, and nothing you drop in leaves your browser.">
+<meta property="og:description" content="Make a thumbnail sized for YouTube, TikTok, Instagram, LinkedIn and more. 12 ready sizes with safe-area guides, batch export, and nothing ever uploaded.">
 <meta property="og:url" content="https://thumbnailsfactory.kreativekorna.com/">
 <meta property="og:image" content="https://thumbnailsfactory.kreativekorna.com/og.png">
 <meta property="og:image:type" content="image/png">
@@ -26,7 +25,7 @@
 <meta property="og:image:alt" content="The words Thumbnail Factory over a dark gradient, with three outlined rectangles showing wide, square and tall thumbnail shapes.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Thumbnail Factory">
-<meta name="twitter:description" content="12 ready sizes for YouTube, TikTok, Instagram, LinkedIn and more. No account, and nothing you drop in leaves your browser.">
+<meta name="twitter:description" content="Make a thumbnail sized for YouTube, TikTok, Instagram, LinkedIn and more. 12 ready sizes with safe-area guides, batch export, and nothing ever uploaded.">
 <meta name="twitter:image" content="https://thumbnailsfactory.kreativekorna.com/og.png">
 
 <script type="application/ld+json">
@@ -49,55 +48,6 @@
     "Runs entirely on device with no upload"
   ],
   "publisher": { "@type": "Organization", "name": "KreativeKorna", "url": "https://kreativekorna.com/" }
-}
-</script>
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "What is a safe area on a thumbnail?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "The part of the frame the platform will not cover with its own interface. Anything outside it may sit behind a caption, a button or a duration badge, so keep your headline and logo inside it."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Why do TikTok and Reels cover more of the frame than YouTube?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Vertical formats put their controls on top of the video rather than beside it. TikTok keeps roughly the right fifth of the frame for its action rail and the bottom fifth for the caption, while a landscape YouTube thumbnail only loses a duration badge in one corner."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Does the dashed safe-area box appear in the image I download?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "No. It is drawn on the preview only. The exported PNG contains your artwork and nothing else."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What size should an Instagram post be?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "1080 by 1350 pixels, a 4:5 portrait. Square at 1080 by 1080 still works and is included as its own preset, but the 4:5 takes up more of the screen on a phone."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Do my images get uploaded anywhere?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "No. Everything is drawn in your browser on your own device. No image, and nothing you type, is ever sent to a server."
-      }
-    }
-  ]
 }
 </script>
 
@@ -133,16 +83,46 @@
   }
   .shell{ max-width:1200px; margin:0 auto; }
 
-  /* ---- masthead ---- */
-  header{ padding:34px 0 26px; }
-  .wordmark{ display:flex; align-items:center; gap:12px; }
-  .wordmark img{ height:30px; width:auto; display:block; }
-  h1{
-    font-size:clamp(28px,4.4vw,40px); line-height:1;
-    font-weight:700; font-stretch:125%; letter-spacing:-.015em;
-    margin:0;
+  /* ---- masthead and site nav ---- */
+  header{
+    display:flex; align-items:center; gap:16px 24px; flex-wrap:wrap;
+    padding:20px 0 18px; border-bottom:1px solid var(--ink); margin-bottom:26px;
   }
-  .lede{ margin:12px 0 0; font-size:16px; max-width:48ch; }
+  .home{ display:flex; align-items:center; gap:9px; text-decoration:none; color:var(--ink); }
+  .home img{ display:block; border-radius:5px; }
+  .home span{ font-size:16px; font-weight:700; font-stretch:112%; letter-spacing:-.005em; }
+  .home:focus-visible{ outline:2px solid var(--ink); outline-offset:3px; border-radius:2px; }
+  header nav{ margin-left:auto; display:flex; gap:18px; }
+  header nav a{ color:var(--ink); font-size:14.5px; font-weight:600; text-decoration:none;
+    padding:3px 0; border-bottom:2px solid transparent; }
+  @media (hover: hover){ header nav a:hover{ border-bottom-color:var(--ink); } }
+  header nav a[aria-current="page"]{ border-bottom-color:var(--mark); }
+  header nav a:focus-visible{ outline:2px solid var(--ink); outline-offset:3px; }
+
+  h1{
+    font-size:clamp(27px,3.9vw,38px); line-height:1.05;
+    font-weight:700; font-stretch:125%; letter-spacing:-.015em;
+    margin:0 0 12px; max-width:22ch;
+  }
+  .lede{ margin:0 0 24px; font-size:16.5px; max-width:52ch; }
+
+  /* ---- long-form pages ---- */
+  .prose{ max-width:68ch; }
+  .prose h2{ font-size:19px; font-weight:700; font-stretch:112%; margin:26px 0 8px; }
+  .prose p, .prose li{ font-size:15px; margin:0 0 12px; }
+  .prose ul{ margin:0 0 14px; padding-left:20px; }
+  .prose li{ margin:0 0 5px; }
+  .prose code{ font-size:14px; background:var(--paper); padding:1px 5px; border-radius:2px; }
+  .prose a, .sizeref a, .safeareas a, .seealso a, footer a{ color:var(--ink); }
+  .seealso{ margin:30px 0 0; max-width:68ch; }
+  .seealso h2{ font-size:19px; font-weight:700; font-stretch:112%; margin:0 0 8px; }
+  .seealso p{ font-size:14.5px; margin:0; }
+
+  footer{
+    margin:40px 0 0; padding:18px 0 0; border-top:1px solid var(--ink); font-size:14px;
+  }
+  footer p{ margin:0 0 6px; }
+  footer .by{ font-size:13px; }
 
   /* ---- layout ---- */
   .layout{ display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:22px; align-items:start; }
@@ -405,13 +385,19 @@
 <div class="shell">
   <header>
     <div class="wordmark">
-      <img id="logoImg" alt="">
-      <h1>Thumbnail Factory</h1>
+      <a class="home" href=""><img src="favicon.svg" alt="" width="26" height="26"><span>Thumbnail Factory</span></a>
     </div>
-    <p class="lede">Make a thumbnail sized for wherever you are posting it. Nothing leaves this tab.</p>
+    <nav aria-label="Pages">
+      <a href="" aria-current="page">Make one</a>
+      <a href="sizes/">Sizes</a>
+      <a href="privacy/">Privacy</a>
+    </nav>
   </header>
-
   <main>
+    <h1>Make a thumbnail for any platform</h1>
+    <p class="lede">Pick a size, drop in a picture, type a headline, download. Nothing
+    you open here is uploaded &mdash; it is all drawn in your own browser.</p>
+
   <!-- A fieldset, so the twelve radios announce as one named group without ARIA. -->
   <fieldset class="sizes" id="sizes">
     <legend class="sr-only">Size</legend>
@@ -501,165 +487,35 @@
     </div>
   </div>
 
-      <section class="sizeref">
-        <h2>Every size this makes</h2>
-        <p>Each one is ready to pick above. <em>Keep clear</em> is the part of the
-        frame that platform covers with its own buttons and captions, so anything
-        you put there may not be seen.</p>
-        <table>
-          <thead>
-            <tr><th>Platform</th><th>Pixels</th><th>Shape</th><th>Keep clear</th></tr>
-          </thead>
-          <tbody>
-          <tr>
-            <th scope="row">YouTube thumbnail</th>
-            <td>1280 &times; 720</td>
-            <td>Wide 16:9</td>
-            <td>Edges only</td>
-          </tr>
-          <tr>
-            <th scope="row">YouTube Shorts cover</th>
-            <td>1080 &times; 1920</td>
-            <td>Tall 9:16</td>
-            <td>right 17%, bottom 20%</td>
-          </tr>
-          <tr>
-            <th scope="row">TikTok cover</th>
-            <td>1080 &times; 1920</td>
-            <td>Tall 9:16</td>
-            <td>top 10%, right 20%, bottom 22%</td>
-          </tr>
-          <tr>
-            <th scope="row">Instagram Reel or Story</th>
-            <td>1080 &times; 1920</td>
-            <td>Tall 9:16</td>
-            <td>top 12%, right 17%, bottom 20%</td>
-          </tr>
-          <tr>
-            <th scope="row">Instagram post</th>
-            <td>1080 &times; 1350</td>
-            <td>Tall 4:5</td>
-            <td>Edges only</td>
-          </tr>
-          <tr>
-            <th scope="row">Instagram square</th>
-            <td>1080 &times; 1080</td>
-            <td>Square 1:1</td>
-            <td>Edges only</td>
-          </tr>
-          <tr>
-            <th scope="row">X card</th>
-            <td>1600 &times; 900</td>
-            <td>Wide 16:9</td>
-            <td>Edges only</td>
-          </tr>
-          <tr>
-            <th scope="row">Facebook link image</th>
-            <td>1200 &times; 630</td>
-            <td>Wide</td>
-            <td>Edges only</td>
-          </tr>
-          <tr>
-            <th scope="row">LinkedIn post image</th>
-            <td>1200 &times; 627</td>
-            <td>Wide</td>
-            <td>Edges only</td>
-          </tr>
-          <tr>
-            <th scope="row">Twitch thumbnail</th>
-            <td>1280 &times; 720</td>
-            <td>Wide 16:9</td>
-            <td>bottom 10%</td>
-          </tr>
-          <tr>
-            <th scope="row">Podcast cover art</th>
-            <td>3000 &times; 3000</td>
-            <td>Square 1:1</td>
-            <td>bottom 9%</td>
-          </tr>
-          <tr>
-            <th scope="row">Blog or link preview</th>
-            <td>1200 &times; 630</td>
-            <td>Wide</td>
-            <td>Edges only</td>
-          </tr>
-          </tbody>
-        </table>
+
+      <section class="seealso">
+        <h2>What this does</h2>
+        <p>Twelve sizes are ready to pick, from a 1280 by 720 YouTube thumbnail to
+        3000 by 3000 podcast art, plus any custom size you type. Set the headline once
+        and <b>Download all 12 sizes</b> renders the lot in a single pass. Replace the
+        logo with your own, and set the headline colours by hand or pull them out of the
+        picture you just dropped in.</p>
+        <p>Nothing is uploaded. There is no account and no server to send anything to
+        &mdash; <a href="privacy/">here is how to check that for yourself</a>.</p>
       </section>
 
-      <section class="safeareas">
-        <h2>Where each platform covers your thumbnail</h2>
-        <p>A safe area is the part of the frame you can count on people seeing.
-        Everything outside it still gets saved in the file, but the app you post to
-        draws its own interface on top: a caption, a row of buttons down one side, a
-        profile photo, a duration badge.</p>
-        <p>Landscape thumbnails lose almost nothing, which is why a YouTube thumbnail
-        can run text close to the edge. Vertical covers are the opposite. TikTok,
-        Reels and Shorts all stack controls down the right and captions along the
-        bottom, so a headline centred in the frame ends up behind a share button.</p>
-        <div class="figs">
-          <figure class="safefig">
-            <svg viewBox="0 0 112 200" role="img" aria-labelledby="fig-youtube-shorts">
-              <title id="fig-youtube-shorts">YouTube Shorts cover, 1080 by 1920 pixels. The platform covers right 17%, bottom 20%, leaving the dashed area clear.</title>
-              <rect width="112" height="200" fill="#565c60"/>
-              <g fill="#14171a" opacity=".88"><rect x="0" y="0" width="112" height="16.0"/><rect x="0" y="160.0" width="112" height="40.0"/><rect x="0" y="16.0" width="6.7" height="144.0"/><rect x="93.0" y="16.0" width="19.0" height="144.0"/></g>
-              <rect x="6.7" y="16.0" width="86.2" height="144.0"
-                    fill="none" stroke="var(--mark)" stroke-width="2" stroke-dasharray="6 4"/>
-            </svg>
-            <figcaption><b>YouTube Shorts cover</b><span>Covers right 17%, bottom 20%</span></figcaption>
-          </figure>
-          <figure class="safefig">
-            <svg viewBox="0 0 112 200" role="img" aria-labelledby="fig-tiktok">
-              <title id="fig-tiktok">TikTok cover, 1080 by 1920 pixels. The platform covers top 10%, right 20%, bottom 22%, leaving the dashed area clear.</title>
-              <rect width="112" height="200" fill="#565c60"/>
-              <g fill="#14171a" opacity=".88"><rect x="0" y="0" width="112" height="20.0"/><rect x="0" y="156.0" width="112" height="44.0"/><rect x="0" y="20.0" width="6.7" height="136.0"/><rect x="89.6" y="20.0" width="22.4" height="136.0"/></g>
-              <rect x="6.7" y="20.0" width="82.9" height="136.0"
-                    fill="none" stroke="var(--mark)" stroke-width="2" stroke-dasharray="6 4"/>
-            </svg>
-            <figcaption><b>TikTok cover</b><span>Covers top 10%, right 20%, bottom 22%</span></figcaption>
-          </figure>
-          <figure class="safefig">
-            <svg viewBox="0 0 112 200" role="img" aria-labelledby="fig-instagram-reel">
-              <title id="fig-instagram-reel">Instagram Reel or Story, 1080 by 1920 pixels. The platform covers top 12%, right 17%, bottom 20%, leaving the dashed area clear.</title>
-              <rect width="112" height="200" fill="#565c60"/>
-              <g fill="#14171a" opacity=".88"><rect x="0" y="0" width="112" height="24.0"/><rect x="0" y="160.0" width="112" height="40.0"/><rect x="0" y="24.0" width="6.7" height="136.0"/><rect x="93.0" y="24.0" width="19.0" height="136.0"/></g>
-              <rect x="6.7" y="24.0" width="86.2" height="136.0"
-                    fill="none" stroke="var(--mark)" stroke-width="2" stroke-dasharray="6 4"/>
-            </svg>
-            <figcaption><b>Instagram Reel or Story</b><span>Covers top 12%, right 17%, bottom 20%</span></figcaption>
-          </figure>
-        </div>
-        <p>Each size in this tool carries its own safe rectangle, and the numbers in
-        the table above are those rectangles written out. Tick <b>Show safe areas</b>
-        while you work and the same box is drawn on the preview. It is a guide only,
-        and never appears in the file you download.</p>
+      <section class="seealso">
+        <h2>Where platforms cover your thumbnail</h2>
+        <p>Vertical covers lose far more of the frame than a landscape thumbnail does.
+        TikTok keeps about the right fifth for its buttons and the bottom fifth for the
+        caption, so a headline centred in the frame ends up behind a share button.
+        <a href="sizes/">See the safe area for every size</a>, drawn out.</p>
       </section>
 
-      <section class="faq">
-        <h2>Questions</h2>
-          <div class="qa">
-            <h3>What is a safe area on a thumbnail?</h3>
-            <p>The part of the frame the platform will not cover with its own interface. Anything outside it may sit behind a caption, a button or a duration badge, so keep your headline and logo inside it.</p>
-          </div>
-          <div class="qa">
-            <h3>Why do TikTok and Reels cover more of the frame than YouTube?</h3>
-            <p>Vertical formats put their controls on top of the video rather than beside it. TikTok keeps roughly the right fifth of the frame for its action rail and the bottom fifth for the caption, while a landscape YouTube thumbnail only loses a duration badge in one corner.</p>
-          </div>
-          <div class="qa">
-            <h3>Does the dashed safe-area box appear in the image I download?</h3>
-            <p>No. It is drawn on the preview only. The exported PNG contains your artwork and nothing else.</p>
-          </div>
-          <div class="qa">
-            <h3>What size should an Instagram post be?</h3>
-            <p>1080 by 1350 pixels, a 4:5 portrait. Square at 1080 by 1080 still works and is included as its own preset, but the 4:5 takes up more of the screen on a phone.</p>
-          </div>
-          <div class="qa">
-            <h3>Do my images get uploaded anywhere?</h3>
-            <p>No. Everything is drawn in your browser on your own device. No image, and nothing you type, is ever sent to a server.</p>
-          </div>
-      </section>
-  </main>
+    </main>
+  <footer>
+    <p><a href="">Make a thumbnail</a> &middot;
+       <a href="sizes/">Every size, with safe areas</a> &middot;
+       <a href="privacy/">What happens to your image</a></p>
+    <p class="by">A free tool by <a href="https://kreativekorna.com/">KreativeKorna</a>. Nothing you open here is uploaded.</p>
+  </footer>
 </div>
+
 
 <script>
 (function(){
@@ -862,7 +718,6 @@
   logo.onload = function(){ ready.logo = true; updateLogoThumb(); refreshDerived('logo', logo); draw(); };
   logo.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
   logo.src = state.logoSrc || DEFAULT_LOGO;
-  document.getElementById('logoImg').src = DEFAULT_LOGO;
   if (document.fonts && document.fonts.ready) {
     document.fonts.load('88px "Archivo Black"').then(function(){ ready.font = true; draw(); });
     document.fonts.ready.then(function(){ ready.font = true; draw(); });

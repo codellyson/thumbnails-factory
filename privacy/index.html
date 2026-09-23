@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What Happens to Your Image &mdash; Thumbnail Factory</title>
+<meta name="description" content="Thumbnail Factory has no server to upload to. Your picture is read off your own disk, drawn in your browser, and never sent anywhere. Here is how to verify that.">
+
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#a9adac">
+
+<!-- Crawlers do not resolve relative paths, so everything below is absolute. -->
+<link rel="canonical" href="https://thumbnailsfactory.kreativekorna.com/privacy/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Thumbnail Factory">
+<meta property="og:title" content="What happens to your image">
+<meta property="og:description" content="Thumbnail Factory has no server to upload to. Your picture is read off your own disk, drawn in your browser, and never sent anywhere. Here is how to verify that.">
+<meta property="og:url" content="https://thumbnailsfactory.kreativekorna.com/privacy/">
+<meta property="og:image" content="https://thumbnailsfactory.kreativekorna.com/og.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The words Thumbnail Factory over a dark gradient, with three outlined rectangles showing wide, square and tall thumbnail shapes.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="What happens to your image">
+<meta name="twitter:description" content="Thumbnail Factory has no server to upload to. Your picture is read off your own disk, drawn in your browser, and never sent anywhere. Here is how to verify that.">
+<meta name="twitter:image" content="https://thumbnailsfactory.kreativekorna.com/og.png">
+
+
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=Archivo+Black&display=swap">
+<style>
+  :root{
+    --page:#a9adac;      /* grey card the whole tool sits on */
+    --bench:#929695;     /* machine body */
+    --bench-lo:#7d8180;  /* recessed edge */
+    --well:#232626;      /* the dark well the canvas sits in */
+    --paper:#f4f4f2;     /* input surfaces */
+    --ink:#141716;
+    --mark:#ffc400;      /* action and active state, nothing else */
+    --mark-lo:#d9a600;
+    --alert:#8f1a14;
+    --ok:#14543a;
+    --ui:"Archivo",-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Concentric radii: every outer radius is its inner radius plus its own
+       padding, so nested corners stay parallel instead of pinching.
+       --r        controls sitting on the bench (buttons, inputs, images)
+       --r-panel  the bench itself: 3 + 18 padding
+       --r-well   the canvas well: 0 (square canvas) + 14 padding */
+    --r:3px; --r-panel:21px; --r-well:14px;
+  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    margin:0; background:var(--page); color:var(--ink);
+    font-family:var(--ui); font-size:15px; line-height:1.45;
+    font-variant-numeric:tabular-nums;
+    padding:0 20px 56px;
+  }
+  .shell{ max-width:1200px; margin:0 auto; }
+
+  /* ---- masthead and site nav ---- */
+  header{
+    display:flex; align-items:center; gap:16px 24px; flex-wrap:wrap;
+    padding:20px 0 18px; border-bottom:1px solid var(--ink); margin-bottom:26px;
+  }
+  .home{ display:flex; align-items:center; gap:9px; text-decoration:none; color:var(--ink); }
+  .home img{ display:block; border-radius:5px; }
+  .home span{ font-size:16px; font-weight:700; font-stretch:112%; letter-spacing:-.005em; }
+  .home:focus-visible{ outline:2px solid var(--ink); outline-offset:3px; border-radius:2px; }
+  header nav{ margin-left:auto; display:flex; gap:18px; }
+  header nav a{ color:var(--ink); font-size:14.5px; font-weight:600; text-decoration:none;
+    padding:3px 0; border-bottom:2px solid transparent; }
+  @media (hover: hover){ header nav a:hover{ border-bottom-color:var(--ink); } }
+  header nav a[aria-current="page"]{ border-bottom-color:var(--mark); }
+  header nav a:focus-visible{ outline:2px solid var(--ink); outline-offset:3px; }
+
+  h1{
+    font-size:clamp(27px,3.9vw,38px); line-height:1.05;
+    font-weight:700; font-stretch:125%; letter-spacing:-.015em;
+    margin:0 0 12px; max-width:22ch;
+  }
+  .lede{ margin:0 0 24px; font-size:16.5px; max-width:52ch; }
+
+  /* ---- long-form pages ---- */
+  .prose{ max-width:68ch; }
+  .prose h2{ font-size:19px; font-weight:700; font-stretch:112%; margin:26px 0 8px; }
+  .prose p, .prose li{ font-size:15px; margin:0 0 12px; }
+  .prose ul{ margin:0 0 14px; padding-left:20px; }
+  .prose li{ margin:0 0 5px; }
+  .prose code{ font-size:14px; background:var(--paper); padding:1px 5px; border-radius:2px; }
+  .prose a, .sizeref a, .safeareas a, .seealso a, footer a{ color:var(--ink); }
+  .seealso{ margin:30px 0 0; max-width:68ch; }
+  .seealso h2{ font-size:19px; font-weight:700; font-stretch:112%; margin:0 0 8px; }
+  .seealso p{ font-size:14.5px; margin:0; }
+
+  footer{
+    margin:40px 0 0; padding:18px 0 0; border-top:1px solid var(--ink); font-size:14px;
+  }
+  footer p{ margin:0 0 6px; }
+  footer .by{ font-size:13px; }
+
+  /* ---- layout ---- */
+  .layout{ display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:22px; align-items:start; }
+
+  /* ---- stage ---- */
+  .stage{ min-width:0; }
+  .canvas-wrap{
+    position:relative; background:var(--well);
+    border:1px solid var(--ink); border-radius:var(--r-well);
+    display:flex; align-items:center; justify-content:center;
+    min-height:260px; padding:14px;
+  }
+  canvas{
+    display:block; max-width:100%; max-height:66vh; width:auto; height:auto;
+    cursor:grab; touch-action:none; background:#000;
+    transition:opacity .12s linear;
+  }
+  canvas.dragging{ cursor:grabbing; }
+  /* Ink would disappear against the well, so the canvas ring uses the mark. */
+  canvas:focus-visible{ outline:2px solid var(--mark); outline-offset:3px; }
+  canvas.resizing{ opacity:.25; }
+  .drop-hint{
+    position:absolute; inset:6px; display:flex; align-items:center; justify-content:center;
+    background:rgba(20,23,22,.86); color:var(--paper); font-size:16px; font-weight:600;
+    text-align:center; padding:20px; border:2px dashed var(--mark);
+    border-radius:8px;   /* inset 6px inside a 14px well */
+    pointer-events:none; opacity:0; transition:opacity .12s linear;
+  }
+  .canvas-wrap.dropping .drop-hint{ opacity:1; }
+
+  .readout{
+    display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+    border-bottom:1px solid var(--ink); padding:12px 2px 8px; margin-top:14px;
+  }
+  .readout .what{ font-weight:700; }
+  .readout .dims{ margin-left:auto; font-weight:500; }
+  .howto{ margin:12px 2px 0; max-width:56ch; }
+  .howto p{ margin:0 0 3px; }
+
+  /* ---- control bench ---- */
+  .bench{
+    background:var(--bench); border:1px solid var(--ink); border-radius:var(--r-panel);
+    padding:18px; display:flex; flex-direction:column; gap:20px; min-width:0;
+  }
+  .bench h2, .sizegroup h2{
+    font-size:13px; font-weight:700; margin:0 0 10px;
+    font-stretch:112%; letter-spacing:.01em;
+  }
+  .rule{ height:1px; background:var(--ink); opacity:.45; }
+
+  /* ---- size chart: the point of the page ---- */
+  .sizes{
+    display:flex; flex-wrap:wrap; gap:18px 26px; align-items:stretch;
+    /* reset the fieldset UA styles before restoring the band's own rules */
+    border:0; border-top:1px solid var(--ink); border-bottom:1px solid var(--ink);
+    padding:16px 0 18px; margin:0 0 22px; min-width:0;
+  }
+  .sizegroup{ min-width:0; }
+  .sizegroup + .sizegroup{ border-left:1px solid var(--ink); padding-left:26px; margin-left:0; }
+  .tiles{ display:flex; flex-wrap:wrap; gap:14px; max-width:286px; }
+  .tile{ width:86px; }
+  .sizegroup.customgroup .tile{ width:54px; }
+  .tile{ position:relative; display:flex; flex-direction:column; align-items:flex-start; gap:5px; cursor:pointer; }
+  /* Visually hidden, not zero-sized: a 0x0 input is still focusable but some
+     assistive tech and tooling treat it as invisible and skip it. The 1px clip
+     keeps it in the accessibility tree. Same for the palette radios below. */
+  .tile input, .pal input{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+  }
+  .chipbox{ height:40px; display:flex; align-items:flex-end; }
+  .chip{
+    display:block; background:var(--paper); border:1px solid var(--ink); border-radius:1px;
+    transition:background .14s linear, box-shadow .14s linear;
+  }
+  .tile.custom .chip{ border-style:dashed; display:flex; align-items:center; justify-content:center;
+    font-size:17px; font-weight:700; line-height:1; color:var(--ink); }
+  @media (hover: hover){ .tile:hover .chip{ background:#fff; box-shadow:0 0 0 2px var(--bench-lo); } }
+  .tile input:checked ~ .chipbox .chip{ background:var(--mark); box-shadow:0 0 0 2px var(--ink); }
+  .tile input:focus-visible ~ .chipbox .chip{ outline:2px solid var(--ink); outline-offset:3px; }
+  .tile .name{ font-size:12.5px; font-weight:500; line-height:1.15; }
+  .tile.custom .name{ display:none; }
+  .tile input:checked ~ .name{ font-weight:700; }
+  .tile .size{ font-size:11px; line-height:1; }
+
+  /* ---- fields ---- */
+  .fields{ display:flex; flex-direction:column; gap:14px; }
+  .field{ display:flex; flex-direction:column; gap:5px; min-width:0; }
+  .field > label, .legend{ font-size:13px; font-weight:600; }
+  .hint{ font-size:12.5px; }
+  input[type=text], input[type=number]{
+    font-family:var(--ui); font-size:15px; font-variant-numeric:tabular-nums;
+    background:var(--paper); color:var(--ink);
+    border:1px solid var(--ink); border-radius:var(--r); padding:9px 10px; width:100%;
+  }
+  input[type=text]:focus-visible, input[type=number]:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .row{ display:flex; gap:10px; }
+  .row .field{ flex:1; }
+  .row[hidden]{ display:none; }
+  .customgroup .row{ width:190px; }
+  .customgroup .row .field{ gap:4px; }
+
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; width:100%; background:transparent; margin:7px 0;
+  }
+  input[type=range]::-webkit-slider-runnable-track{ height:3px; background:var(--ink); }
+  input[type=range]::-moz-range-track{ height:3px; background:var(--ink); }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:17px; height:17px; border-radius:50%;
+    background:var(--paper); border:2px solid var(--ink); margin-top:-7px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:13px; height:13px; border-radius:50%; background:var(--paper); border:2px solid var(--ink);
+  }
+  input[type=range]:focus-visible{ outline:2px solid var(--ink); outline-offset:4px; }
+
+  .toggles{ display:flex; flex-direction:column; gap:9px; }
+  .tog{ display:flex; align-items:center; gap:9px; font-size:14px; cursor:pointer; min-height:24px; }
+  .tog input{ width:16px; height:16px; margin:0; accent-color:var(--ink); }
+  .tog.off{ opacity:.5; cursor:default; }
+  .note{ font-size:12.5px; margin:-2px 0 0 25px; max-width:34ch; }
+  .note[hidden]{ display:none; }
+
+  /* ---- brand controls ---- */
+  .inline{ display:flex; gap:8px; align-items:center; }
+  .inline input[type=text]{ flex:1; min-width:0; }
+  input[type=color]{
+    flex:0 0 auto; width:38px; height:38px; padding:2px; cursor:pointer;
+    background:var(--paper); border:1px solid var(--ink);
+    border-radius:2px;   /* square swatch + 2px padding */
+  }
+  input[type=color]:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .palettes{ display:flex; flex-wrap:wrap; gap:6px; margin-top:3px; }
+  .pal{ position:relative; cursor:pointer; line-height:0; }
+  .pal[hidden]{ display:none; }
+  .palchip{
+    display:block; width:34px; height:24px; border:1px solid var(--ink); border-radius:1px;
+    transition:box-shadow .14s linear;
+  }
+  @media (hover: hover){ .pal:hover .palchip{ box-shadow:0 0 0 2px var(--bench-lo); } }
+  .pal input:checked ~ .palchip{ box-shadow:0 0 0 2px var(--ink); }
+  .pal input:focus-visible ~ .palchip{ outline:2px solid var(--ink); outline-offset:3px; }
+  .pal.customp .palchip{
+    background:var(--paper); display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:700; line-height:1; border-style:dashed;
+  }
+  .stops{ display:flex; gap:6px; margin-top:7px; }
+  .stops[hidden]{ display:none; }
+
+  .logorow{ display:flex; gap:10px; align-items:center; }
+  .logopreview{
+    flex:0 0 auto; width:66px; height:40px; background:var(--well);
+    border:1px solid var(--ink);
+    border-radius:5px; padding:5px;   /* square logo + 5px padding */
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  /* Dark well behind it, so the outline is white at low opacity. A tinted
+     neutral here picks up the surface and reads as dirt on the image edge. */
+  .logopreview img{
+    max-width:56px; max-height:30px; display:block;
+    outline:1px solid oklch(1 0 0 / 0.1); outline-offset:-1px;
+  }
+  .logobtns{ display:flex; gap:6px; flex:1; min-width:0; }
+  /* .btn is width:100% for the full-width actions; inside this row that basis
+     makes both buttons shrink to equal halves and wrap. Size to content, and
+     let Replace take whatever is left over. */
+  .logobtns .btn{ width:auto; white-space:nowrap; }
+  .logobtns #logoPick{ flex:1 1 auto; }
+  .logobtns #logoReset{ flex:0 0 auto; }
+  .btn-sm{ padding:7px 10px; font-size:13px; font-weight:600; }
+  .btn-sm[hidden]{ display:none; }
+
+  /* ---- buttons ---- */
+  .btn{
+    font-family:var(--ui); font-size:15px; font-weight:700; cursor:pointer;
+    border:1px solid var(--ink); border-radius:var(--r); padding:11px 14px; width:100%;
+    background:var(--paper); color:var(--ink);
+    transition-property:background-color, transform;
+    transition-duration:.14s;
+    transition-timing-function:cubic-bezier(0.2, 0, 0, 1);
+  }
+  @media (hover: hover){ .btn:hover{ background:#fff; } }
+  .btn:active:not(:disabled){ transform:scale(0.96); }
+  .btn:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .btn-go{ background:var(--mark); font-size:16px; padding:13px 14px; }
+  @media (hover: hover){ .btn-go:hover{ background:var(--mark-lo); } }
+  .btn:disabled{ opacity:.5; cursor:default; }
+  @media (hover: hover){
+    .btn:disabled:hover{ background:var(--paper); }
+    .btn-go:disabled:hover{ background:var(--mark); }
+  }
+  .actions{ display:flex; flex-direction:column; gap:9px; }
+
+  .status{ font-size:13px; min-height:19px; font-weight:500; }
+  .status.ok{ color:var(--ok); }
+  .status.err{ color:var(--alert); }
+
+  .fallback[hidden]{ display:none; }
+  .fallback p{ font-size:13px; margin:0 0 8px; }
+  .fallback img{
+    max-width:100%; border-radius:var(--r); display:block;
+    outline:1px solid oklch(0 0 0 / 0.1); outline-offset:-1px;
+  }
+
+  /* ---- size reference: the preset table, generated at build time ---- */
+  .sizeref{ margin:30px 0 0; }
+  .sizeref h2{ font-size:19px; font-weight:700; font-stretch:112%; letter-spacing:-.005em; margin:0 0 8px; }
+  .sizeref > p{ margin:0 0 16px; max-width:66ch; font-size:14.5px; }
+  .sizeref table{ border-collapse:collapse; width:100%; font-size:14px; }
+  .sizeref th, .sizeref td{ text-align:left; padding:9px 14px 9px 0; vertical-align:top;
+    border-bottom:1px solid var(--ink); }
+  .sizeref thead th{ font-size:12px; font-weight:700; letter-spacing:.01em; }
+  .sizeref tbody th{ font-weight:600; }
+  .sizeref tbody tr:last-child th, .sizeref tbody tr:last-child td{ border-bottom:0; }
+  @media (max-width:560px){
+    .sizeref table{ font-size:13px; }
+    .sizeref th, .sizeref td{ padding:8px 8px 8px 0; }
+  }
+
+  /* ---- safe-area explainer and questions ---- */
+  .safeareas, .faq{ margin:34px 0 0; }
+  .safeareas h2, .faq h2{ font-size:19px; font-weight:700; font-stretch:112%;
+    letter-spacing:-.005em; margin:0 0 8px; }
+  .safeareas p{ margin:0 0 14px; max-width:66ch; font-size:14.5px; }
+  .figs{ display:flex; flex-wrap:wrap; gap:22px; margin:20px 0 22px; }
+  .safefig{ margin:0; }
+  .safefig svg{ display:block; border:1px solid var(--ink); border-radius:3px; height:200px; width:auto; }
+  .safefig figcaption{ margin-top:8px; font-size:13px; max-width:19ch; line-height:1.35; }
+  .safefig figcaption b{ display:block; font-weight:700; }
+  .safefig figcaption span{ display:block; }
+  .faq .qa{ border-top:1px solid var(--ink); padding:14px 0 2px; max-width:68ch; }
+  .faq h3{ font-size:15px; font-weight:700; margin:0 0 5px; }
+  .faq .qa p{ margin:0 0 10px; font-size:14.5px; }
+
+  .sr-only{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+  }
+
+  @media (max-width:900px){
+    .layout{ grid-template-columns:minmax(0,1fr); }
+    /* one scrolling row, so the preview is still on the first screen */
+    .sizes{ flex-wrap:nowrap; overflow-x:auto; gap:0 18px; padding-bottom:14px; }
+    .sizegroup{ flex:0 0 auto; }
+    .sizegroup + .sizegroup{ padding-left:18px; }
+    .tiles{ flex-wrap:nowrap; max-width:none; gap:12px; }
+    .customgroup .row{ width:150px; }
+    .canvas-wrap{ min-height:0; padding:10px; border-radius:10px; }
+    header{ padding:24px 0 18px; }
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{ transition-duration:0ms !important; animation-duration:0ms !important; }
+    .btn:active:not(:disabled){ transform:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <header>
+    <div class="wordmark">
+      <a class="home" href="/"><img src="/favicon.svg" alt="" width="26" height="26"><span>Thumbnail Factory</span></a>
+    </div>
+    <nav aria-label="Pages">
+      <a href="/">Make one</a>
+      <a href="/sizes/">Sizes</a>
+      <a href="/privacy/" aria-current="page">Privacy</a>
+    </nav>
+  </header>
+  <main>
+    <h1>What happens to your image</h1>
+    <p class="lede">Nothing. It never leaves the tab you opened. This page explains how
+    that works and what the tool does store.</p>
+
+    <section class="prose">
+      <h2>The short version</h2>
+      <p>Thumbnail Factory has no server to upload anything to. The whole tool is one
+      HTML file served as a static page. When you choose a picture, the browser reads it
+      off your own disk and draws it onto a canvas in the page. The finished thumbnail is
+      produced by that same canvas and handed straight to your downloads folder. At no
+      point does the image travel anywhere.</p>
+      <p>There is no account, no sign-in, no analytics script, and no tracking pixel.</p>
+
+      <h2>How to check, rather than take my word for it</h2>
+      <p>Open your browser's developer tools, switch to the Network tab, and use the tool
+      normally. Choose a picture, type a headline, download the result. You will see
+      requests for the page itself and for the font, and nothing else. No request carries
+      your image, because no such request is ever made.</p>
+      <p>You can also disconnect from the internet after the page loads. Everything keeps
+      working, which is only possible because the work happens on your device.</p>
+
+      <h2>What is stored, and where</h2>
+      <p>The tool remembers a few things between visits so you do not have to set them up
+      again. They are kept in <code>localStorage</code>, which is a store your browser
+      keeps on your own machine, scoped to this site. It is not sent anywhere, and it is
+      not readable by other sites.</p>
+      <ul>
+        <li>The two lines of headline text</li>
+        <li>The size you last picked, and any custom width and height</li>
+        <li>Your headline colours</li>
+        <li>A logo you uploaded, if you replaced the default one</li>
+      </ul>
+      <p>The picture you are working on is <em>not</em> stored. It lives in memory while
+      the tab is open and is gone when you close it.</p>
+      <p>To clear everything, clear this site's data in your browser settings, or use a
+      private window, where nothing is kept once you close it.</p>
+
+      <h2>What the page does load from elsewhere</h2>
+      <p>One stylesheet, from Google Fonts, for the typeface the headlines are set in.
+      That request tells Google the font was requested from this site, in the ordinary way
+      any web font does. It carries nothing about your image or your text. If you would
+      rather avoid it, the page still works with that request blocked; the headline simply
+      falls back to a system typeface.</p>
+
+      <h2>Why it is built this way</h2>
+      <p>Most free thumbnail tools upload your picture to process it. That is a reasonable
+      engineering choice and it is also how you end up agreeing to terms about what may be
+      done with what you uploaded. Drawing on a canvas in the browser avoids the question
+      entirely. There is no copy of your work to keep, so there is no policy needed about
+      keeping it.</p>
+      <p><a href="../">Go and make one</a>.</p>
+    </section>
+  </main>
+  <footer>
+    <p><a href="/">Make a thumbnail</a> &middot;
+       <a href="/sizes/">Every size, with safe areas</a> &middot;
+       <a href="/privacy/">What happens to your image</a></p>
+    <p class="by">A free tool by <a href="https://kreativekorna.com/">KreativeKorna</a>. Nothing you open here is uploaded.</p>
+  </footer>
+</div>
+
+
+</body>
+</html>

@@ -5,7 +5,7 @@
   // duration badges, profile avatars).
   var PRESETS = [
     { id:'youtube',        short:'YouTube',      label:'YouTube thumbnail',      w:1280, h:720,  play:true,  safe:{t:.055,r:.05,b:.07,l:.05} },
-    { id:'youtube-shorts', short:'Shorts',       label:'YouTube Shorts cover',   w:1080, h:1920, play:true,  safe:{t:.08,r:.17,b:.20,l:.06} },
+    { id:'youtube-shorts', short:'Shorts',       label:'YouTube Shorts cover',   w:1080, h:1920, play:false, safe:{t:.08,r:.17,b:.20,l:.06} },
     { id:'tiktok',         short:'TikTok',       label:'TikTok cover',           w:1080, h:1920, play:false, safe:{t:.10,r:.20,b:.22,l:.06} },
     { id:'instagram-reel', short:'Reel, Story',  label:'Instagram Reel or Story',w:1080, h:1920, play:false, safe:{t:.12,r:.17,b:.20,l:.06} },
     { id:'instagram-post', short:'Instagram',    label:'Instagram post',         w:1080, h:1350, play:false, safe:{t:.06,r:.06,b:.08,l:.06} },
@@ -258,7 +258,9 @@
     var px1 = l1 ? fitSize(c, l1, maxW, 88*k, 28*k) : 0;
     var blockH = (px2 ? px2*1.06 : 0) + (px1 ? px1*1.06 : 0);
 
-    // play badge: beside the headline in landscape, above it in portrait
+    // Play badge: beside the headline in landscape. The portrait branch is not
+    // reachable today, since every preset with play:true is landscape - it is
+    // kept only so a portrait preset that opts in still lands somewhere sane.
     if (badge) {
       var pcx, pcy;
       if (portrait) { pcx = right - r; pcy = bottom - blockH - r - 0.02*H; }

@@ -175,7 +175,7 @@
   .toggles{ display:flex; flex-direction:column; gap:9px; }
   .tog{ display:flex; align-items:center; gap:9px; font-size:14px; cursor:pointer; }
   .tog input{ width:16px; height:16px; margin:0; accent-color:var(--ink); }
-  .tog.off{ opacity:.45; cursor:default; }
+  .tog.off{ opacity:.5; cursor:default; }
   .note{ font-size:12.5px; margin:-2px 0 0 25px; max-width:34ch; }
   .note[hidden]{ display:none; }
 
@@ -211,7 +211,12 @@
     border:1px solid var(--ink); border-radius:var(--r);
     display:flex; align-items:center; justify-content:center; overflow:hidden;
   }
-  .logopreview img{ max-width:56px; max-height:30px; display:block; }
+  /* Dark well behind it, so the outline is white at low opacity. A tinted
+     neutral here picks up the surface and reads as dirt on the image edge. */
+  .logopreview img{
+    max-width:56px; max-height:30px; display:block;
+    outline:1px solid oklch(1 0 0 / 0.1); outline-offset:-1px;
+  }
   .logobtns{ display:flex; gap:6px; flex:1; min-width:0; }
   /* .btn is width:100% for the full-width actions; inside this row that basis
      makes both buttons shrink to equal halves and wrap. Size to content, and
@@ -227,8 +232,12 @@
     font-family:var(--ui); font-size:15px; font-weight:700; cursor:pointer;
     border:1px solid var(--ink); border-radius:var(--r); padding:11px 14px; width:100%;
     background:var(--paper); color:var(--ink);
+    transition-property:background-color, transform;
+    transition-duration:.14s;
+    transition-timing-function:cubic-bezier(0.2, 0, 0, 1);
   }
   .btn:hover{ background:#fff; }
+  .btn:active:not(:disabled){ transform:scale(0.96); }
   .btn:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
   .btn-go{ background:var(--mark); font-size:16px; padding:13px 14px; }
   .btn-go:hover{ background:var(--mark-lo); }
@@ -243,7 +252,10 @@
 
   .fallback[hidden]{ display:none; }
   .fallback p{ font-size:13px; margin:0 0 8px; }
-  .fallback img{ max-width:100%; border:1px solid var(--ink); border-radius:var(--r); display:block; }
+  .fallback img{
+    max-width:100%; border-radius:var(--r); display:block;
+    outline:1px solid oklch(0 0 0 / 0.1); outline-offset:-1px;
+  }
 
   .sr-only{
     position:absolute; width:1px; height:1px; padding:0; margin:-1px;
@@ -264,6 +276,7 @@
 
   @media (prefers-reduced-motion:reduce){
     *{ transition-duration:0ms !important; animation-duration:0ms !important; }
+    .btn:active:not(:disabled){ transform:none; }
   }
 </style>
 </head>
@@ -685,19 +698,26 @@
     }
   }
 
+  var firstDraw = true;
   function draw(){
     var p = current();
     if (cv.width !== p.w || cv.height !== p.h) {
       cv.width = p.w; cv.height = p.h;
-      cv.classList.add('resizing');
-      requestAnimationFrame(function(){
-        requestAnimationFrame(function(){ cv.classList.remove('resizing'); });
-      });
+      // The cross-fade answers a size the person just picked. On the first
+      // paint nobody picked anything, so a saved size would wash in for no
+      // reason; skip it there.
+      if (!firstDraw) {
+        cv.classList.add('resizing');
+        requestAnimationFrame(function(){
+          requestAnimationFrame(function(){ cv.classList.remove('resizing'); });
+        });
+      }
     }
     render(ctx, p, { guides: state.safe });
     document.getElementById('what').textContent = p.label;
     document.getElementById('dims').innerHTML = p.w + ' &times; ' + p.h;
     if (customChip) sizeChip(customChip, p.id === 'custom' ? p : presetById('custom'));
+    firstDraw = false;
   }
 
   // ---- size chart -------------------------------------------------------
@@ -953,19 +973,31 @@
   });
 
   // ---- drag to pan (stored as a fraction, so it survives a size change) --
-  var dragging = false, sx=0, sy=0, spx=0, spy=0;
+  // A full redraw costs ~22ms at 3000x3000, and pointermove fires faster than
+  // the frame rate, so drawing per event overruns the budget and the drag
+  // stutters. Coalesce to one redraw per frame. The displayed size cannot
+  // change mid-drag, so the rect is read once instead of on every move.
+  var dragging = false, sx=0, sy=0, spx=0, spy=0, dragW=1, dragH=1, panRaf=0;
   cv.addEventListener('pointerdown', function(e){
     dragging = true; cv.classList.add('dragging'); cv.setPointerCapture(e.pointerId);
     sx = e.clientX; sy = e.clientY; spx = state.panX; spy = state.panY;
+    var rect = cv.getBoundingClientRect();
+    dragW = rect.width || 1; dragH = rect.height || 1;
   });
   cv.addEventListener('pointermove', function(e){
     if (!dragging) return;
-    var rect = cv.getBoundingClientRect();
-    state.panX = spx + (e.clientX - sx) / rect.width;
-    state.panY = spy + (e.clientY - sy) / rect.height;
-    draw();
+    state.panX = spx + (e.clientX - sx) / dragW;
+    state.panY = spy + (e.clientY - sy) / dragH;
+    if (panRaf) return;
+    panRaf = requestAnimationFrame(function(){ panRaf = 0; draw(); });
   });
-  ['pointerup','pointercancel'].forEach(function(ev){ cv.addEventListener(ev, function(){ dragging = false; cv.classList.remove('dragging'); }); });
+  ['pointerup','pointercancel'].forEach(function(ev){
+    cv.addEventListener(ev, function(){
+      dragging = false; cv.classList.remove('dragging');
+      if (panRaf) { cancelAnimationFrame(panRaf); panRaf = 0; }
+      draw();   // land on the exact final position
+    });
+  });
 
   // ---- download ---------------------------------------------------------
   var statusEl = document.getElementById('status');

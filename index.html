@@ -44,7 +44,12 @@
     --alert:#8f1a14;
     --ok:#14543a;
     --ui:"Archivo",-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    --r:3px;
+    /* Concentric radii: every outer radius is its inner radius plus its own
+       padding, so nested corners stay parallel instead of pinching.
+       --r        controls sitting on the bench (buttons, inputs, images)
+       --r-panel  the bench itself: 3 + 18 padding
+       --r-well   the canvas well: 0 (square canvas) + 14 padding */
+    --r:3px; --r-panel:21px; --r-well:14px;
   }
   *{ box-sizing:border-box; }
   html{ -webkit-text-size-adjust:100%; }
@@ -74,7 +79,7 @@
   .stage{ min-width:0; }
   .canvas-wrap{
     position:relative; background:var(--well);
-    border:1px solid var(--ink); border-radius:var(--r);
+    border:1px solid var(--ink); border-radius:var(--r-well);
     display:flex; align-items:center; justify-content:center;
     min-height:260px; padding:14px;
   }
@@ -88,7 +93,8 @@
   .drop-hint{
     position:absolute; inset:6px; display:flex; align-items:center; justify-content:center;
     background:rgba(20,23,22,.86); color:var(--paper); font-size:16px; font-weight:600;
-    text-align:center; padding:20px; border:2px dashed var(--mark); border-radius:var(--r);
+    text-align:center; padding:20px; border:2px dashed var(--mark);
+    border-radius:8px;   /* inset 6px inside a 14px well */
     pointer-events:none; opacity:0; transition:opacity .12s linear;
   }
   .canvas-wrap.dropping .drop-hint{ opacity:1; }
@@ -104,7 +110,7 @@
 
   /* ---- control bench ---- */
   .bench{
-    background:var(--bench); border:1px solid var(--ink); border-radius:var(--r);
+    background:var(--bench); border:1px solid var(--ink); border-radius:var(--r-panel);
     padding:18px; display:flex; flex-direction:column; gap:20px; min-width:0;
   }
   .bench h2, .sizegroup h2{
@@ -184,7 +190,8 @@
   .inline input[type=text]{ flex:1; min-width:0; }
   input[type=color]{
     flex:0 0 auto; width:38px; height:38px; padding:2px; cursor:pointer;
-    background:var(--paper); border:1px solid var(--ink); border-radius:var(--r);
+    background:var(--paper); border:1px solid var(--ink);
+    border-radius:2px;   /* square swatch + 2px padding */
   }
   input[type=color]:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
   .palettes{ display:flex; flex-wrap:wrap; gap:6px; margin-top:3px; }
@@ -208,7 +215,8 @@
   .logorow{ display:flex; gap:10px; align-items:center; }
   .logopreview{
     flex:0 0 auto; width:66px; height:40px; background:var(--well);
-    border:1px solid var(--ink); border-radius:var(--r);
+    border:1px solid var(--ink);
+    border-radius:5px; padding:5px;   /* square logo + 5px padding */
     display:flex; align-items:center; justify-content:center; overflow:hidden;
   }
   /* Dark well behind it, so the outline is white at low opacity. A tinted
@@ -270,7 +278,7 @@
     .sizegroup + .sizegroup{ padding-left:18px; }
     .tiles{ flex-wrap:nowrap; max-width:none; gap:12px; }
     .customgroup .row{ width:150px; }
-    .canvas-wrap{ min-height:0; padding:10px; }
+    .canvas-wrap{ min-height:0; padding:10px; border-radius:10px; }
     header{ padding:24px 0 18px; }
   }
 

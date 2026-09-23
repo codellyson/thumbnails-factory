@@ -213,7 +213,13 @@
   }
   .logopreview img{ max-width:56px; max-height:30px; display:block; }
   .logobtns{ display:flex; gap:6px; flex:1; min-width:0; }
-  .btn-sm{ padding:7px 9px; font-size:13px; font-weight:600; }
+  /* .btn is width:100% for the full-width actions; inside this row that basis
+     makes both buttons shrink to equal halves and wrap. Size to content, and
+     let Replace take whatever is left over. */
+  .logobtns .btn{ width:auto; white-space:nowrap; }
+  .logobtns #logoPick{ flex:1 1 auto; }
+  .logobtns #logoReset{ flex:0 0 auto; }
+  .btn-sm{ padding:7px 10px; font-size:13px; font-weight:600; }
   .btn-sm[hidden]{ display:none; }
 
   /* ---- buttons ---- */

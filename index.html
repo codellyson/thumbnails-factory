@@ -52,6 +52,55 @@
 }
 </script>
 
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is a safe area on a thumbnail?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The part of the frame the platform will not cover with its own interface. Anything outside it may sit behind a caption, a button or a duration badge, so keep your headline and logo inside it."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why do TikTok and Reels cover more of the frame than YouTube?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Vertical formats put their controls on top of the video rather than beside it. TikTok keeps roughly the right fifth of the frame for its action rail and the bottom fifth for the caption, while a landscape YouTube thumbnail only loses a duration badge in one corner."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does the dashed safe-area box appear in the image I download?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It is drawn on the preview only. The exported PNG contains your artwork and nothing else."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What size should an Instagram post be?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "1080 by 1350 pixels, a 4:5 portrait. Square at 1080 by 1080 still works and is included as its own preset, but the 4:5 takes up more of the screen on a phone."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do my images get uploaded anywhere?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Everything is drawn in your browser on your own device. No image, and nothing you type, is ever sent to a server."
+      }
+    }
+  ]
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=Archivo+Black&display=swap">
 <style>
@@ -313,6 +362,21 @@
     .sizeref th, .sizeref td{ padding:8px 8px 8px 0; }
   }
 
+  /* ---- safe-area explainer and questions ---- */
+  .safeareas, .faq{ margin:34px 0 0; }
+  .safeareas h2, .faq h2{ font-size:19px; font-weight:700; font-stretch:112%;
+    letter-spacing:-.005em; margin:0 0 8px; }
+  .safeareas p{ margin:0 0 14px; max-width:66ch; font-size:14.5px; }
+  .figs{ display:flex; flex-wrap:wrap; gap:22px; margin:20px 0 22px; }
+  .safefig{ margin:0; }
+  .safefig svg{ display:block; border:1px solid var(--ink); border-radius:3px; height:200px; width:auto; }
+  .safefig figcaption{ margin-top:8px; font-size:13px; max-width:19ch; line-height:1.35; }
+  .safefig figcaption b{ display:block; font-weight:700; }
+  .safefig figcaption span{ display:block; }
+  .faq .qa{ border-top:1px solid var(--ink); padding:14px 0 2px; max-width:68ch; }
+  .faq h3{ font-size:15px; font-weight:700; margin:0 0 5px; }
+  .faq .qa p{ margin:0 0 10px; font-size:14.5px; }
+
   .sr-only{
     position:absolute; width:1px; height:1px; padding:0; margin:-1px;
     overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
@@ -521,6 +585,78 @@
           </tr>
           </tbody>
         </table>
+      </section>
+
+      <section class="safeareas">
+        <h2>Where each platform covers your thumbnail</h2>
+        <p>A safe area is the part of the frame you can count on people seeing.
+        Everything outside it still gets saved in the file, but the app you post to
+        draws its own interface on top: a caption, a row of buttons down one side, a
+        profile photo, a duration badge.</p>
+        <p>Landscape thumbnails lose almost nothing, which is why a YouTube thumbnail
+        can run text close to the edge. Vertical covers are the opposite. TikTok,
+        Reels and Shorts all stack controls down the right and captions along the
+        bottom, so a headline centred in the frame ends up behind a share button.</p>
+        <div class="figs">
+          <figure class="safefig">
+            <svg viewBox="0 0 112 200" role="img" aria-labelledby="fig-youtube-shorts">
+              <title id="fig-youtube-shorts">YouTube Shorts cover, 1080 by 1920 pixels. The platform covers right 17%, bottom 20%, leaving the dashed area clear.</title>
+              <rect width="112" height="200" fill="#565c60"/>
+              <g fill="#14171a" opacity=".88"><rect x="0" y="0" width="112" height="16.0"/><rect x="0" y="160.0" width="112" height="40.0"/><rect x="0" y="16.0" width="6.7" height="144.0"/><rect x="93.0" y="16.0" width="19.0" height="144.0"/></g>
+              <rect x="6.7" y="16.0" width="86.2" height="144.0"
+                    fill="none" stroke="var(--mark)" stroke-width="2" stroke-dasharray="6 4"/>
+            </svg>
+            <figcaption><b>YouTube Shorts cover</b><span>Covers right 17%, bottom 20%</span></figcaption>
+          </figure>
+          <figure class="safefig">
+            <svg viewBox="0 0 112 200" role="img" aria-labelledby="fig-tiktok">
+              <title id="fig-tiktok">TikTok cover, 1080 by 1920 pixels. The platform covers top 10%, right 20%, bottom 22%, leaving the dashed area clear.</title>
+              <rect width="112" height="200" fill="#565c60"/>
+              <g fill="#14171a" opacity=".88"><rect x="0" y="0" width="112" height="20.0"/><rect x="0" y="156.0" width="112" height="44.0"/><rect x="0" y="20.0" width="6.7" height="136.0"/><rect x="89.6" y="20.0" width="22.4" height="136.0"/></g>
+              <rect x="6.7" y="20.0" width="82.9" height="136.0"
+                    fill="none" stroke="var(--mark)" stroke-width="2" stroke-dasharray="6 4"/>
+            </svg>
+            <figcaption><b>TikTok cover</b><span>Covers top 10%, right 20%, bottom 22%</span></figcaption>
+          </figure>
+          <figure class="safefig">
+            <svg viewBox="0 0 112 200" role="img" aria-labelledby="fig-instagram-reel">
+              <title id="fig-instagram-reel">Instagram Reel or Story, 1080 by 1920 pixels. The platform covers top 12%, right 17%, bottom 20%, leaving the dashed area clear.</title>
+              <rect width="112" height="200" fill="#565c60"/>
+              <g fill="#14171a" opacity=".88"><rect x="0" y="0" width="112" height="24.0"/><rect x="0" y="160.0" width="112" height="40.0"/><rect x="0" y="24.0" width="6.7" height="136.0"/><rect x="93.0" y="24.0" width="19.0" height="136.0"/></g>
+              <rect x="6.7" y="24.0" width="86.2" height="136.0"
+                    fill="none" stroke="var(--mark)" stroke-width="2" stroke-dasharray="6 4"/>
+            </svg>
+            <figcaption><b>Instagram Reel or Story</b><span>Covers top 12%, right 17%, bottom 20%</span></figcaption>
+          </figure>
+        </div>
+        <p>Each size in this tool carries its own safe rectangle, and the numbers in
+        the table above are those rectangles written out. Tick <b>Show safe areas</b>
+        while you work and the same box is drawn on the preview. It is a guide only,
+        and never appears in the file you download.</p>
+      </section>
+
+      <section class="faq">
+        <h2>Questions</h2>
+          <div class="qa">
+            <h3>What is a safe area on a thumbnail?</h3>
+            <p>The part of the frame the platform will not cover with its own interface. Anything outside it may sit behind a caption, a button or a duration badge, so keep your headline and logo inside it.</p>
+          </div>
+          <div class="qa">
+            <h3>Why do TikTok and Reels cover more of the frame than YouTube?</h3>
+            <p>Vertical formats put their controls on top of the video rather than beside it. TikTok keeps roughly the right fifth of the frame for its action rail and the bottom fifth for the caption, while a landscape YouTube thumbnail only loses a duration badge in one corner.</p>
+          </div>
+          <div class="qa">
+            <h3>Does the dashed safe-area box appear in the image I download?</h3>
+            <p>No. It is drawn on the preview only. The exported PNG contains your artwork and nothing else.</p>
+          </div>
+          <div class="qa">
+            <h3>What size should an Instagram post be?</h3>
+            <p>1080 by 1350 pixels, a 4:5 portrait. Square at 1080 by 1080 still works and is included as its own preset, but the 4:5 takes up more of the screen on a phone.</p>
+          </div>
+          <div class="qa">
+            <h3>Do my images get uploaded anywhere?</h3>
+            <p>No. Everything is drawn in your browser on your own device. No image, and nothing you type, is ever sent to a server.</p>
+          </div>
       </section>
   </main>
 </div>

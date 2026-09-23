@@ -52,6 +52,8 @@
 }
 </script>
 
+<!--FAQ-SCHEMA-->
+
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=Archivo+Black&display=swap">
 <style>
@@ -313,6 +315,21 @@
     .sizeref th, .sizeref td{ padding:8px 8px 8px 0; }
   }
 
+  /* ---- safe-area explainer and questions ---- */
+  .safeareas, .faq{ margin:34px 0 0; }
+  .safeareas h2, .faq h2{ font-size:19px; font-weight:700; font-stretch:112%;
+    letter-spacing:-.005em; margin:0 0 8px; }
+  .safeareas p{ margin:0 0 14px; max-width:66ch; font-size:14.5px; }
+  .figs{ display:flex; flex-wrap:wrap; gap:22px; margin:20px 0 22px; }
+  .safefig{ margin:0; }
+  .safefig svg{ display:block; border:1px solid var(--ink); border-radius:3px; height:200px; width:auto; }
+  .safefig figcaption{ margin-top:8px; font-size:13px; max-width:19ch; line-height:1.35; }
+  .safefig figcaption b{ display:block; font-weight:700; }
+  .safefig figcaption span{ display:block; }
+  .faq .qa{ border-top:1px solid var(--ink); padding:14px 0 2px; max-width:68ch; }
+  .faq h3{ font-size:15px; font-weight:700; margin:0 0 5px; }
+  .faq .qa p{ margin:0 0 10px; font-size:14.5px; }
+
   .sr-only{
     position:absolute; width:1px; height:1px; padding:0; margin:-1px;
     overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
@@ -438,6 +455,10 @@
   </div>
 
 <!--SIZE-REFERENCE-->
+
+<!--SAFE-AREAS-->
+
+<!--FAQ-->
   </main>
 </div>
 

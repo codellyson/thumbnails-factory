@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://thumbnailsfactory.kreativekorna.com/sitemap.xml

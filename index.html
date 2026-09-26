@@ -129,6 +129,8 @@
 
   /* ---- stage ---- */
   .stage{ min-width:0; }
+  /* The controls run long; the preview stays in view beside them. */
+  @media (min-width:901px){ .stage{ position:sticky; top:16px; } }
   .canvas-wrap{
     position:relative; background:var(--well);
     border:1px solid var(--ink); border-radius:var(--r-well);
@@ -464,6 +466,16 @@
           <button class="btn" id="pick" aria-describedby="imgLabel">Choose an image</button>
           <input type="file" id="file" accept="image/*" hidden>
         </div>
+        <div class="row">
+          <div class="field">
+            <label for="zoom">Zoom</label>
+            <input type="range" id="zoom" min="100" max="250" value="125">
+          </div>
+          <div class="field" id="vigField">
+            <label for="vig">Shading</label>
+            <input type="range" id="vig" min="0" max="100" value="70">
+          </div>
+        </div>
         <div class="field">
           <label for="line1">Top line</label>
           <div class="inline">
@@ -477,7 +489,7 @@
           <div class="palettes" id="palettes" role="radiogroup" aria-label="Bottom line colour"></div>
           <div class="stops" id="stops" hidden></div>
         </div>
-        <details class="group" open>
+        <details class="group" name="panel">
           <summary>Badge</summary>
           <div class="field">
             <label for="badge">Text</label>
@@ -508,7 +520,7 @@
         </details>
 
         <div class="showcase" id="showcaseFields" hidden>
-        <details class="group" open>
+        <details class="group" name="panel">
           <summary>Window</summary>
           <div class="field">
             <label for="winTitle">Title</label>
@@ -534,13 +546,13 @@
           </div>
         </details>
 
-        <details class="group" open>
+        <details class="group" name="panel">
           <summary id="phoneLabel">Phone</summary>
           <label class="tog"><input type="checkbox" id="showPhone" checked> Show a phone beside the window</label>
           <div class="phonebits" id="phoneBits">
             <div class="logobtns">
               <button class="btn btn-sm" id="phonePick" aria-describedby="phoneLabel">Choose phone picture</button>
-              <button class="btn btn-sm" id="phoneReset" hidden>Use the window picture</button>
+              <button class="btn btn-sm" id="phoneReset" hidden>Remove picture</button>
             </div>
             <input type="file" id="phoneFile" accept="image/*" hidden>
             <p class="hint">Drag on the phone to move its picture.</p>
@@ -586,7 +598,7 @@
           </div>
         </details>
 
-        <details class="group" open>
+        <details class="group" name="panel">
           <summary>Backdrop</summary>
           <fieldset class="field seg">
             <legend class="legend">Glow</legend>
@@ -608,18 +620,8 @@
         </details>
         </div>
 
-        <div class="row">
-          <div class="field">
-            <label for="zoom">Zoom</label>
-            <input type="range" id="zoom" min="100" max="250" value="125">
-          </div>
-          <div class="field" id="vigField">
-            <label for="vig">Shading</label>
-            <input type="range" id="vig" min="0" max="100" value="70">
-          </div>
-        </div>
-        <div class="field">
-          <span class="legend" id="logoLabel">Logo</span>
+        <details class="group" name="panel">
+          <summary id="logoLabel">Logo</summary>
           <div class="logorow">
             <span class="logopreview"><img id="logoThumb" alt="The logo on your thumbnail"></span>
             <div class="logobtns">
@@ -629,7 +631,7 @@
           </div>
           <label class="tog"><input type="checkbox" id="showLogo" checked> Show it on the thumbnail</label>
           <input type="file" id="logoFile" accept="image/*" hidden>
-        </div>
+        </details>
       </div>
 
       <div class="toggles">
@@ -1013,7 +1015,7 @@
     var c = faceCv.getContext('2d');
     c.clearRect(0, 0, fw, fh);
     var light = state.winStyle === 'light', plain = state.winStyle === 'plain';
-    var r = (plain ? 0.03 : 0.022)*w, bar = plain ? 0 : Math.max(10, 0.058*w);
+    var r = (plain ? 0.03 : 0.022)*w, bar = plain ? 0 : BAR*w;
     c.save();
     roundRect(c, 0, 0, w, h, r); c.clip();
     c.fillStyle = light ? '#f2f2f4' : '#1b1c21'; c.fillRect(0, 0, w, h);
@@ -1086,8 +1088,8 @@
 
   // A phone playing a Short: frame, island, the picture, and optionally the
   // burned-in caption, the handle and the action rail.
-  function drawPhone(c, x, y, w, h, deg){
-    var img = phoneImg || frame;
+  function drawPhone(c, x, y, w, h, deg, preview){
+    var img = phoneImg;
     var r = 0.16*w, bez = 0.035*w, sw = w - 2*bez, sh = h - 2*bez;
     c.save();
     c.translate(x + w/2, y + h/2); c.rotate(deg*Math.PI/180); c.translate(-w/2, -h/2);
@@ -1107,7 +1109,25 @@
 
     c.save();
     roundRect(c, bez, bez, sw, sh, r - bez); c.clip();
-    shown.phone = cover(c, img, bez, bez, sw, sh, state.phoneZoom, state.phonePanX*w, state.phonePanY*w);
+    if (img) {
+      shown.phone = cover(c, img, bez, bez, sw, sh, state.phoneZoom, state.phonePanX*w, state.phonePanY*w);
+    } else {
+      // No picture of its own: a dark screen tinted with the headline colours,
+      // never the window's picture shown twice.
+      var st = activeStops(), sg = c.createLinearGradient(bez, bez, bez + sw, bez + sh);
+      sg.addColorStop(0, '#15161c'); sg.addColorStop(1, '#0b0c10');
+      c.fillStyle = sg; c.fillRect(bez, bez, sw, sh);
+      var tg = c.createRadialGradient(bez + sw*0.3, bez + sh*0.25, 0, bez + sw*0.3, bez + sh*0.25, sh*0.7);
+      tg.addColorStop(0, st[0]); tg.addColorStop(1, 'rgba(0,0,0,0)');
+      c.save(); c.globalAlpha = 0.35; c.fillStyle = tg; c.fillRect(bez, bez, sw, sh); c.restore();
+      if (preview) {
+        c.font = '600 ' + (sw*0.075).toFixed(1) + 'px ' + UI_FONT;
+        c.fillStyle = 'rgba(255,255,255,.55)'; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText('Drop a picture', bez + sw/2, bez + sh*0.32);
+        c.fillText('on the phone', bez + sw/2, bez + sh*0.32 + sw*0.1);
+        c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+      }
+    }
     var shade = c.createLinearGradient(0, bez + sh, 0, bez + sh*0.55);
     shade.addColorStop(0, 'rgba(0,0,0,.55)'); shade.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = shade; c.fillRect(bez, bez, sw, sh);
@@ -1212,12 +1232,23 @@
 
   // Applies the phone's side and size to an arrangement, then measures the
   // result, so the fitting code never has to know either setting exists.
+  // The window takes the picture's own shape, plus its title bar, so a
+  // screenshot is shown whole rather than cut mid-line. Very tall or very
+  // wide pictures are held to a sane window and cropped from there.
+  var WIN_ASPECT = { min:1.2, max:2.2 }, BAR = 0.058;
+  function windowHeight(){
+    var a = frame.width / frame.height;
+    a = Math.max(WIN_ASPECT.min, Math.min(WIN_ASPECT.max, a));
+    return 1/a + (state.winStyle === 'plain' ? 0 : BAR);
+  }
   function arrange(l){
-    var win = { x:l.win.x, y:l.win.y, w:l.win.w, h:l.win.h }, ph = null;
+    var win = { x:l.win.x, y:l.win.y, w:l.win.w, h:windowHeight() }, ph = null;
     if (l.phone) {
       var sz = state.phoneSize, p = l.phone;
-      // grow or shrink about the corner that overlaps the window
-      ph = { w:p.w*sz, h:p.h*sz, x:p.x, y:p.y + p.h*(1-sz)/2 };
+      // The phone hangs at the same fraction of the window's height whatever
+      // shape the window took, then grows or shrinks about its middle.
+      var py = l.win.y + (p.y - l.win.y) * win.h / l.win.h;
+      ph = { w:p.w*sz, h:p.h*sz, x:p.x, y:py + p.h*(1-sz)/2 };
       if (state.phoneSide === 'left') {
         var span = Math.max(win.x + win.w, ph.x + ph.w);
         win.x = span - win.x - win.w;
@@ -1237,6 +1268,11 @@
   // Every measurement is derived from the target size, so one routine covers
   // 1280x720 and 1080x1920 alike. k is the geometric-mean scale against the
   // original 1280x720 design.
+  // Corners a platform prints over. YouTube puts the video's length in the
+  // bottom right; the showcase and the play badge stay out of it. Sizes are
+  // fractions of the canvas, measured from that corner.
+  var STAMPS = { youtube:{ w:0.14, h:0.12 } };
+
   var phoneHit = null;   // the phone's box on the preview, for routing a drop
   // The pan each picture was actually drawn at, after cover() stopped it at
   // the edge. A drag starts from here, so pulling past the edge and back
@@ -1248,6 +1284,7 @@
     var k = Math.sqrt((W*H)/(1280*720));
     var s = p.safe;
     var left = W*s.l, right = W*(1-s.r), top = H*s.t, bottom = H*(1-s.b);
+    var stamp = STAMPS[p.id], stampX = stamp ? W*(1-stamp.w) : W, stampY = stamp ? H*(1-stamp.h) : H;
     var portrait = (W/H) < 1.2;
     var show = state.layout === 'showcase';
     if (opts.preview) phoneHit = null;
@@ -1298,7 +1335,7 @@
     if (badge) {
       var pcx, pcy;
       if (portrait) { pcx = right - r; pcy = bottom - blockH - r - 0.02*H; }
-      else { pcx = right - r; pcy = bottom - r; }
+      else { pcx = right - r; pcy = Math.min(bottom, stampY - 0.015*H) - 87*k; }
       c.save();
       c.translate(pcx, pcy); c.rotate(-6*Math.PI/180);
       c.beginPath(); c.arc(0,0,87*k,0,Math.PI*2);
@@ -1363,12 +1400,22 @@
         // cards, under the logo row, so they sit on the headline.
         var ox = portrait ? rx0 + ((rx1-rx0) - lay.w*u)/2 : rx1 - lay.w*u;
         var oy = portrait ? ry1 - lay.h*u : ry0 + ((ry1-ry0) - lay.h*u)/2;
+        // Out of the timestamp corner: lift the pieces clear of it, and if
+        // there is no room to lift them, shrink them until there is.
+        var clearY = stampY - 0.02*H;
+        if (ox + lay.w*u > stampX && oy + lay.h*u > clearY) {
+          oy = clearY - lay.h*u;
+          if (oy < ry0) {
+            u = Math.max(0, (clearY - ry0) / lay.h); oy = ry0;
+            if (!portrait) ox = rx1 - lay.w*u;
+          }
+        }
         var wb = lay.win;
         drawWindow(c, ox + wb.x*u, oy + wb.y*u, wb.w*u, wb.h*u, state.winTilt,
                    state.panX*W, state.panY*H);
         if (lay.phone) {
           var ph = lay.phone;
-          drawPhone(c, ox + ph.x*u, oy + ph.y*u, ph.w*u, ph.h*u, state.phoneTilt);
+          drawPhone(c, ox + ph.x*u, oy + ph.y*u, ph.w*u, ph.h*u, state.phoneTilt, opts.preview);
           if (opts.preview) phoneHit = { x:ox + ph.x*u, y:oy + ph.y*u, w:ph.w*u, h:ph.h*u };
         }
       }
@@ -1402,6 +1449,18 @@
       c.lineWidth = Math.max(2, 3*k);
       c.setLineDash([14*k, 10*k]);
       c.strokeRect(left, top, right-left, bottom-top);
+      if (stamp) {
+        // a stand-in for the platform's own timestamp, where it will land
+        var bw = 0.07*W, bh = 0.05*H, bx = W - 0.012*W - bw, by = H - 0.02*H - bh;
+        c.setLineDash([]);
+        roundRect(c, bx, by, bw, bh, bh*0.18); c.fillStyle = 'rgba(0,0,0,.8)'; c.fill();
+        c.font = '600 ' + (bh*0.55).toFixed(1) + 'px ' + UI_FONT;
+        c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText('12:34', bx + bw/2, by + bh/2);
+        c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+        c.setLineDash([8*k, 6*k]);
+        c.strokeRect(stampX, stampY, W - stampX, H - stampY);
+      }
       c.restore();
     }
   }
@@ -1713,7 +1772,7 @@
   phoneFile.addEventListener('change', function(){ if (phoneFile.files[0]) loadPhone(phoneFile.files[0]); phoneFile.value = ''; });
   phoneResetBtn.addEventListener('click', function(){
     phoneImg = null; phoneResetBtn.hidden = true; draw();
-    setStatus('The phone shows the main image again.', 'ok');
+    setStatus('Phone picture removed.', 'ok');
   });
   function loadPhone(blob){
     var img = new Image();

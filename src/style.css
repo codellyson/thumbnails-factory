@@ -73,6 +73,8 @@
 
   /* ---- stage ---- */
   .stage{ min-width:0; }
+  /* The controls run long; the preview stays in view beside them. */
+  @media (min-width:901px){ .stage{ position:sticky; top:16px; } }
   .canvas-wrap{
     position:relative; background:var(--well);
     border:1px solid var(--ink); border-radius:var(--r-well);

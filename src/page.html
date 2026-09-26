@@ -42,6 +42,16 @@
           <button class="btn" id="pick" aria-describedby="imgLabel">Choose an image</button>
           <input type="file" id="file" accept="image/*" hidden>
         </div>
+        <div class="row">
+          <div class="field">
+            <label for="zoom">Zoom</label>
+            <input type="range" id="zoom" min="100" max="250" value="125">
+          </div>
+          <div class="field" id="vigField">
+            <label for="vig">Shading</label>
+            <input type="range" id="vig" min="0" max="100" value="70">
+          </div>
+        </div>
         <div class="field">
           <label for="line1">Top line</label>
           <div class="inline">
@@ -55,7 +65,7 @@
           <div class="palettes" id="palettes" role="radiogroup" aria-label="Bottom line colour"></div>
           <div class="stops" id="stops" hidden></div>
         </div>
-        <details class="group" open>
+        <details class="group" name="panel">
           <summary>Badge</summary>
           <div class="field">
             <label for="badge">Text</label>
@@ -86,7 +96,7 @@
         </details>
 
         <div class="showcase" id="showcaseFields" hidden>
-        <details class="group" open>
+        <details class="group" name="panel">
           <summary>Window</summary>
           <div class="field">
             <label for="winTitle">Title</label>
@@ -112,13 +122,13 @@
           </div>
         </details>
 
-        <details class="group" open>
+        <details class="group" name="panel">
           <summary id="phoneLabel">Phone</summary>
           <label class="tog"><input type="checkbox" id="showPhone" checked> Show a phone beside the window</label>
           <div class="phonebits" id="phoneBits">
             <div class="logobtns">
               <button class="btn btn-sm" id="phonePick" aria-describedby="phoneLabel">Choose phone picture</button>
-              <button class="btn btn-sm" id="phoneReset" hidden>Use the window picture</button>
+              <button class="btn btn-sm" id="phoneReset" hidden>Remove picture</button>
             </div>
             <input type="file" id="phoneFile" accept="image/*" hidden>
             <p class="hint">Drag on the phone to move its picture.</p>
@@ -164,7 +174,7 @@
           </div>
         </details>
 
-        <details class="group" open>
+        <details class="group" name="panel">
           <summary>Backdrop</summary>
           <fieldset class="field seg">
             <legend class="legend">Glow</legend>
@@ -186,18 +196,8 @@
         </details>
         </div>
 
-        <div class="row">
-          <div class="field">
-            <label for="zoom">Zoom</label>
-            <input type="range" id="zoom" min="100" max="250" value="125">
-          </div>
-          <div class="field" id="vigField">
-            <label for="vig">Shading</label>
-            <input type="range" id="vig" min="0" max="100" value="70">
-          </div>
-        </div>
-        <div class="field">
-          <span class="legend" id="logoLabel">Logo</span>
+        <details class="group" name="panel">
+          <summary id="logoLabel">Logo</summary>
           <div class="logorow">
             <span class="logopreview"><img id="logoThumb" alt="The logo on your thumbnail"></span>
             <div class="logobtns">
@@ -207,7 +207,7 @@
           </div>
           <label class="tog"><input type="checkbox" id="showLogo" checked> Show it on the thumbnail</label>
           <input type="file" id="logoFile" accept="image/*" hidden>
-        </div>
+        </details>
       </div>
 
       <div class="toggles">

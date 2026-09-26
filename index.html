@@ -160,9 +160,14 @@
     .stage:has(.feed:not([hidden])) canvas{ max-height:max(240px, calc(100vh - 520px)); }
     .stage:has(.feed:not([hidden])) .howto{ display:none; }
   }
+  /* The well takes its light from the thumbnail: a blurred copy of it glows
+     behind the preview, the way a video app's ambient mode does, over the
+     picture's own average colour. A fixed black would make every picture
+     look like it sits in the same hole. */
   .canvas-wrap{
     position:relative; background:var(--well);
-    border-radius:var(--r-well);
+    border-radius:var(--r-well); overflow:hidden; isolation:isolate;
+    transition:background-color .4s linear;
     display:flex; align-items:center; justify-content:center;
     min-height:260px; padding:18px;
   }
@@ -170,6 +175,12 @@
     display:block; max-width:100%; max-height:66vh; width:auto; height:auto;
     cursor:grab; touch-action:none; background:#000; border-radius:6px;   /* 24 well − 18 padding */
     transition:opacity .12s linear;
+  }
+  #cv{ position:relative; z-index:1; box-shadow:0 10px 40px rgb(0 0 0 / .28); }
+  .canvas-wrap .ambient{
+    position:absolute; inset:0; width:100%; height:100%; max-height:none; z-index:0;
+    border-radius:0; background:none; cursor:inherit; pointer-events:none;
+    filter:blur(36px) saturate(1.25); transform:scale(1.2); opacity:.85;
   }
   canvas.dragging{ cursor:grabbing; }
   /* Ink would vanish against the well, so the canvas ring uses the accent. */
@@ -180,7 +191,7 @@
     background:rgb(29 28 26 / .88); color:var(--canvas); font-size:16px; font-weight:500;
     text-align:center; padding:20px; border:2px dashed var(--accent);
     border-radius:16px;   /* inset 8px inside a 24px well */
-    pointer-events:none; opacity:0; transition:opacity .12s linear;
+    pointer-events:none; opacity:0; transition:opacity .12s linear; z-index:2;
   }
   .canvas-wrap.dropping .drop-hint{ opacity:1; }
 
@@ -509,6 +520,7 @@
     <div class="stage">
       <h2 class="sr-only">Preview</h2>
       <div class="canvas-wrap" id="wrap">
+        <canvas class="ambient" id="ambient" width="48" height="27" aria-hidden="true"></canvas>
         <canvas id="cv" width="1280" height="720" role="img" tabindex="0"
                 aria-label="Thumbnail preview" aria-describedby="howto"></canvas>
         <div class="drop-hint">Drop the image here</div>
@@ -1561,11 +1573,31 @@
       }
     }
     render(ctx, p, { guides: state.safe, preview: true });
+    tintWell();
     document.getElementById('what').textContent = p.label;
     document.getElementById('dims').innerHTML = p.w + ' &times; ' + p.h;
     if (customChip) sizeChip(customChip, p.id === 'custom' ? p : presetById('custom'));
     firstDraw = false;
     scheduleFeed();
+  }
+
+  // ---- the well around the preview --------------------------------------
+  // A 48x27 copy of the thumbnail, stretched and blurred by CSS, lights the
+  // well; the average of those pixels, darkened, fills whatever the glow does
+  // not reach. Shrinking the canvas this far costs well under a millisecond,
+  // so it keeps up with a drag.
+  var ambient = document.getElementById('ambient'), actx = ambient.getContext('2d', { willReadFrequently:true });
+  var wellEl = document.getElementById('wrap');
+  function tintWell(){
+    try {
+      actx.drawImage(cv, 0, 0, ambient.width, ambient.height);
+      var d = actx.getImageData(0, 0, ambient.width, ambient.height).data, r = 0, g = 0, b = 0, n = d.length/4;
+      for (var i = 0; i < d.length; i += 4) { r += d[i]; g += d[i+1]; b += d[i+2]; }
+      // Kept well below the picture's own brightness, so the preview stays the
+      // brightest thing in the well and its edges still read.
+      var k = 0.55;
+      wellEl.style.backgroundColor = 'rgb(' + Math.round(r/n*k) + ',' + Math.round(g/n*k) + ',' + Math.round(b/n*k) + ')';
+    } catch (e) { /* a tainted canvas cannot be read; the default well stays */ }
   }
 
   // ---- feed-size preview ------------------------------------------------

@@ -792,11 +792,31 @@
       }
     }
     render(ctx, p, { guides: state.safe, preview: true });
+    tintWell();
     document.getElementById('what').textContent = p.label;
     document.getElementById('dims').innerHTML = p.w + ' &times; ' + p.h;
     if (customChip) sizeChip(customChip, p.id === 'custom' ? p : presetById('custom'));
     firstDraw = false;
     scheduleFeed();
+  }
+
+  // ---- the well around the preview --------------------------------------
+  // A 48x27 copy of the thumbnail, stretched and blurred by CSS, lights the
+  // well; the average of those pixels, darkened, fills whatever the glow does
+  // not reach. Shrinking the canvas this far costs well under a millisecond,
+  // so it keeps up with a drag.
+  var ambient = document.getElementById('ambient'), actx = ambient.getContext('2d', { willReadFrequently:true });
+  var wellEl = document.getElementById('wrap');
+  function tintWell(){
+    try {
+      actx.drawImage(cv, 0, 0, ambient.width, ambient.height);
+      var d = actx.getImageData(0, 0, ambient.width, ambient.height).data, r = 0, g = 0, b = 0, n = d.length/4;
+      for (var i = 0; i < d.length; i += 4) { r += d[i]; g += d[i+1]; b += d[i+2]; }
+      // Kept well below the picture's own brightness, so the preview stays the
+      // brightest thing in the well and its edges still read.
+      var k = 0.55;
+      wellEl.style.backgroundColor = 'rgb(' + Math.round(r/n*k) + ',' + Math.round(g/n*k) + ',' + Math.round(b/n*k) + ')';
+    } catch (e) { /* a tainted canvas cannot be read; the default well stays */ }
   }
 
   // ---- feed-size preview ------------------------------------------------

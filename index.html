@@ -220,6 +220,20 @@
   }
   input[type=text]:focus-visible, input[type=number]:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
   .row{ display:flex; gap:10px; }
+  .row .field.grow{ flex:3; }
+  .row .field.narrow{ flex:1; min-width:70px; }
+  .seg{ border:0; margin:0; padding:0; }
+  .seg .legend{ padding:0; margin-bottom:5px; }
+  .segs{ display:flex; border-radius:var(--r); background:var(--bench-lo); padding:3px; gap:3px; }
+  .segs label{ flex:1; position:relative; text-align:center; font-size:13px; font-weight:600;
+    padding:7px 6px; border-radius:var(--r); cursor:pointer; min-height:24px; }
+  .segs input{ position:absolute; opacity:0; inset:0; margin:0; cursor:pointer; }
+  .segs label:has(input:checked){ background:var(--paper); color:var(--ink); }
+  .segs label:has(input:focus-visible){ outline:2px solid var(--ink); outline-offset:1px; }
+  .hint{ font-size:12.5px; margin:4px 0 0; }
+  .showcase{ display:flex; flex-direction:column; gap:14px; }
+  .showcase[hidden], .phonebits[hidden]{ display:none; }
+  .phonebits{ display:flex; flex-direction:column; gap:10px; margin-top:4px; }
   .row .field{ flex:1; }
   .row[hidden]{ display:none; }
   .customgroup .row{ width:190px; }
@@ -292,6 +306,8 @@
   .logobtns .btn{ width:auto; white-space:nowrap; }
   .logobtns #logoPick{ flex:1 1 auto; }
   .logobtns #logoReset{ flex:0 0 auto; }
+  .phonebits .logobtns{ flex-wrap:wrap; }
+  .phonebits .logobtns .btn{ flex:1 1 auto; }
   .btn-sm{ padding:7px 10px; font-size:13px; font-weight:600; }
   .btn-sm[hidden]{ display:none; }
 
@@ -424,6 +440,14 @@
     <div class="bench">
       <h2 class="sr-only">Options</h2>
       <div class="fields">
+        <fieldset class="field seg">
+          <legend class="legend">Layout</legend>
+          <div class="segs">
+            <label><input type="radio" name="layout" value="bleed"> Full picture</label>
+            <label><input type="radio" name="layout" value="showcase"> Showcase</label>
+          </div>
+          <p class="hint" id="layoutHint">The image fills the frame.</p>
+        </fieldset>
         <div class="field">
           <span class="legend" id="imgLabel">Image</span>
           <button class="btn" id="pick" aria-describedby="imgLabel">Choose an image</button>
@@ -441,6 +465,48 @@
           <input type="text" id="line2" value="SHORTS FACTORY" maxlength="24" autocomplete="off">
           <div class="palettes" id="palettes" role="radiogroup" aria-label="Bottom line colour"></div>
           <div class="stops" id="stops" hidden></div>
+        </div>
+        <div class="row">
+          <div class="field grow">
+            <label for="series">Series tag</label>
+            <input type="text" id="series" maxlength="28" autocomplete="off" placeholder="SHORTS FACTORY">
+          </div>
+          <div class="field narrow">
+            <label for="episode">Episode</label>
+            <input type="text" id="episode" maxlength="8" autocomplete="off" placeholder="3">
+          </div>
+        </div>
+        <div class="showcase" id="showcaseFields" hidden>
+          <div class="field">
+            <label for="winTitle">Window title</label>
+            <input type="text" id="winTitle" maxlength="40" autocomplete="off" placeholder="transcript.json">
+          </div>
+          <div class="field">
+            <span class="legend" id="phoneLabel">Phone</span>
+            <label class="tog"><input type="checkbox" id="showPhone" checked> Show a phone beside the window</label>
+            <div class="phonebits" id="phoneBits">
+              <div class="logobtns">
+                <button class="btn btn-sm" id="phonePick" aria-describedby="phoneLabel">Choose phone picture</button>
+                <button class="btn btn-sm" id="phoneReset" hidden>Use the main image</button>
+              </div>
+              <input type="file" id="phoneFile" accept="image/*" hidden>
+              <div class="row">
+                <div class="field">
+                  <label for="cap1">Caption</label>
+                  <input type="text" id="cap1" maxlength="18" autocomplete="off" placeholder="SO I'M">
+                </div>
+                <div class="field">
+                  <label for="cap2">Highlighted</label>
+                  <input type="text" id="cap2" maxlength="18" autocomplete="off" placeholder="TRYING">
+                </div>
+              </div>
+              <div class="field">
+                <label for="handle">Handle</label>
+                <input type="text" id="handle" maxlength="30" autocomplete="off" placeholder="@shortsfactory">
+              </div>
+              <label class="tog"><input type="checkbox" id="showDots" checked> Action buttons</label>
+            </div>
+          </div>
         </div>
         <div class="row">
           <div class="field">
@@ -663,6 +729,10 @@
     line1:'BUILDING', line2:'SHORTS FACTORY', logo:true, play:true, safe:false,
     line1Color:'#ffffff', palette:'kk', customStops:['#b9a4ff','#d9a2ff','#ffb27a'],
     logoSrc:null,  // null means the logo this tool ships with
+    // Showcase layout: the image sits in a window on a dark backdrop, with an
+    // optional phone beside it, instead of filling the frame.
+    layout:'bleed', series:'', episode:'', winTitle:'',
+    phone:true, cap1:'', cap2:'', handle:'', dots:true,
     derived:{ frame:null, logo:null }   // colours read out of each uploaded asset
   };
 
@@ -679,6 +749,12 @@
       if (saved.customStops && saved.customStops.length === 3) state.customStops = saved.customStops;
       if (saved.logoSrc) state.logoSrc = saved.logoSrc;
       if (saved.derived) state.derived = saved.derived;
+      ['layout','series','episode','winTitle','cap1','cap2','handle'].forEach(function(key){
+        if (typeof saved[key] === 'string') state[key] = saved[key];
+      });
+      if (typeof saved.phone === 'boolean') state.phone = saved.phone;
+      if (typeof saved.dots === 'boolean') state.dots = saved.dots;
+      if (state.layout === 'showcase') state.zoom = 1;
     }
   } catch(e){}
 
@@ -713,7 +789,7 @@
   }
 
   var DEFAULT_LOGO = LOGO_SRC;
-  var logo = new Image(), frame = makeDefaultFrame();
+  var logo = new Image(), frame = makeDefaultFrame(), phoneImg = null;
   var ready = { logo:false, frame:true, font:false };
   logo.onload = function(){ ready.logo = true; updateLogoThumb(); refreshDerived('logo', logo); draw(); };
   logo.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
@@ -735,10 +811,189 @@
     return px;
   }
 
+  // ---- showcase pieces --------------------------------------------------
+  // Drawn in canvas rather than shipped as mockup images, so the file stays
+  // small and every piece scales with the output size.
+  var UI_FONT = '-apple-system, "Segoe UI", Helvetica, Arial, sans-serif';
+
+  function roundRect(c, x, y, w, h, r){
+    r = Math.min(r, w/2, h/2);
+    c.beginPath();
+    c.moveTo(x+r, y);
+    c.arcTo(x+w, y, x+w, y+h, r);
+    c.arcTo(x+w, y+h, x, y+h, r);
+    c.arcTo(x, y+h, x, y, r);
+    c.arcTo(x, y, x+w, y, r);
+    c.closePath();
+  }
+  function noShadow(c){ c.shadowColor='transparent'; c.shadowBlur=0; c.shadowOffsetY=0; }
+
+  // Draws img to cover the box, the way CSS object-fit: cover does.
+  function cover(c, img, x, y, w, h, zoom, dx, dy){
+    var s = Math.max(w/img.width, h/img.height) * (zoom || 1);
+    var iw = img.width*s, ih = img.height*s;
+    c.drawImage(img, x + (w-iw)/2 + (dx||0), y + (h-ih)/2 + (dy||0), iw, ih);
+  }
+
+  // The backdrop glow: the image shrunk to a few dozen pixels, then stretched
+  // back up, is a blur every browser can draw. Browsers with canvas filters
+  // get a smoother one on top of that.
+  var glow = null, glowOf = null;
+  function glowFor(img){
+    if (glowOf === img) return glow;
+    var gw = 48, gh = Math.max(1, Math.round(gw * img.height / img.width));
+    glow = document.createElement('canvas'); glow.width = gw; glow.height = gh;
+    glow.getContext('2d').drawImage(img, 0, 0, gw, gh);
+    glowOf = img;
+    return glow;
+  }
+  function drawBackdrop(c, W, H, k){
+    c.save();
+    c.globalAlpha = 0.6;
+    if (typeof c.filter === 'string') c.filter = 'blur(' + Math.round(24*k) + 'px)';
+    c.imageSmoothingQuality = 'high';
+    cover(c, glowFor(frame), -0.05*W, -0.05*H, 1.1*W, 1.1*H);
+    c.restore();
+    // Darkest where the headline sits, so the glow reads as light behind the
+    // cards rather than a photo behind the words.
+    var g = c.createLinearGradient(0, 0, W, 0);
+    g.addColorStop(0, 'rgba(8,9,13,.92)'); g.addColorStop(0.55, 'rgba(8,9,13,.72)');
+    g.addColorStop(1, 'rgba(8,9,13,.5)');
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    var g2 = c.createLinearGradient(0, H, 0, 0);
+    g2.addColorStop(0, 'rgba(8,9,13,.8)'); g2.addColorStop(0.6, 'rgba(8,9,13,.2)');
+    g2.addColorStop(1, 'rgba(8,9,13,0)');
+    c.fillStyle = g2; c.fillRect(0, 0, W, H);
+  }
+
+  // A desktop window: title bar, three lights, the image below. x,y,w,h is the
+  // unrotated box; it turns about its own centre.
+  function drawWindow(c, x, y, w, h, deg, panX, panY){
+    var r = 0.022*w, bar = Math.max(10, 0.058*w);
+    c.save();
+    c.translate(x + w/2, y + h/2); c.rotate(deg*Math.PI/180); c.translate(-w/2, -h/2);
+    c.shadowColor = 'rgba(0,0,0,.7)'; c.shadowBlur = 0.09*w; c.shadowOffsetY = 0.03*w;
+    roundRect(c, 0, 0, w, h, r); c.fillStyle = '#1b1c21'; c.fill();
+    noShadow(c);
+    c.save();
+    roundRect(c, 0, 0, w, h, r); c.clip();
+    cover(c, frame, 0, bar, w, h - bar, state.zoom, panX, panY);
+    c.fillStyle = '#26272d'; c.fillRect(0, 0, w, bar);
+    c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(0, bar - Math.max(1, bar*0.03), w, Math.max(1, bar*0.03));
+    c.restore();
+    var lr = bar*0.16, ly = bar/2;
+    ['#ff5f57','#febc2e','#28c840'].forEach(function(col, i){
+      c.beginPath(); c.arc(bar*0.5 + i*lr*3.1, ly, lr, 0, Math.PI*2);
+      c.fillStyle = col; c.fill();
+    });
+    if (state.winTitle) {
+      c.font = '600 ' + (bar*0.34).toFixed(1) + 'px ' + UI_FONT;
+      c.fillStyle = 'rgba(255,255,255,.82)'; c.textBaseline = 'middle';
+      c.fillText(state.winTitle, bar*0.5 + lr*9.5, ly, w - bar*2 - lr*10);
+    }
+    roundRect(c, 0.5, 0.5, w-1, h-1, r);
+    c.strokeStyle = 'rgba(255,255,255,.1)'; c.lineWidth = Math.max(1, w*0.0015); c.stroke();
+    c.restore();
+  }
+
+  // A phone playing a Short: frame, island, the picture, and optionally the
+  // burned-in caption, the handle and the action rail.
+  function drawPhone(c, x, y, w, h, deg){
+    var img = phoneImg || frame;
+    var r = 0.16*w, bez = 0.035*w, sw = w - 2*bez, sh = h - 2*bez;
+    c.save();
+    c.translate(x + w/2, y + h/2); c.rotate(deg*Math.PI/180); c.translate(-w/2, -h/2);
+    c.shadowColor = 'rgba(0,0,0,.75)'; c.shadowBlur = 0.2*w; c.shadowOffsetY = 0.07*w;
+    roundRect(c, 0, 0, w, h, r); c.fillStyle = '#0c0c0e'; c.fill();
+    noShadow(c);
+    roundRect(c, w*0.006, w*0.006, w - w*0.012, h - w*0.012, r);
+    c.strokeStyle = '#3a3b40'; c.lineWidth = w*0.012; c.stroke();
+
+    c.save();
+    roundRect(c, bez, bez, sw, sh, r - bez); c.clip();
+    cover(c, img, bez, bez, sw, sh);
+    var shade = c.createLinearGradient(0, bez + sh, 0, bez + sh*0.55);
+    shade.addColorStop(0, 'rgba(0,0,0,.55)'); shade.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = shade; c.fillRect(bez, bez, sw, sh);
+
+    var cx = bez + sw/2;
+    var caps = [state.cap1, state.cap2].map(function(t){ return (t || '').toUpperCase(); });
+    if (caps[0] || caps[1]) {
+      var cpx = Math.min(sw*0.14, fitSize(c, caps[0].length >= caps[1].length ? caps[0] : caps[1], sw*0.78, sw*0.14, sw*0.05));
+      c.font = headlineFont(cpx); c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+      c.lineJoin = 'round'; c.lineWidth = cpx*0.16; c.strokeStyle = 'rgba(0,0,0,.9)';
+      var cy = bez + sh*0.6;
+      caps.forEach(function(t, i){
+        if (!t) return;
+        var ty = cy + i*cpx*1.08;
+        c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = cpx*0.3;
+        c.strokeText(t, cx, ty); noShadow(c);
+        c.fillStyle = i ? '#ffd23f' : '#ffffff';
+        c.fillText(t, cx, ty);
+      });
+      c.textAlign = 'left';
+    }
+    if (state.dots) {
+      var dr = sw*0.055, dx = bez + sw - dr*1.9;
+      for (var i = 0; i < 3; i++) {
+        c.beginPath(); c.arc(dx, bez + sh*(0.63 + i*0.085), dr, 0, Math.PI*2);
+        c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = dr*0.8;
+        c.fillStyle = '#ffffff'; c.fill(); noShadow(c);
+      }
+    }
+    if (state.handle) {
+      var hp = sw*0.058, handle = state.handle.charAt(0) === '@' ? state.handle : '@' + state.handle;
+      c.font = '700 ' + hp.toFixed(1) + 'px ' + UI_FONT;
+      c.fillStyle = '#ffffff'; c.textBaseline = 'alphabetic';
+      c.shadowColor = 'rgba(0,0,0,.7)'; c.shadowBlur = hp*0.4;
+      c.fillText(handle, bez + sw*0.07, bez + sh*0.94, sw*0.7);
+      noShadow(c);
+    }
+    c.restore();
+
+    // island
+    roundRect(c, w/2 - sw*0.17, bez + sh*0.018, sw*0.34, sw*0.09, sw*0.045);
+    c.fillStyle = '#000'; c.fill();
+    c.restore();
+  }
+
+  // The series tag beside the logo: "SHORTS FACTORY · EP 3". An episode typed
+  // as a bare number gets its EP prefix; anything else is used as written.
+  function pillText(){
+    var s = state.series.trim().toUpperCase(), e = state.episode.trim().toUpperCase();
+    if (/^\d+$/.test(e)) e = 'EP ' + e;
+    return s && e ? s + '  ·  ' + e : (s || e);
+  }
+  function drawPill(c, x, cy, h){
+    var t = pillText();
+    if (!t) return 0;
+    var fpx = h*0.44;
+    c.font = headlineFont(fpx);
+    var tw = c.measureText(t).width, pad = h*0.42, w = tw + pad*2;
+    c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = h*0.3; c.shadowOffsetY = h*0.08;
+    roundRect(c, x, cy - h/2, w, h, h/2); c.fillStyle = '#ffffff'; c.fill();
+    noShadow(c);
+    c.fillStyle = '#121316'; c.textBaseline = 'middle';
+    c.fillText(t, x + pad, cy + fpx*0.04);
+    c.textBaseline = 'alphabetic';
+    return w;
+  }
+
+  // Where the window and phone sit relative to each other, in units of the
+  // window's width. Taken from the reference layout: the phone overlaps the
+  // window's lower right corner and leans the other way.
+  // Tall rooms get the stacked version, with the phone hanging lower and bigger.
+  var SHOWCASE = {
+    side:  { w:1.1, h:1.02, win:{ x:0, y:0.02, w:1, h:0.74, deg:-3 }, phone:{ x:0.66, y:0.2, w:0.42, h:0.8, deg:6 } },
+    stack: { w:1,   h:1.3,  win:{ x:0, y:0.02, w:1, h:0.72, deg:-3 }, phone:{ x:0.5, y:0.42, w:0.45, h:0.86, deg:6 } },
+    alone: { w:1,   h:0.78, win:{ x:0, y:0.02, w:1, h:0.74, deg:-3 } }
+  };
+
   // ---- renderer ---------------------------------------------------------
   // Every measurement is derived from the target size, so one routine covers
   // 1280x720 and 1080x1920 alike. k is the geometric-mean scale against the
   // original 1280x720 design.
+  var phoneHit = null;   // the phone's box on the preview, for routing a drop
   function render(c, p, opts){
     opts = opts || {};
     var W = p.w, H = p.h;
@@ -746,38 +1001,47 @@
     var s = p.safe;
     var left = W*s.l, right = W*(1-s.r), top = H*s.t, bottom = H*(1-s.b);
     var portrait = (W/H) < 1.2;
+    var show = state.layout === 'showcase';
+    if (opts.preview) phoneHit = null;
 
     c.clearRect(0,0,W,H);
     c.fillStyle = '#0b0e14'; c.fillRect(0,0,W,H);
 
-    if (ready.frame) {
-      var cover = Math.max(W/frame.width, H/frame.height) * state.zoom;
-      var fw = frame.width*cover, fh = frame.height*cover;
-      var fx = (W-fw)/2 + state.panX*W, fy = (H-fh)/2 + state.panY*H;
-      c.drawImage(frame, fx, fy, fw, fh);
+    if (show) {
+      drawBackdrop(c, W, H, k);
+    } else {
+      if (ready.frame) cover(c, frame, 0, 0, W, H, state.zoom, state.panX*W, state.panY*H);
+
+      // vignette
+      var v = state.vig;
+      var g1 = c.createLinearGradient(0,H,0,H-H*0.55);
+      g1.addColorStop(0,'rgba(5,7,12,'+(0.94*v/0.7).toFixed(3)+')');
+      g1.addColorStop(0.55,'rgba(5,7,12,'+(0.55*v/0.7).toFixed(3)+')');
+      g1.addColorStop(1,'rgba(5,7,12,0)');
+      c.fillStyle = g1; c.fillRect(0,0,W,H);
+      var g2 = c.createRadialGradient(W/2,H*0.35,300*k,W/2,H*0.35,900*k);
+      g2.addColorStop(0,'rgba(0,0,0,0)');
+      g2.addColorStop(1,'rgba(0,0,0,'+(0.45*v/0.7).toFixed(3)+')');
+      c.fillStyle = g2; c.fillRect(0,0,W,H);
     }
 
-    // vignette
-    var v = state.vig;
-    var g1 = c.createLinearGradient(0,H,0,H-H*0.55);
-    g1.addColorStop(0,'rgba(5,7,12,'+(0.94*v/0.7).toFixed(3)+')');
-    g1.addColorStop(0.55,'rgba(5,7,12,'+(0.55*v/0.7).toFixed(3)+')');
-    g1.addColorStop(1,'rgba(5,7,12,0)');
-    c.fillStyle = g1; c.fillRect(0,0,W,H);
-    var g2 = c.createRadialGradient(W/2,H*0.35,300*k,W/2,H*0.35,900*k);
-    g2.addColorStop(0,'rgba(0,0,0,0)');
-    g2.addColorStop(1,'rgba(0,0,0,'+(0.45*v/0.7).toFixed(3)+')');
-    c.fillStyle = g2; c.fillRect(0,0,W,H);
-
-    // headline metrics
-    var badge = state.play && p.play;
+    // headline metrics. Showcase gives the words the left half in landscape and
+    // the full width under the cards otherwise, and lets them grow bigger.
+    var badge = state.play && p.play && !show;
     var r = 75*k;
-    var maxW = right - left;
+    var maxW = right - left, startPx = 88*k;
+    var cardsX = left + (right - left)*0.46;
+    if (show) {
+      // Tall covers are width-starved: every pixel of headline height is taken
+      // from the cards, so the words come down a size there.
+      startPx = (W/H) < 0.85 ? 100*k : portrait ? 130*k : 150*k;
+      if (!portrait) maxW = cardsX - left - 0.02*W;
+    }
     if (badge && !portrait) maxW -= (2*r + 0.02*W);
     var l1 = state.line1.toUpperCase(), l2 = state.line2.toUpperCase();
     c.textBaseline = 'alphabetic';
-    var px2 = l2 ? fitSize(c, l2, maxW, 88*k, 28*k) : 0;
-    var px1 = l1 ? fitSize(c, l1, maxW, 88*k, 28*k) : 0;
+    var px2 = l2 ? fitSize(c, l2, maxW, startPx, 28*k) : 0;
+    var px1 = l1 ? fitSize(c, l1, maxW, startPx, 28*k) : 0;
     var blockH = (px2 ? px2*1.06 : 0) + (px1 ? px1*1.06 : 0);
 
     // Play badge: beside the headline in landscape. The portrait branch is not
@@ -800,6 +1064,52 @@
       c.restore();
     }
 
+    // logo row: the logo, then the series tag beside it
+    var lh = 88*k, pillX = left;
+    if (state.logo && ready.logo) {
+      var lw = logo.width * (lh/logo.height);
+      c.shadowColor='rgba(0,0,0,.6)'; c.shadowBlur=20*k; c.shadowOffsetY=8*k;
+      c.drawImage(logo, left, top, lw, lh);
+      noShadow(c);
+      pillX = left + lw + 0.022*W;
+    }
+    var hasRow = drawPill(c, pillX, top + lh/2, lh*0.56) > 0 || pillX > left;
+
+    // the window and phone, fitted into whatever room the words leave
+    if (show) {
+      var rx0, rx1, ry0, ry1;
+      if (portrait) {
+        rx0 = left; rx1 = right;
+        ry0 = top + (hasRow ? lh + 0.03*H : 0);
+        // Measured to the top of the capitals, not the line box, so the gap
+        // above the headline is the gap you see.
+        var capTop = l1 ? (px2 ? px2*1.06 : 0) + px1*0.74 : px2*0.74;
+        ry1 = bottom - capTop - 0.035*H;
+      } else {
+        rx0 = cardsX; rx1 = right; ry0 = top; ry1 = bottom;
+      }
+      // Whichever arrangement comes out bigger in this room wins. 0.92 leaves
+      // room for the corners the tilt swings outward.
+      var lay = null, u = 0;
+      (state.phone ? [SHOWCASE.side, SHOWCASE.stack] : [SHOWCASE.alone]).forEach(function(l){
+        var fit = 0.92 * Math.min((rx1-rx0)/l.w, (ry1-ry0)/l.h);
+        if (fit > u) { u = fit; lay = l; }
+      });
+      var ox = portrait ? rx0 + ((rx1-rx0) - lay.w*u)/2 : rx1 - lay.w*u;
+      // Width runs out first in tall rooms. The spare height goes above the
+      // cards, under the logo row, so they sit on the headline.
+      var oy = portrait ? ry1 - lay.h*u : ry0 + ((ry1-ry0) - lay.h*u)/2;
+      if (lay) {
+        drawWindow(c, ox + lay.win.x*u, oy + lay.win.y*u, lay.win.w*u, lay.win.h*u, lay.win.deg,
+                   state.panX*W, state.panY*H);
+        if (state.phone) {
+          var ph = lay.phone;
+          drawPhone(c, ox + ph.x*u, oy + ph.y*u, ph.w*u, ph.h*u, ph.deg);
+          if (opts.preview) phoneHit = { x:ox + ph.x*u, y:oy + ph.y*u, w:ph.w*u, h:ph.h*u };
+        }
+      }
+    }
+
     // headline
     var yBottom = bottom;
     if (l2) {
@@ -810,7 +1120,7 @@
       c.shadowColor='rgba(0,0,0,.85)'; c.shadowBlur=18*k; c.shadowOffsetY=4*k;
       c.fillStyle = lg;
       c.fillText(l2, left, yBottom);
-      c.shadowColor='transparent'; c.shadowBlur=0; c.shadowOffsetY=0;
+      noShadow(c);
       yBottom -= px2*1.06;
     }
     if (l1) {
@@ -818,15 +1128,7 @@
       c.shadowColor='rgba(0,0,0,.9)'; c.shadowBlur=22*k; c.shadowOffsetY=5*k;
       c.fillStyle = state.line1Color;
       c.fillText(l1, left, yBottom);
-      c.shadowColor='transparent'; c.shadowBlur=0; c.shadowOffsetY=0;
-    }
-
-    // logo
-    if (state.logo && ready.logo) {
-      var lh = 88*k, lw = logo.width * (lh/logo.height);
-      c.shadowColor='rgba(0,0,0,.6)'; c.shadowBlur=20*k; c.shadowOffsetY=8*k;
-      c.drawImage(logo, left, top, lw, lh);
-      c.shadowColor='transparent'; c.shadowBlur=0; c.shadowOffsetY=0;
+      noShadow(c);
     }
 
     // safe-area guides: preview only, never exported
@@ -855,7 +1157,7 @@
         });
       }
     }
-    render(ctx, p, { guides: state.safe });
+    render(ctx, p, { guides: state.safe, preview: true });
     document.getElementById('what').textContent = p.label;
     document.getElementById('dims').innerHTML = p.w + ' &times; ' + p.h;
     if (customChip) sizeChip(customChip, p.id === 'custom' ? p : presetById('custom'));
@@ -1057,8 +1359,10 @@
   function syncPresetUI(){
     var p = presetById(state.preset);
     customRow.hidden = (p.id !== 'custom');
-    playEl.disabled = !p.play;
-    playTog.classList.toggle('off', !p.play);
+    // The badge sits where the showcase puts its cards, so it is full-picture only.
+    var canPlay = p.play && state.layout !== 'showcase';
+    playEl.disabled = !canPlay;
+    playTog.classList.toggle('off', !canPlay);
   }
   function clampCustom(el, fallback){
     var n = parseInt(el.value, 10);
@@ -1070,9 +1374,68 @@
 
   bind('line1', function(e){ state.line1 = e.target.value; persist(); draw(); });
   bind('line2', function(e){ state.line2 = e.target.value; persist(); draw(); });
+
+  // ---- layout, series tag and the showcase cards ------------------------
+  var LAYOUT_HINTS = {
+    bleed: 'The image fills the frame.',
+    showcase: 'The image sits in a window on a dark backdrop, with a phone beside it.'
+  };
+  var layoutEls = document.querySelectorAll('input[name="layout"]');
+  var showcaseFields = document.getElementById('showcaseFields');
+  var phoneBits = document.getElementById('phoneBits');
+  function syncLayout(){
+    var show = state.layout === 'showcase';
+    for (var i = 0; i < layoutEls.length; i++) layoutEls[i].checked = (layoutEls[i].value === state.layout);
+    showcaseFields.hidden = !show;
+    phoneBits.hidden = !state.phone;
+    vigEl.disabled = show;
+    document.getElementById('layoutHint').textContent = LAYOUT_HINTS[state.layout];
+    document.getElementById('imgLabel').textContent = show ? 'Window picture' : 'Image';
+    syncPresetUI();
+  }
+  for (var li = 0; li < layoutEls.length; li++) {
+    layoutEls[li].addEventListener('change', function(e){
+      if (!e.target.checked) return;
+      state.layout = e.target.value; state.panX = 0; state.panY = 0;
+      // A full picture wants a little zoom to crop; a window wants the whole
+      // screenshot, edge to edge.
+      state.zoom = state.layout === 'showcase' ? 1 : 1.25;
+      zoomEl.value = Math.round(state.zoom*100); sayPercent(zoomEl);
+      syncLayout(); persist(); draw();
+    });
+  }
+  ['series','episode','winTitle','cap1','cap2','handle'].forEach(function(id){
+    var el = document.getElementById(id);
+    el.value = state[id];
+    el.addEventListener('input', function(){ state[id] = el.value; persist(); draw(); });
+  });
+  var showPhoneEl = document.getElementById('showPhone'), showDotsEl = document.getElementById('showDots');
+  showPhoneEl.checked = state.phone; showDotsEl.checked = state.dots;
+  showPhoneEl.addEventListener('change', function(){ state.phone = showPhoneEl.checked; syncLayout(); persist(); draw(); });
+  showDotsEl.addEventListener('change', function(){ state.dots = showDotsEl.checked; persist(); draw(); });
+
+  // The phone's picture is its own image, kept for this session only, like the
+  // main one. Without it the phone shows the main image.
+  var phoneFile = document.getElementById('phoneFile'), phoneResetBtn = document.getElementById('phoneReset');
+  document.getElementById('phonePick').addEventListener('click', function(){ phoneFile.click(); });
+  phoneFile.addEventListener('change', function(){ if (phoneFile.files[0]) loadPhone(phoneFile.files[0]); phoneFile.value = ''; });
+  phoneResetBtn.addEventListener('click', function(){
+    phoneImg = null; phoneResetBtn.hidden = true; draw();
+    setStatus('The phone shows the main image again.', 'ok');
+  });
+  function loadPhone(blob){
+    var img = new Image();
+    img.onload = function(){
+      phoneImg = img; phoneResetBtn.hidden = false; draw();
+      setStatus('Phone picture loaded.', 'ok');
+    };
+    img.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
+    img.src = URL.createObjectURL(blob);
+  }
   // Without this both sliders announce a bare number; they are percentages.
   var zoomEl = document.getElementById('zoom'), vigEl = document.getElementById('vig');
   function sayPercent(el){ el.setAttribute('aria-valuetext', el.value + '%'); }
+  zoomEl.value = Math.round(state.zoom*100);
   sayPercent(zoomEl); sayPercent(vigEl);
   bind('zoom', function(e){ state.zoom = e.target.value/100; sayPercent(e.target); draw(); });
   bind('vig', function(e){ state.vig = (e.target.value/100)*0.7; sayPercent(e.target); draw(); });
@@ -1087,7 +1450,10 @@
       line1:state.line1, line2:state.line2, preset:state.preset,
       customW:state.customW, customH:state.customH,
       line1Color:state.line1Color, palette:state.palette,
-      customStops:state.customStops, logoSrc:state.logoSrc, derived:state.derived
+      customStops:state.customStops, logoSrc:state.logoSrc, derived:state.derived,
+      layout:state.layout, series:state.series, episode:state.episode,
+      winTitle:state.winTitle, phone:state.phone, cap1:state.cap1, cap2:state.cap2,
+      handle:state.handle, dots:state.dots
     })); }catch(e){
       // A big custom logo can blow the storage quota. Losing the saved copy is
       // survivable; the logo stays put for this session either way.
@@ -1112,9 +1478,18 @@
   var wrap = document.getElementById('wrap');
   ['dragenter','dragover'].forEach(function(ev){ wrap.addEventListener(ev, function(e){ e.preventDefault(); wrap.classList.add('dropping'); }); });
   ['dragleave','drop'].forEach(function(ev){ wrap.addEventListener(ev, function(e){ e.preventDefault(); wrap.classList.remove('dropping'); }); });
+  // In the showcase, a file dropped on the phone goes to the phone.
+  function overPhone(e){
+    if (state.layout !== 'showcase' || !state.phone || !phoneHit) return false;
+    var rect = cv.getBoundingClientRect();
+    var x = (e.clientX - rect.left) * cv.width / (rect.width || 1);
+    var y = (e.clientY - rect.top) * cv.height / (rect.height || 1);
+    return x >= phoneHit.x && x <= phoneHit.x + phoneHit.w && y >= phoneHit.y && y <= phoneHit.y + phoneHit.h;
+  }
   wrap.addEventListener('drop', function(e){
     var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-    if (f) loadBlob(f);
+    if (!f) return;
+    if (overPhone(e)) loadPhone(f); else loadBlob(f);
   });
   document.addEventListener('paste', function(e){
     var items = e.clipboardData && e.clipboardData.items;
@@ -1234,7 +1609,7 @@
     setStatus('');
   }
 
-  syncPresetUI();
+  syncLayout();
   syncPalette();
   updateLogoThumb();
   refreshDerived('frame', frame);   // the painted backdrop counts as an image too

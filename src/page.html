@@ -29,6 +29,14 @@
     <div class="bench">
       <h2 class="sr-only">Options</h2>
       <div class="fields">
+        <fieldset class="field seg">
+          <legend class="legend">Layout</legend>
+          <div class="segs">
+            <label><input type="radio" name="layout" value="bleed"> Full picture</label>
+            <label><input type="radio" name="layout" value="showcase"> Showcase</label>
+          </div>
+          <p class="hint" id="layoutHint">The image fills the frame.</p>
+        </fieldset>
         <div class="field">
           <span class="legend" id="imgLabel">Image</span>
           <button class="btn" id="pick" aria-describedby="imgLabel">Choose an image</button>
@@ -46,6 +54,48 @@
           <input type="text" id="line2" value="SHORTS FACTORY" maxlength="24" autocomplete="off">
           <div class="palettes" id="palettes" role="radiogroup" aria-label="Bottom line colour"></div>
           <div class="stops" id="stops" hidden></div>
+        </div>
+        <div class="row">
+          <div class="field grow">
+            <label for="series">Series tag</label>
+            <input type="text" id="series" maxlength="28" autocomplete="off" placeholder="SHORTS FACTORY">
+          </div>
+          <div class="field narrow">
+            <label for="episode">Episode</label>
+            <input type="text" id="episode" maxlength="8" autocomplete="off" placeholder="3">
+          </div>
+        </div>
+        <div class="showcase" id="showcaseFields" hidden>
+          <div class="field">
+            <label for="winTitle">Window title</label>
+            <input type="text" id="winTitle" maxlength="40" autocomplete="off" placeholder="transcript.json">
+          </div>
+          <div class="field">
+            <span class="legend" id="phoneLabel">Phone</span>
+            <label class="tog"><input type="checkbox" id="showPhone" checked> Show a phone beside the window</label>
+            <div class="phonebits" id="phoneBits">
+              <div class="logobtns">
+                <button class="btn btn-sm" id="phonePick" aria-describedby="phoneLabel">Choose phone picture</button>
+                <button class="btn btn-sm" id="phoneReset" hidden>Use the main image</button>
+              </div>
+              <input type="file" id="phoneFile" accept="image/*" hidden>
+              <div class="row">
+                <div class="field">
+                  <label for="cap1">Caption</label>
+                  <input type="text" id="cap1" maxlength="18" autocomplete="off" placeholder="SO I'M">
+                </div>
+                <div class="field">
+                  <label for="cap2">Highlighted</label>
+                  <input type="text" id="cap2" maxlength="18" autocomplete="off" placeholder="TRYING">
+                </div>
+              </div>
+              <div class="field">
+                <label for="handle">Handle</label>
+                <input type="text" id="handle" maxlength="30" autocomplete="off" placeholder="@shortsfactory">
+              </div>
+              <label class="tog"><input type="checkbox" id="showDots" checked> Action buttons</label>
+            </div>
+          </div>
         </div>
         <div class="row">
           <div class="field">

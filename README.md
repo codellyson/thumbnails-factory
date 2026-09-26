@@ -55,6 +55,24 @@ The social card is built the way the tool builds a thumbnail — same painted
 backdrop, same vignette, same gradient on the lower line — so it stays honest
 about what the page produces. The icon is the size chart's active tile.
 
+## Layouts
+
+**Full picture** fills the frame with the image, darkens the bottom, and sets the
+headline over it.
+
+**Showcase** is for build and tutorial videos. The image goes into a desktop
+window (title bar, three lights, an optional title) on a dark backdrop lit by a
+blurred copy of the same image. Beside it sits an optional phone playing a Short:
+its own picture, or the main image if none is given, with a two-line caption
+(the second line highlighted), a handle and the action buttons, each optional.
+Drop a file on the phone to set its picture. The headline takes the left half in
+landscape and runs under the cards in tall and square sizes; the window and phone
+switch between side-by-side and stacked, whichever comes out bigger in the room
+left over. The play badge is full-picture only.
+
+Both layouts take a **series tag**, a white pill beside the logo. An episode typed
+as a bare number becomes `EP 3`; anything else is used as written.
+
 ## Platforms
 
 | Preset | Size |

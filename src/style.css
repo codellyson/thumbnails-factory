@@ -261,8 +261,8 @@
   .logobtns .btn{ width:auto; white-space:nowrap; }
   .logobtns #logoPick{ flex:1 1 auto; }
   .logobtns #logoReset{ flex:0 0 auto; }
-  .phonebits .logobtns{ flex-wrap:wrap; }
-  .phonebits .logobtns .btn{ flex:1 1 auto; }
+  .group .logobtns{ flex-wrap:wrap; }
+  .group .logobtns .btn{ flex:1 1 auto; }
   .btn-sm{ padding:7px 10px; font-size:13px; font-weight:600; }
   .btn-sm[hidden]{ display:none; }
 

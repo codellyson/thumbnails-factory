@@ -65,7 +65,9 @@ window (title bar, three lights, an optional title), turned away in perspective,
 on a dark backdrop lit by a blurred copy of the same image. Beside it sits an optional phone playing a Short:
 its own picture, or the main image if none is given, with a two-line caption
 (the second line highlighted), a handle and the action buttons, each optional.
-Drop a file on the phone to set its picture. The headline takes the left half in
+The window, the phone and the backdrop each take their own picture; the phone and
+backdrop fall back to the window's. Drop a file on the phone to set its picture,
+and drag on either screen to reframe just that one. The headline takes the left half in
 landscape and runs under the cards in tall and square sizes; the window and phone
 switch between side-by-side and stacked, whichever comes out bigger in the room
 left over. The play badge is full-picture only.
@@ -79,8 +81,8 @@ Each showcase piece has its own panel, and each panel folds away:
 | --- | --- |
 | Badge | text, style (light, dark, outline, headline colours), position (by the logo, top right, on the headline), size |
 | Window | title, style (dark, light, no frame), turn in depth, tilt |
-| Phone | picture, two lines of on-screen text with an accent colour, handle, like and share buttons, side, size, tilt |
-| Backdrop | glow from the image, from the headline colours, or none, and its strength |
+| Phone | picture, zoom, two lines of on-screen text with an accent colour, handle, like and share buttons, side, size, tilt |
+| Backdrop | glow from a picture (its own, or the window's), from the headline colours, or none, and its strength |
 
 ## Platforms
 

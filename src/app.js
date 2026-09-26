@@ -149,6 +149,7 @@
     winStyle:'dark', winTurn:17, winTilt:-4,
     phoneSide:'right', phoneSize:1, phoneTilt:6,
     glow:'image', glowAmt:0.6,
+    phoneZoom:1, phonePanX:0, phonePanY:0,   // framing inside the phone, as fractions of its width
     derived:{ frame:null, logo:null }   // colours read out of each uploaded asset
   };
 
@@ -218,7 +219,9 @@
   }
 
   var DEFAULT_LOGO = LOGO_SRC;
-  var logo = new Image(), frame = makeDefaultFrame(), phoneImg = null;
+  // frame fills the window (or the whole frame in Full picture); the phone and
+  // the backdrop glow have their own pictures and fall back to it.
+  var logo = new Image(), frame = makeDefaultFrame(), phoneImg = null, bgImg = null;
   var ready = { logo:false, frame:true, font:false };
   logo.onload = function(){ ready.logo = true; updateLogoThumb(); refreshDerived('logo', logo); draw(); };
   logo.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
@@ -257,11 +260,17 @@
   }
   function noShadow(c){ c.shadowColor='transparent'; c.shadowBlur=0; c.shadowOffsetY=0; }
 
-  // Draws img to cover the box, the way CSS object-fit: cover does.
+  // Draws img to cover the box, the way CSS object-fit: cover does. The pan
+  // stops where the picture's edge meets the box's, so a drag can never
+  // pull in an empty strip.
   function cover(c, img, x, y, w, h, zoom, dx, dy){
     var s = Math.max(w/img.width, h/img.height) * (zoom || 1);
     var iw = img.width*s, ih = img.height*s;
-    c.drawImage(img, x + (w-iw)/2 + (dx||0), y + (h-ih)/2 + (dy||0), iw, ih);
+    var mx = (iw-w)/2, my = (ih-h)/2;
+    dx = Math.max(-mx, Math.min(mx, dx || 0));
+    dy = Math.max(-my, Math.min(my, dy || 0));
+    c.drawImage(img, x + (w-iw)/2 + dx, y + (h-ih)/2 + dy, iw, ih);
+    return [dx, dy];
   }
 
   // The backdrop glow: the image shrunk to a few dozen pixels, then stretched
@@ -284,7 +293,7 @@
       c.globalAlpha = state.glowAmt;
       if (typeof c.filter === 'string') c.filter = 'blur(' + Math.round(24*k) + 'px)';
       c.imageSmoothingQuality = 'high';
-      cover(c, glowFor(frame), -0.05*W, -0.05*H, 1.1*W, 1.1*H);
+      cover(c, glowFor(bgImg || frame), -0.05*W, -0.05*H, 1.1*W, 1.1*H);
       c.restore();
     } else if (state.glow === 'palette') {
       var st = activeStops(), R = Math.max(W, H);
@@ -320,7 +329,7 @@
     c.save();
     roundRect(c, 0, 0, w, h, r); c.clip();
     c.fillStyle = light ? '#f2f2f4' : '#1b1c21'; c.fillRect(0, 0, w, h);
-    cover(c, frame, 0, bar, w, h - bar, state.zoom, panX, panY);
+    shown.win = cover(c, frame, 0, bar, w, h - bar, state.zoom, panX, panY);
     if (bar) {
       c.fillStyle = light ? '#e6e6e9' : '#26272d'; c.fillRect(0, 0, w, bar);
       c.fillStyle = light ? 'rgba(0,0,0,.12)' : 'rgba(0,0,0,.35)';
@@ -410,7 +419,7 @@
 
     c.save();
     roundRect(c, bez, bez, sw, sh, r - bez); c.clip();
-    cover(c, img, bez, bez, sw, sh);
+    shown.phone = cover(c, img, bez, bez, sw, sh, state.phoneZoom, state.phonePanX*w, state.phonePanY*w);
     var shade = c.createLinearGradient(0, bez + sh, 0, bez + sh*0.55);
     shade.addColorStop(0, 'rgba(0,0,0,.55)'); shade.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = shade; c.fillRect(bez, bez, sw, sh);
@@ -541,6 +550,10 @@
   // 1280x720 and 1080x1920 alike. k is the geometric-mean scale against the
   // original 1280x720 design.
   var phoneHit = null;   // the phone's box on the preview, for routing a drop
+  // The pan each picture was actually drawn at, after cover() stopped it at
+  // the edge. A drag starts from here, so pulling past the edge and back
+  // does not leave a dead zone to cross first.
+  var shown = { win:[0,0], phone:[0,0] };
   function render(c, p, opts){
     opts = opts || {};
     var W = p.w, H = p.h;
@@ -557,7 +570,7 @@
     if (show) {
       drawBackdrop(c, W, H, k);
     } else {
-      if (ready.frame) cover(c, frame, 0, 0, W, H, state.zoom, state.panX*W, state.panY*H);
+      if (ready.frame) shown.win = cover(c, frame, 0, 0, W, H, state.zoom, state.panX*W, state.panY*H);
 
       // vignette
       var v = state.vig;
@@ -976,10 +989,14 @@
   // Every segmented choice and every slider in the grouped panels maps
   // straight onto one state key: the radio group's name, or the slider's
   // data-key. Sliders marked % store a fraction; the rest store degrees.
+  function syncRadios(key){
+    var radios = document.querySelectorAll('input[name="' + key + '"]');
+    for (var i = 0; i < radios.length; i++) radios[i].checked = (radios[i].value === state[key]);
+  }
   ['pillStyle','pillPos','winStyle','phoneSide','glow'].forEach(function(key){
+    syncRadios(key);
     var radios = document.querySelectorAll('input[name="' + key + '"]');
     for (var i = 0; i < radios.length; i++) {
-      radios[i].checked = (radios[i].value === state[key]);
       radios[i].addEventListener('change', function(e){
         if (!e.target.checked) return;
         state[key] = e.target.value; persist(); draw();
@@ -1013,12 +1030,36 @@
   function loadPhone(blob){
     var img = new Image();
     img.onload = function(){
-      phoneImg = img; phoneResetBtn.hidden = false; draw();
-      setStatus('Phone picture loaded.', 'ok');
+      phoneImg = img; phoneResetBtn.hidden = false;
+      state.phonePanX = 0; state.phonePanY = 0; draw();
+      setStatus('Phone picture loaded. Drag it on the phone to reframe it.', 'ok');
     };
     img.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
     img.src = URL.createObjectURL(blob);
   }
+
+  // The backdrop's picture only lights the glow, so a photo that would be
+  // wrong in the window can still set the mood behind it.
+  var bgFile = document.getElementById('bgFile'), bgResetBtn = document.getElementById('bgReset');
+  document.getElementById('bgPick').addEventListener('click', function(){ bgFile.click(); });
+  bgFile.addEventListener('change', function(){
+    var f = bgFile.files[0];
+    bgFile.value = '';
+    if (!f) return;
+    var img = new Image();
+    img.onload = function(){
+      bgImg = img; bgResetBtn.hidden = false;
+      if (state.glow !== 'image') { state.glow = 'image'; syncRadios('glow'); persist(); }
+      draw();
+      setStatus('Backdrop picture loaded.', 'ok');
+    };
+    img.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
+    img.src = URL.createObjectURL(f);
+  });
+  bgResetBtn.addEventListener('click', function(){
+    bgImg = null; bgResetBtn.hidden = true; draw();
+    setStatus('The backdrop glows from the window picture again.', 'ok');
+  });
   // Without this both sliders announce a bare number; they are percentages.
   var zoomEl = document.getElementById('zoom'), vigEl = document.getElementById('vig');
   function sayPercent(el){ el.setAttribute('aria-valuetext', el.value + '%'); }
@@ -1069,6 +1110,8 @@
   ['dragenter','dragover'].forEach(function(ev){ wrap.addEventListener(ev, function(e){ e.preventDefault(); wrap.classList.add('dropping'); }); });
   ['dragleave','drop'].forEach(function(ev){ wrap.addEventListener(ev, function(e){ e.preventDefault(); wrap.classList.remove('dropping'); }); });
   // In the showcase, a file dropped on the phone goes to the phone.
+  // phoneHit is the phone's box before its tilt; at a few degrees the
+  // corners it misses are too small to matter.
   function overPhone(e){
     if (state.layout !== 'showcase' || !state.phone || !phoneHit) return false;
     var rect = cv.getBoundingClientRect();
@@ -1094,17 +1137,32 @@
   // the frame rate, so drawing per event overruns the budget and the drag
   // stutters. Coalesce to one redraw per frame. The displayed size cannot
   // change mid-drag, so the rect is read once instead of on every move.
-  var dragging = false, sx=0, sy=0, spx=0, spy=0, dragW=1, dragH=1, panRaf=0;
+  // A drag that starts on the phone reframes the phone's picture; anywhere
+  // else it reframes the main one. Each keeps its own position.
+  var dragging = false, onPhone = false, sx=0, sy=0, spx=0, spy=0, dragW=1, dragH=1, panRaf=0;
   cv.addEventListener('pointerdown', function(e){
     dragging = true; cv.classList.add('dragging'); cv.setPointerCapture(e.pointerId);
-    sx = e.clientX; sy = e.clientY; spx = state.panX; spy = state.panY;
+    onPhone = overPhone(e);
+    sx = e.clientX; sy = e.clientY;
+    draw();   // refresh shown: an export may have drawn at another size since
+    var p = current();
+    if (onPhone) { spx = shown.phone[0]/phoneHit.w; spy = shown.phone[1]/phoneHit.w; }
+    else { spx = shown.win[0]/p.w; spy = shown.win[1]/p.h; }
     var rect = cv.getBoundingClientRect();
     dragW = rect.width || 1; dragH = rect.height || 1;
+    // Phone framing is stored against the phone's width, so a drag moves the
+    // picture exactly as far as the pointer on any size.
+    if (onPhone) { dragW = dragH = (rect.width || 1) * phoneHit.w / cv.width; }
   });
   cv.addEventListener('pointermove', function(e){
     if (!dragging) return;
-    state.panX = spx + (e.clientX - sx) / dragW;
-    state.panY = spy + (e.clientY - sy) / dragH;
+    if (onPhone) {
+      state.phonePanX = spx + (e.clientX - sx) / dragW;
+      state.phonePanY = spy + (e.clientY - sy) / dragH;
+    } else {
+      state.panX = spx + (e.clientX - sx) / dragW;
+      state.panY = spy + (e.clientY - sy) / dragH;
+    }
     if (panRaf) return;
     panRaf = requestAnimationFrame(function(){ panRaf = 0; draw(); });
   });
@@ -1116,9 +1174,9 @@
     var d = PAN_KEYS[e.key];
     if (!d || e.metaKey || e.ctrlKey || e.altKey) return;
     e.preventDefault();
-    var step = e.shiftKey ? 0.05 : 0.01;
-    state.panX += d[0] * step;
-    state.panY += d[1] * step;
+    var step = e.shiftKey ? 0.05 : 0.01, p = current();
+    state.panX = shown.win[0]/p.w + d[0] * step;
+    state.panY = shown.win[1]/p.h + d[1] * step;
     draw();
   });
   ['pointerup','pointercancel'].forEach(function(ev){

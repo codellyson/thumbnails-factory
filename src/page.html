@@ -118,9 +118,14 @@
           <div class="phonebits" id="phoneBits">
             <div class="logobtns">
               <button class="btn btn-sm" id="phonePick" aria-describedby="phoneLabel">Choose phone picture</button>
-              <button class="btn btn-sm" id="phoneReset" hidden>Use the main image</button>
+              <button class="btn btn-sm" id="phoneReset" hidden>Use the window picture</button>
             </div>
             <input type="file" id="phoneFile" accept="image/*" hidden>
+            <p class="hint">Drag on the phone to move its picture.</p>
+            <div class="field">
+              <label for="phoneZoom">Zoom</label>
+              <input type="range" id="phoneZoom" data-key="phoneZoom" data-unit="%" min="100" max="250">
+            </div>
             <div class="row">
               <div class="field">
                 <label for="cap1">Text on screen</label>
@@ -164,8 +169,8 @@
           <fieldset class="field seg">
             <legend class="legend">Glow</legend>
             <div class="segs">
-              <label><input type="radio" name="glow" value="image"> From image</label>
-              <label><input type="radio" name="glow" value="palette"> From colours</label>
+              <label><input type="radio" name="glow" value="image"> Picture</label>
+              <label><input type="radio" name="glow" value="palette"> Colours</label>
               <label><input type="radio" name="glow" value="none"> None</label>
             </div>
           </fieldset>
@@ -173,6 +178,11 @@
             <label for="glowAmt">Strength</label>
             <input type="range" id="glowAmt" data-key="glowAmt" data-unit="%" min="0" max="100">
           </div>
+          <div class="logobtns">
+            <button class="btn btn-sm" id="bgPick">Choose backdrop picture</button>
+            <button class="btn btn-sm" id="bgReset" hidden>Use the window picture</button>
+          </div>
+          <input type="file" id="bgFile" accept="image/*" hidden>
         </details>
         </div>
 

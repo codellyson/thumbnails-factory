@@ -109,10 +109,19 @@ def gradient_text(draw_on, text, font, xy, stops):
     return Image.composite(ramp, draw_on, mask)
 
 
-UI_FONT = "/System/Library/Fonts/HelveticaNeue.ttc"   # stands in for Instrument Sans
-MEDIUM = 10                                            # face index of Medium in the .ttc
+# The site's own face, kept in the repo (SIL OFL, see tools/fonts/OFL.txt) so
+# the card matches the page on any machine.
+UI_FONT = ROOT / "tools" / "fonts" / "InstrumentSans.ttf"
 MUTED  = (127, 124, 119)                               # --muted
 LINE   = (221, 208, 195)                               # --line-strong
+
+
+def ui_font(size, weight=500):
+    """Instrument Sans at a weight on its variable axis; 500 is the site's
+    heading weight."""
+    f = ImageFont.truetype(str(UI_FONT), size)
+    f.set_variation_by_axes([100, weight])   # width, weight
+    return f
 
 
 def tracked(draw, xy, text, font, fill, track):
@@ -155,16 +164,16 @@ def make_card(path, w=1200, h=630):
     mark = 64
     icon = draw_mark(mark * 4).resize((mark, mark), Image.LANCZOS)
     img.paste(icon, (pad, pad), icon)
-    name = ImageFont.truetype(UI_FONT, 34, index=MEDIUM)
+    name = ui_font(34)
     tracked(d, (pad + mark + 20, pad + mark / 2 + 12), "Thumbnail Factory", name, INK, -0.02)
 
     # the promise
-    head = ImageFont.truetype(UI_FONT, 66, index=MEDIUM)
+    head = ui_font(68)
     y = 330
     for line in ("Make a thumbnail", "for any platform"):
-        tracked(d, (pad, y), line, head, INK, -0.045)
+        tracked(d, (pad, y), line, head, INK, -0.04)
         y += 76
-    sub = ImageFont.truetype(UI_FONT, 27, index=MEDIUM)
+    sub = ui_font(28)
     tracked(d, (pad, y + 26), "Twelve sizes. Nothing uploads.", sub, MUTED, -0.01)
 
     # the thing it makes, on a soft shadow

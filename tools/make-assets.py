@@ -138,25 +138,44 @@ def make_card(path, w=1200, h=630):
     return img.size
 
 
+# The mark: a picture in a frame, on the one coral the site uses as accent.
+# Coordinates are on a 64-unit grid, shared by the SVG and the PNGs.
+FRAME = (10, 17, 54, 47)   # the ink picture frame
+FRAME_R = 5
+RIDGE = [(10, 38), (22, 29), (31, 36), (39, 31), (54, 42), (54, 47), (10, 47)]
+
+
 def make_icons():
-    """The mark is the size chart's chosen tile: a wide frame, with the one
-    coral dot the page uses to say "you are here"."""
     (ROOT / "favicon.svg").write_text(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
-        '<rect width="64" height="64" rx="14" fill="#23221f"/>'
-        '<rect x="10" y="20" width="44" height="25" rx="4" fill="#fcf9f5"/>'
-        '<circle cx="32" cy="53" r="3.5" fill="#ee7b58"/>'
+        '<rect width="64" height="64" rx="14" fill="#ee7b58"/>'
+        '<rect x="10" y="17" width="44" height="30" rx="5" fill="#23221f"/>'
+        '<path d="M10 38l12-9 9 7 8-5 15 11v0a5 5 0 0 1-5 5H15a5 5 0 0 1-5-5z" fill="#fcf9f5"/>'
         "</svg>\n"
     )
-    for size, name in ((32, "favicon-32.png"), (180, "apple-touch-icon.png")):
-        # Drawn at 8x and shrunk, so the rounded corners come out smooth.
-        S = size * 8
-        img = Image.new("RGB", (S, S), INK)
-        d = ImageDraw.Draw(img)
+    # The tab icon keeps its rounded corners; the touch icon fills the square,
+    # because iOS rounds it with its own mask.
+    for size, name, rounded in ((32, "favicon-32.png", True), (180, "apple-touch-icon.png", False)):
+        S = size * 8   # drawn large and shrunk, so edges come out smooth
         u = S / 64
-        d.rounded_rectangle([10*u, 20*u, 54*u, 45*u], radius=4*u, fill=CANVAS)
-        d.ellipse([28.5*u, 49.5*u, 35.5*u, 56.5*u], fill=ACCENT)
-        img.resize((size, size), Image.LANCZOS).save(ROOT / name, "PNG", optimize=True)
+        img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        if rounded:
+            d.rounded_rectangle([0, 0, S - 1, S - 1], radius=14 * u, fill=ACCENT)
+        else:
+            d.rectangle([0, 0, S, S], fill=ACCENT)
+        box = [v * u for v in FRAME]
+        d.rounded_rectangle(box, radius=FRAME_R * u, fill=INK)
+        # the ridge is cut to the frame's rounded corners
+        ridge = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        ImageDraw.Draw(ridge).polygon([(x * u, y * u) for x, y in RIDGE], fill=CANVAS)
+        mask = Image.new("L", (S, S), 0)
+        ImageDraw.Draw(mask).rounded_rectangle(box, radius=FRAME_R * u, fill=255)
+        img.paste(ridge, (0, 0), Image.composite(ridge.split()[3], Image.new("L", (S, S), 0), mask))
+        out = img.resize((size, size), Image.LANCZOS)
+        if not rounded:
+            out = out.convert("RGB")
+        out.save(ROOT / name, "PNG", optimize=True)
 
 
 if __name__ == "__main__":

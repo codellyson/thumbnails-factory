@@ -497,15 +497,21 @@
       off your own disk and draws it onto a canvas in the page. The finished thumbnail is
       produced by that same canvas and handed straight to your downloads folder. At no
       point does the image travel anywhere.</p>
-      <p>There is no account, no sign-in, no analytics script, and no tracking pixel.</p>
+      <p>There is no account, no sign-in, no cookie and no tracking pixel. The page does
+      send a few anonymous counts, described below, and none of them carries your picture
+      or anything you typed.</p>
 
       <h2>How to check, rather than take my word for it</h2>
       <p>Open your browser's developer tools, switch to the Network tab, and use the tool
       normally. Choose a picture, type a headline, download the result. You will see
-      requests for the page itself and for the font, and nothing else. No request carries
-      your image, because no such request is ever made.</p>
+      requests for the page itself, for the fonts, and small requests to
+      <code>us.aptabase.com</code> when the page opens and when you download. Open any of
+      those and read its body: an event name, a size such as <code>youtube</code>, a layout
+      name, and your browser's language. No request carries your image or your text,
+      because no such request is ever made.</p>
       <p>You can also disconnect from the internet after the page loads. Everything keeps
-      working, which is only possible because the work happens on your device.</p>
+      working, which is only possible because the work happens on your device. The only
+      difference is that the counts described below fail quietly.</p>
 
       <h2>What is stored, and where</h2>
       <p>The tool remembers a few things between visits so you do not have to set them up
@@ -516,6 +522,7 @@
         <li>The two lines of headline text</li>
         <li>The size you last picked, and any custom width and height</li>
         <li>Your headline colours</li>
+        <li>Your layout, badge, window, phone and backdrop settings</li>
         <li>A logo you uploaded, if you replaced the default one</li>
       </ul>
       <p>The picture you are working on is <em>not</em> stored. It lives in memory while
@@ -523,8 +530,25 @@
       <p>To clear everything, clear this site's data in your browser settings, or use a
       private window, where nothing is kept once you close it.</p>
 
+      <h2>What is counted</h2>
+      <p>To learn which sizes and layouts people actually use, the tool sends three kinds
+      of anonymous event to <a href="https://aptabase.com/">Aptabase</a>, a
+      privacy-focused analytics service:</p>
+      <ul>
+        <li><b>Opened</b>, with the size and layout the tool started on</li>
+        <li><b>Downloaded</b>, with the size and layout of the image you saved</li>
+        <li><b>Downloaded every size</b>, with the layout</li>
+      </ul>
+      <p>Each event also carries your browser's language and a random session number that
+      lasts for an hour of use. The number is held only in the open tab; it is not stored
+      on your device, so there is nothing to tie one visit to the next. No cookies are
+      set. The code that sends these counts is written out in the page itself, not loaded
+      from anyone else, so you can read exactly what it does.</p>
+      <p>Blocking <code>us.aptabase.com</code> stops the counts and changes nothing else.
+      Opening the page as a file from your own disk sends nothing at all.</p>
+
       <h2>What the page does load from elsewhere</h2>
-      <p>One stylesheet, from Google Fonts, for the typeface the headlines are set in.
+      <p>One stylesheet, from Google Fonts, for the typefaces the page and the headlines are set in.
       That request tells Google the font was requested from this site, in the ordinary way
       any web font does. It carries nothing about your image or your text. If you would
       rather avoid it, the page still works with that request blocked; the headline simply

@@ -3,8 +3,11 @@
 A single-file, offline thumbnail generator. Drop in a frame, type a two-line
 headline, and download a finished image sized for the platform you're posting to.
 
-Open `index.html` in a browser. There is no network call — the logo and all the
-logic are embedded in the one file.
+Open `index.html` in a browser. The logo and all the logic are embedded in the one
+file, and the picture and headline never leave it. Served over the web, the page
+sends three anonymous usage counts to Aptabase (opened, downloaded, downloaded every
+size), carrying only a size and layout name; opened from disk it sends nothing. The
+privacy page lists exactly what is sent.
 
 The site is three pages, all generated from `src/`:
 

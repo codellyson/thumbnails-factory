@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Generate the site's favicon and social card.
 
-The card is built the way the tool itself builds a thumbnail: the same painted
-backdrop, the same vignette, the same two-line headline with the house gradient
-on the lower line. Run it from the repo root after changing any of those.
+The card wears the site's own colours and shows, on its right, a thumbnail
+built the way the tool builds one: the same painted backdrop, the same
+vignette, the same two-line headline with the house gradient on the lower
+line. Run it from the repo root after changing any of those.
 
     python3 tools/make-assets.py
 """
 import base64, math, pathlib, re
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FONT = "/System/Library/Fonts/Supplemental/Arial Black.ttf"
@@ -108,31 +109,99 @@ def gradient_text(draw_on, text, font, xy, stops):
     return Image.composite(ramp, draw_on, mask)
 
 
-def make_card(path, w=1200, h=630):
+UI_FONT = "/System/Library/Fonts/HelveticaNeue.ttc"   # stands in for Instrument Sans
+MEDIUM = 10                                            # face index of Medium in the .ttc
+MUTED  = (127, 124, 119)                               # --muted
+LINE   = (221, 208, 195)                               # --line-strong
+
+
+def tracked(draw, xy, text, font, fill, track):
+    """Draw text with tighter letter spacing than the font's own, the way
+    the site sets its headings (negative tracking, in em)."""
+    x, y = xy
+    em = font.size
+    for ch in text:
+        draw.text((x, y), ch, font=font, fill=fill, anchor="ls")
+        x += font.getlength(ch) + track * em
+    return x
+
+
+def thumbnail(w, h):
+    """A thumbnail as the tool makes one: painted backdrop, vignette, and the
+    two-line headline with the house gradient on the lower line."""
     img = vignette(backdrop(w, h))
-    pad = round(w * 0.05)
-    big = ImageFont.truetype(FONT, 96)
-
-    # Three of the size chart's own tiles, at true proportion. Wide, square and
-    # tall, because the shapes are what say "more than one platform".
-    d = ImageDraw.Draw(img, "RGBA")
-    right, th = w - pad, 38
-    bottom = h - pad
-    for aspect in (16/9, 1/1, 9/16):
-        tw = max(12, round(th * aspect))
-        d.rectangle([right - tw, bottom - th, right, bottom],
-                    outline=(255, 255, 255, 150), width=2)
-        right -= tw + 14
-
-    base = h - pad - 62
+    pad = round(w * 0.07)
+    big = ImageFont.truetype(FONT, round(h * 0.15))
+    base = h - pad
     img = gradient_text(img, "FACTORY", big, (pad, base), STOPS)
-    d = ImageDraw.Draw(img)
-    d.text((pad, base - 102), "THUMBNAIL", font=big, fill=(255, 255, 255), anchor="ls")
-
+    ImageDraw.Draw(img).text((pad, base - round(h * 0.16)), "THUMBNAIL", font=big,
+                             fill=(255, 255, 255), anchor="ls")
     logo = logo_image()
-    lh = 84
+    lh = round(h * 0.13)
     logo = logo.resize((round(logo.width * lh / logo.height), lh), Image.LANCZOS)
-    img.paste(logo, (pad, round(h * 0.075)), logo)
+    img.paste(logo, (pad, round(h * 0.09)), logo)
+    return img
+
+
+def make_card(path, w=1200, h=630):
+    """The share card in the site's own dress: warm page, the mark and name,
+    the promise in ink, and on the right the thing it makes, with the size
+    chart's tiles under it drawn in the page's colours."""
+    img = Image.new("RGB", (w, h), CANVAS)
+    d = ImageDraw.Draw(img)
+    pad = 72
+
+    # mark and name
+    mark = 64
+    icon = draw_mark(mark * 4).resize((mark, mark), Image.LANCZOS)
+    img.paste(icon, (pad, pad), icon)
+    name = ImageFont.truetype(UI_FONT, 34, index=MEDIUM)
+    tracked(d, (pad + mark + 20, pad + mark / 2 + 12), "Thumbnail Factory", name, INK, -0.02)
+
+    # the promise
+    head = ImageFont.truetype(UI_FONT, 66, index=MEDIUM)
+    y = 330
+    for line in ("Make a thumbnail", "for any platform"):
+        tracked(d, (pad, y), line, head, INK, -0.045)
+        y += 76
+    sub = ImageFont.truetype(UI_FONT, 27, index=MEDIUM)
+    tracked(d, (pad, y + 26), "Twelve sizes. Nothing uploads.", sub, MUTED, -0.01)
+
+    # the thing it makes, on a soft shadow
+    tw, th = 452, 254
+    tx, ty = w - pad - tw, 132   # centres the card and its tiles on the height
+    shadow = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    ImageDraw.Draw(shadow).rounded_rectangle([tx, ty + 18, tx + tw, ty + th + 18], radius=22,
+                                             fill=INK + (60,))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(26))
+    img = Image.alpha_composite(img.convert("RGBA"), shadow).convert("RGB")
+    thumb = thumbnail(tw * 2, th * 2).resize((tw, th), Image.LANCZOS)
+    mask = Image.new("L", (tw * 4, th * 4), 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, tw * 4 - 1, th * 4 - 1], radius=18 * 4, fill=255)
+    img.paste(thumb, (tx, ty), mask.resize((tw, th), Image.LANCZOS))
+
+    # Wide, square and tall, as the size chart shows them: the chosen one in
+    # ink, the others as quiet outlines in the page's line colour.
+    S = 4
+    tiles = Image.new("RGBA", (w * S, h * S), (0, 0, 0, 0))
+    td = ImageDraw.Draw(tiles)
+    tile_h, right, bottom = 46, tx + tw, ty + th + 92
+    for aspect, chosen in ((9/16, False), (1/1, False), (16/9, True)):
+        tile_w = round(tile_h * aspect)
+        box = [(right - tile_w) * S, (bottom - tile_h) * S, right * S, bottom * S]
+        if chosen:
+            td.rounded_rectangle(box, radius=5 * S, fill=INK)
+            dot_x = right - tile_w / 2
+        else:
+            td.rounded_rectangle(box, radius=5 * S, outline=LINE, width=2 * S, fill=(255, 254, 253))
+        right -= tile_w + 14
+    tiles = tiles.resize((w, h), Image.LANCZOS)
+    img = Image.alpha_composite(img.convert("RGBA"), tiles).convert("RGB")
+    # the coral dot the nav uses for "you are here", under the chosen tile
+    dx = dot_x
+    dd = Image.new("RGBA", (w * S, h * S), (0, 0, 0, 0))
+    ImageDraw.Draw(dd).ellipse([(dx - 4) * S, (bottom + 12) * S, (dx + 4) * S, (bottom + 20) * S], fill=ACCENT)
+    img = Image.alpha_composite(img.convert("RGBA"), dd.resize((w, h), Image.LANCZOS)).convert("RGB")
 
     img.save(path, "PNG", optimize=True)
     return img.size
@@ -145,6 +214,26 @@ FRAME_R = 5
 RIDGE = [(10, 38), (22, 29), (31, 36), (39, 31), (54, 42), (54, 47), (10, 47)]
 
 
+def draw_mark(S, rounded=True):
+    """The mark at S pixels square, as RGBA."""
+    u = S / 64
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    if rounded:
+        d.rounded_rectangle([0, 0, S - 1, S - 1], radius=14 * u, fill=ACCENT)
+    else:
+        d.rectangle([0, 0, S, S], fill=ACCENT)
+    box = [v * u for v in FRAME]
+    d.rounded_rectangle(box, radius=FRAME_R * u, fill=INK)
+    # the ridge is cut to the frame's rounded corners
+    ridge = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    ImageDraw.Draw(ridge).polygon([(x * u, y * u) for x, y in RIDGE], fill=CANVAS)
+    mask = Image.new("L", (S, S), 0)
+    ImageDraw.Draw(mask).rounded_rectangle(box, radius=FRAME_R * u, fill=255)
+    img.paste(ridge, (0, 0), Image.composite(ridge.split()[3], Image.new("L", (S, S), 0), mask))
+    return img
+
+
 def make_icons():
     (ROOT / "favicon.svg").write_text(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
@@ -154,25 +243,9 @@ def make_icons():
         "</svg>\n"
     )
     # The tab icon keeps its rounded corners; the touch icon fills the square,
-    # because iOS rounds it with its own mask.
+    # because iOS rounds it with its own mask. Both are drawn 8x and shrunk.
     for size, name, rounded in ((32, "favicon-32.png", True), (180, "apple-touch-icon.png", False)):
-        S = size * 8   # drawn large and shrunk, so edges come out smooth
-        u = S / 64
-        img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-        d = ImageDraw.Draw(img)
-        if rounded:
-            d.rounded_rectangle([0, 0, S - 1, S - 1], radius=14 * u, fill=ACCENT)
-        else:
-            d.rectangle([0, 0, S, S], fill=ACCENT)
-        box = [v * u for v in FRAME]
-        d.rounded_rectangle(box, radius=FRAME_R * u, fill=INK)
-        # the ridge is cut to the frame's rounded corners
-        ridge = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-        ImageDraw.Draw(ridge).polygon([(x * u, y * u) for x, y in RIDGE], fill=CANVAS)
-        mask = Image.new("L", (S, S), 0)
-        ImageDraw.Draw(mask).rounded_rectangle(box, radius=FRAME_R * u, fill=255)
-        img.paste(ridge, (0, 0), Image.composite(ridge.split()[3], Image.new("L", (S, S), 0), mask))
-        out = img.resize((size, size), Image.LANCZOS)
+        out = draw_mark(size * 8, rounded).resize((size, size), Image.LANCZOS)
         if not rounded:
             out = out.convert("RGB")
         out.save(ROOT / name, "PNG", optimize=True)

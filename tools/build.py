@@ -117,10 +117,10 @@ def figure(p):
         f'              <title id="{fid}">{desc}</title>\n'
         # Light stands for artwork you can see, dark for what the platform covers.
         # Yellow stays reserved for the safe box, matching the app's own guide.
-        f'              <rect width="{w}" height="{FIG_H}" fill="#565c60"/>\n'
-        '              <g fill="#14171a" opacity=".88">' + "".join(bands) + "</g>\n"
+        f'              <rect width="{w}" height="{FIG_H}" fill="#6d675f"/>\n'
+        '              <g fill="#23221f" opacity=".9">' + "".join(bands) + "</g>\n"
         f'              <rect x="{sx:.1f}" y="{sy:.1f}" width="{sw:.1f}" height="{sh:.1f}"\n'
-        '                    fill="none" stroke="var(--mark)" stroke-width="2" stroke-dasharray="6 4"/>\n'
+        '                    fill="none" stroke="var(--guide)" stroke-width="2" stroke-dasharray="6 4"/>\n'
         "            </svg>\n"
         f'            <figcaption><b>{p["label"]}</b><span>Covers {covered}</span></figcaption>\n'
         "          </figure>"

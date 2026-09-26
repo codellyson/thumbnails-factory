@@ -1,4 +1,34 @@
-
+  // ---- usage counts -----------------------------------------------------
+  // Anonymous counts via Aptabase: event name plus a preset or layout name.
+  // Never the picture, headline, logo or file name. No cookies; the session
+  // id is random, lasts an hour of activity, and lives only in this tab.
+  // Nothing is sent from file://, and localhost events are marked debug.
+  var TRACK = {
+    key: 'A-US-7751406996',
+    url: 'https://us.aptabase.com/api/v0/event',
+    debug: /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || /\.(localhost|test)$/.test(location.hostname),
+    on: location.protocol === 'https:' || location.protocol === 'http:',
+    session: '', last: 0
+  };
+  function track(name, props){
+    if (!TRACK.on || typeof fetch !== 'function') return;
+    var now = Date.now();
+    if (!TRACK.session || now - TRACK.last > 3600e3) {
+      TRACK.session = Math.floor(now/1000) + String(Math.floor(Math.random()*1e8)).padStart(8, '0');
+    }
+    TRACK.last = now;
+    try {
+      fetch(TRACK.url, {
+        method:'POST', credentials:'omit', keepalive:true,
+        headers:{ 'Content-Type':'application/json', 'App-Key':TRACK.key },
+        body: JSON.stringify({
+          timestamp: new Date(now).toISOString(), sessionId: TRACK.session, eventName: name,
+          systemProps: { locale: navigator.language || '', isDebug: TRACK.debug, appVersion: '', sdkVersion: 'aptabase-web@0.5.0' },
+          props: props || {}
+        })
+      }).catch(function(){});
+    } catch (e) {}
+  }
   // ---- platform presets -------------------------------------------------
   // safe: fractions of the canvas kept clear of headline/logo/badge, so the
   // artwork survives each platform's own UI chrome (captions, action rails,
@@ -792,11 +822,31 @@
       }
     }
     render(ctx, p, { guides: state.safe, preview: true });
+    tintWell();
     document.getElementById('what').textContent = p.label;
     document.getElementById('dims').innerHTML = p.w + ' &times; ' + p.h;
     if (customChip) sizeChip(customChip, p.id === 'custom' ? p : presetById('custom'));
     firstDraw = false;
     scheduleFeed();
+  }
+
+  // ---- the well around the preview --------------------------------------
+  // A 48x27 copy of the thumbnail, stretched and blurred by CSS, lights the
+  // well; the average of those pixels, darkened, fills whatever the glow does
+  // not reach. Shrinking the canvas this far costs well under a millisecond,
+  // so it keeps up with a drag.
+  var ambient = document.getElementById('ambient'), actx = ambient.getContext('2d', { willReadFrequently:true });
+  var wellEl = document.getElementById('wrap');
+  function tintWell(){
+    try {
+      actx.drawImage(cv, 0, 0, ambient.width, ambient.height);
+      var d = actx.getImageData(0, 0, ambient.width, ambient.height).data, r = 0, g = 0, b = 0, n = d.length/4;
+      for (var i = 0; i < d.length; i += 4) { r += d[i]; g += d[i+1]; b += d[i+2]; }
+      // Kept well below the picture's own brightness, so the preview stays the
+      // brightest thing in the well and its edges still read.
+      var k = 0.55;
+      wellEl.style.backgroundColor = 'rgb(' + Math.round(r/n*k) + ',' + Math.round(g/n*k) + ',' + Math.round(b/n*k) + ')';
+    } catch (e) { /* a tainted canvas cannot be read; the default well stays */ }
   }
 
   // ---- feed-size preview ------------------------------------------------
@@ -1348,6 +1398,7 @@
       draw();
       if (!blob) { saveBtn.disabled = false; setStatus('Could not render the image. Try a smaller size.', 'err'); return; }
       offer(blob, fileName(p));
+      track('thumbnail_downloaded', { preset:p.id, layout:state.layout });
     }, 'image/png');
   });
 
@@ -1364,6 +1415,7 @@
   allBtn.textContent = 'Download all ' + allList.length + ' sizes';
   allBtn.addEventListener('click', function(){
     allBtn.disabled = true; saveBtn.disabled = true;
+    track('all_sizes_downloaded', { layout:state.layout });
     var i = 0;
     (function step(){
       if (i >= allList.length) {
@@ -1406,6 +1458,7 @@
   refreshDerived('frame', frame);   // the painted backdrop counts as an image too
   updateDerivedChips();
   draw();
+  track('app_opened', { preset:state.preset, layout:state.layout });
 })();
 </script>
 

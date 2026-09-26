@@ -144,7 +144,7 @@
     // Showcase layout: the image sits in a window on a dark backdrop, with an
     // optional phone beside it, instead of filling the frame.
     layout:'bleed', badge:'', winTitle:'', capColor:'#ffd23f',
-    phone:true, cap1:'', cap2:'', handle:'', dots:true,
+    phone:true, cap1:'', cap2:'', handle:'', dots:true, feed:false,
     pillStyle:'light', pillSize:1, pillPos:'logo',
     winStyle:'dark', winTurn:17, winTilt:-4,
     phoneSide:'right', phoneSize:1, phoneTilt:6,
@@ -179,6 +179,7 @@
       });
       if (typeof saved.phone === 'boolean') state.phone = saved.phone;
       if (typeof saved.dots === 'boolean') state.dots = saved.dots;
+      if (typeof saved.feed === 'boolean') state.feed = saved.feed;
       if (state.layout === 'showcase') state.zoom = 1;
       // Before the badge was free text it was a series name and an episode.
       if (typeof saved.badge !== 'string' && (saved.series || saved.episode)) {
@@ -795,6 +796,84 @@
     document.getElementById('dims').innerHTML = p.w + ' &times; ' + p.h;
     if (customChip) sizeChip(customChip, p.id === 'custom' ? p : presetById('custom'));
     firstDraw = false;
+    scheduleFeed();
+  }
+
+  // ---- feed-size preview ------------------------------------------------
+  // Where each size is actually seen, and how wide it is there in CSS pixels.
+  // The editor shows the thumbnail big; people meet it small. Only the places
+  // where it is small enough to lose detail are listed: an Instagram post
+  // fills the phone in the feed, so only its profile-grid tile is here.
+  var FEED = {
+    'youtube':          [['Suggested videos', 168], ['Home feed on a phone', 360]],
+    'youtube-shorts':   [['Shorts shelf', 150]],
+    'tiktok':           [['Profile grid', 124]],
+    'instagram-reel':   [['Profile grid', 124]],
+    'instagram-post':   [['Profile grid', 124]],
+    'instagram-square': [['Profile grid', 124]],
+    'x':                [['Timeline on a phone', 340]],
+    'facebook':         [['Feed on a phone', 340]],
+    'linkedin':         [['Feed on a phone', 340]],
+    'twitch':           [['Browse grid', 240]],
+    'podcast':          [['App list', 64], ['Show page', 160]],
+    'blog-og':          [['Chat link preview', 240], ['Feed on a phone', 340]],
+    'custom':           [['Small', 160], ['Medium', 320]]
+  };
+  var feedEl = document.getElementById('feed'), feedRow = document.getElementById('feedRow');
+  var feedTimer = 0, feedSrc = document.createElement('canvas');
+
+  // Redrawing the full-size picture again costs a frame, so the strip waits
+  // until edits pause instead of following every drag step.
+  function scheduleFeed(){
+    if (!state.feed) return;
+    clearTimeout(feedTimer);
+    feedTimer = setTimeout(renderFeed, 150);
+  }
+
+  // Halving in steps before the last resize keeps fine detail from turning to
+  // shimmer, which a single big jump would do - and would make small text look
+  // worse than it really will.
+  function shrinkTo(src, w, h){
+    var cur = src;
+    while (cur.width / 2 > w) {
+      var half = document.createElement('canvas');
+      half.width = Math.round(cur.width/2); half.height = Math.round(cur.height/2);
+      var hg = half.getContext('2d'); hg.imageSmoothingQuality = 'high';
+      hg.drawImage(cur, 0, 0, half.width, half.height);
+      cur = half;
+    }
+    return cur;
+  }
+
+  function renderFeed(){
+    var p = current();
+    feedSrc.width = p.w; feedSrc.height = p.h;
+    render(feedSrc.getContext('2d'), p, { guides:false });   // exactly what downloads
+    var dpr = Math.min(3, window.devicePixelRatio || 1);
+    feedRow.textContent = '';
+    (FEED[p.id] || FEED.custom).forEach(function(spot){
+      var cssW = spot[1], cssH = Math.floor(cssW * p.h / p.w);   // 168 wide is 94 tall, as YouTube draws it
+      var fig = document.createElement('figure'); fig.className = 'feeditem';
+      fig.style.width = cssW + 'px';
+      var out = document.createElement('canvas');
+      out.width = Math.round(cssW*dpr); out.height = Math.round(cssH*dpr);
+      // Height follows the width, so a screen narrower than the spot shrinks
+      // the tile instead of squashing it.
+      out.style.width = cssW + 'px'; out.style.height = 'auto';
+      out.setAttribute('role', 'img');
+      out.setAttribute('aria-label', 'Your thumbnail at ' + cssW + ' by ' + cssH + ' pixels, as in ' + spot[0].toLowerCase());
+      var og = out.getContext('2d'); og.imageSmoothingQuality = 'high';
+      og.drawImage(shrinkTo(feedSrc, out.width, out.height), 0, 0, out.width, out.height);
+      var text = document.createElement('div'); text.className = 'feedtext';
+      text.setAttribute('aria-hidden', 'true');
+      text.appendChild(document.createElement('span')); text.appendChild(document.createElement('span'));
+      var cap = document.createElement('figcaption');
+      cap.textContent = spot[0] + ' · ' + cssW + ' × ' + cssH;
+      fig.appendChild(out);
+      if (cssW >= 120) fig.appendChild(text);
+      fig.appendChild(cap);
+      feedRow.appendChild(fig);
+    });
   }
 
   // ---- size chart -------------------------------------------------------
@@ -1127,6 +1206,13 @@
   document.getElementById('showLogo').addEventListener('change', function(e){ state.logo = e.target.checked; draw(); });
   playEl.addEventListener('change', function(e){ state.play = e.target.checked; draw(); });
   var safeNote = document.getElementById('safeNote');
+  var showFeedEl = document.getElementById('showFeed');
+  showFeedEl.checked = state.feed; feedEl.hidden = !state.feed;
+  showFeedEl.addEventListener('change', function(){
+    state.feed = showFeedEl.checked; feedEl.hidden = !state.feed;
+    persist();
+    if (state.feed) renderFeed();
+  });
   document.getElementById('showSafe').addEventListener('change', function(e){
     state.safe = e.target.checked; safeNote.hidden = !state.safe; draw();
   });
@@ -1141,7 +1227,7 @@
       customW:state.customW, customH:state.customH,
       line1Color:state.line1Color, palette:state.palette,
       customStops:state.customStops, logoSrc:state.logoSrc, derived:state.derived,
-      phone:state.phone, dots:state.dots
+      phone:state.phone, dots:state.dots, feed:state.feed
     }, pick(STR_KEYS.concat(NUM_KEYS))))); }catch(e){
       // A big custom logo can blow the storage quota. Losing the saved copy is
       // survivable; the logo stays put for this session either way.

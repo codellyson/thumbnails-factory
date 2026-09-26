@@ -157,6 +157,12 @@
   .stage{ min-width:0; }
   /* The controls run long; the preview stays in view beside them. */
   @media (min-width:901px){ .stage{ position:sticky; top:16px; } }
+  /* With the feed strip open the pinned column holds two previews, so the big
+     one gives up height to keep both on screen, and the how-to steps aside. */
+  @media (min-width:901px){
+    .stage:has(.feed:not([hidden])) canvas{ max-height:max(240px, calc(100vh - 520px)); }
+    .stage:has(.feed:not([hidden])) .howto{ display:none; }
+  }
   .canvas-wrap{
     position:relative; background:var(--well);
     border:1px solid var(--ink); border-radius:var(--r-well);
@@ -188,6 +194,19 @@
   .readout .what{ font-weight:700; }
   .readout .dims{ margin-left:auto; font-weight:500; }
   .howto{ margin:12px 2px 0; max-width:56ch; }
+  .feed{ margin:14px 0 0; padding:14px; background:#0f0f0f; color:#f1f1f1; border-radius:var(--r-well); }
+  .feed[hidden]{ display:none; }
+  .feed h3{ margin:0; font-size:13px; font-weight:700; letter-spacing:.01em; }
+  .feed .hint{ margin:2px 0 12px; color:#aaa; }
+  .feedrow{ display:flex; flex-wrap:wrap; gap:18px 22px; align-items:flex-start; }
+  .feeditem{ margin:0; display:flex; flex-direction:column; gap:6px; min-width:0; max-width:100%; }
+  .feeditem canvas{ display:block; max-width:100%; max-height:none; border-radius:8px; cursor:default; background:#000; }
+  .feeditem figcaption{ font-size:12px; color:#aaa; }
+  /* Grey bars where the title and channel would be, so the thumbnail is seen
+     among the things it competes with, not alone. */
+  .feedtext{ display:flex; flex-direction:column; gap:5px; }
+  .feedtext span{ display:block; height:9px; border-radius:3px; background:#3a3a3a; }
+  .feedtext span + span{ width:60%; background:#2a2a2a; }
   .howto p{ margin:0 0 3px; }
 
   /* ---- control bench ---- */

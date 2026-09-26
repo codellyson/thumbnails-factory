@@ -20,6 +20,11 @@
         <span class="what" id="what">YouTube thumbnail</span>
         <span class="dims" id="dims">1280 &times; 720</span>
       </p>
+      <section class="feed" id="feed" aria-labelledby="feedTitle" hidden>
+        <h3 id="feedTitle">At feed size</h3>
+        <p class="hint">Shown at the size people scroll past it. If the words are hard to read here, make them fewer or bigger.</p>
+        <div class="feedrow" id="feedRow"></div>
+      </section>
       <div class="howto" id="howto">
         <p>Drag the image to move it inside the frame, or focus it and use the arrow keys.</p>
         <p>Paste a screenshot with &#8984;V, or drop a file anywhere on the preview.</p>
@@ -212,6 +217,7 @@
 
       <div class="toggles">
         <label class="tog" id="playTog"><input type="checkbox" id="showPlay" checked> Play badge</label>
+        <label class="tog"><input type="checkbox" id="showFeed"> Show at feed size</label>
         <label class="tog"><input type="checkbox" id="showSafe"> Show safe areas</label>
         <p class="note" id="safeNote" hidden>Keep the text and logo inside the dashed box. Everything outside it can be covered by the app's own buttons and captions. The box is not saved with the image.</p>
       </div>

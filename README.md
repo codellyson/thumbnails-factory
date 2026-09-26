@@ -91,6 +91,12 @@ screen the preview stays in view while you scroll the controls:
 | Phone | picture, zoom, two lines of on-screen text with an accent colour, handle, like and share buttons, side, size, tilt |
 | Backdrop | glow from a picture (its own, or the window's), from the headline colours, or none, and its strength |
 
+**Show at feed size** puts the thumbnail beside the editor at the size people
+actually meet it: 168 px wide in YouTube's suggested list, 124 px in a TikTok or
+Instagram profile grid, 64 px in a podcast app, and so on for each size. Each is
+drawn from the same render that downloads, shrunk in steps so small text looks as
+it will, not better or worse.
+
 ## Platforms
 
 | Preset | Size |

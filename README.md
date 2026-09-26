@@ -70,8 +70,17 @@ landscape and runs under the cards in tall and square sizes; the window and phon
 switch between side-by-side and stacked, whichever comes out bigger in the room
 left over. The play badge is full-picture only.
 
-Both layouts take a **series tag**, a white pill beside the logo. An episode typed
-as a bare number becomes `EP 3`; anything else is used as written.
+Both layouts take a **series tag**, a pill with the series name and episode. An
+episode typed as a bare number becomes `EP 3`; anything else is used as written.
+
+Each showcase piece has its own panel, and each panel folds away:
+
+| Panel | Controls |
+| --- | --- |
+| Series tag | style (light, dark, outline, headline colours), position (by the logo, top right, on the headline), size |
+| Window | title, style (dark, light, no frame), turn in depth, tilt |
+| Phone | picture, caption, handle, action buttons, side, size, tilt |
+| Backdrop | glow from the image, from the headline colours, or none, and its strength |
 
 ## Platforms
 

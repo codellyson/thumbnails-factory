@@ -213,6 +213,17 @@
   .showcase{ display:flex; flex-direction:column; gap:14px; }
   .showcase[hidden], .phonebits[hidden]{ display:none; }
   .phonebits{ display:flex; flex-direction:column; gap:10px; margin-top:4px; }
+  .group{ border-top:1px solid rgba(20,23,22,.35); padding-top:10px; display:flex; flex-direction:column; gap:12px; }
+  .group > summary{ font-size:13px; font-weight:700; letter-spacing:.01em; cursor:pointer;
+    list-style:none; display:flex; align-items:center; gap:6px; min-height:24px; }
+  .group > summary::-webkit-details-marker{ display:none; }
+  .group > summary::before{ content:""; width:6px; height:6px; border:solid var(--ink);
+    border-width:0 2px 2px 0; transform:rotate(-45deg); transition:transform .12s linear; margin-right:2px; }
+  .group[open] > summary::before{ transform:rotate(45deg); }
+  .group > summary:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .group:not([open]){ gap:0; }
+  .field[hidden]{ display:none; }
+  .segs label{ white-space:nowrap; }
   .row .field{ flex:1; }
   .row[hidden]{ display:none; }
   .customgroup .row{ width:190px; }

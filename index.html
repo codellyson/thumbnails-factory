@@ -234,6 +234,17 @@
   .showcase{ display:flex; flex-direction:column; gap:14px; }
   .showcase[hidden], .phonebits[hidden]{ display:none; }
   .phonebits{ display:flex; flex-direction:column; gap:10px; margin-top:4px; }
+  .group{ border-top:1px solid rgba(20,23,22,.35); padding-top:10px; display:flex; flex-direction:column; gap:12px; }
+  .group > summary{ font-size:13px; font-weight:700; letter-spacing:.01em; cursor:pointer;
+    list-style:none; display:flex; align-items:center; gap:6px; min-height:24px; }
+  .group > summary::-webkit-details-marker{ display:none; }
+  .group > summary::before{ content:""; width:6px; height:6px; border:solid var(--ink);
+    border-width:0 2px 2px 0; transform:rotate(-45deg); transition:transform .12s linear; margin-right:2px; }
+  .group[open] > summary::before{ transform:rotate(45deg); }
+  .group > summary:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .group:not([open]){ gap:0; }
+  .field[hidden]{ display:none; }
+  .segs label{ white-space:nowrap; }
   .row .field{ flex:1; }
   .row[hidden]{ display:none; }
   .customgroup .row{ width:190px; }
@@ -466,54 +477,135 @@
           <div class="palettes" id="palettes" role="radiogroup" aria-label="Bottom line colour"></div>
           <div class="stops" id="stops" hidden></div>
         </div>
-        <div class="row">
-          <div class="field grow">
-            <label for="series">Series tag</label>
-            <input type="text" id="series" maxlength="28" autocomplete="off" placeholder="SHORTS FACTORY">
-          </div>
-          <div class="field narrow">
-            <label for="episode">Episode</label>
-            <input type="text" id="episode" maxlength="8" autocomplete="off" placeholder="3">
-          </div>
-        </div>
-        <div class="showcase" id="showcaseFields" hidden>
-          <div class="field">
-            <label for="winTitle">Window title</label>
-            <input type="text" id="winTitle" maxlength="40" autocomplete="off" placeholder="transcript.json">
-          </div>
-          <div class="field">
-            <span class="legend" id="phoneLabel">Phone</span>
-            <label class="tog"><input type="checkbox" id="showPhone" checked> Show a phone beside the window</label>
-            <div class="phonebits" id="phoneBits">
-              <div class="logobtns">
-                <button class="btn btn-sm" id="phonePick" aria-describedby="phoneLabel">Choose phone picture</button>
-                <button class="btn btn-sm" id="phoneReset" hidden>Use the main image</button>
-              </div>
-              <input type="file" id="phoneFile" accept="image/*" hidden>
-              <div class="row">
-                <div class="field">
-                  <label for="cap1">Caption</label>
-                  <input type="text" id="cap1" maxlength="18" autocomplete="off" placeholder="SO I'M">
-                </div>
-                <div class="field">
-                  <label for="cap2">Highlighted</label>
-                  <input type="text" id="cap2" maxlength="18" autocomplete="off" placeholder="TRYING">
-                </div>
-              </div>
-              <div class="field">
-                <label for="handle">Handle</label>
-                <input type="text" id="handle" maxlength="30" autocomplete="off" placeholder="@shortsfactory">
-              </div>
-              <label class="tog"><input type="checkbox" id="showDots" checked> Action buttons</label>
+        <details class="group" open>
+          <summary>Series tag</summary>
+          <div class="row">
+            <div class="field grow">
+              <label for="series">Series</label>
+              <input type="text" id="series" maxlength="28" autocomplete="off" placeholder="SHORTS FACTORY">
+            </div>
+            <div class="field narrow">
+              <label for="episode">Episode</label>
+              <input type="text" id="episode" maxlength="8" autocomplete="off" placeholder="3">
             </div>
           </div>
+          <fieldset class="field seg">
+            <legend class="legend">Style</legend>
+            <div class="segs">
+              <label><input type="radio" name="pillStyle" value="light"> Light</label>
+              <label><input type="radio" name="pillStyle" value="dark"> Dark</label>
+              <label><input type="radio" name="pillStyle" value="outline"> Outline</label>
+              <label><input type="radio" name="pillStyle" value="brand"> Colour</label>
+            </div>
+          </fieldset>
+          <fieldset class="field seg">
+            <legend class="legend">Position</legend>
+            <div class="segs">
+              <label><input type="radio" name="pillPos" value="logo"> By logo</label>
+              <label><input type="radio" name="pillPos" value="right"> Top right</label>
+              <label><input type="radio" name="pillPos" value="headline"> On headline</label>
+            </div>
+          </fieldset>
+          <div class="field">
+            <label for="pillSize">Size</label>
+            <input type="range" id="pillSize" data-key="pillSize" data-unit="%" min="70" max="160">
+          </div>
+        </details>
+
+        <div class="showcase" id="showcaseFields" hidden>
+        <details class="group" open>
+          <summary>Window</summary>
+          <div class="field">
+            <label for="winTitle">Title</label>
+            <input type="text" id="winTitle" maxlength="40" autocomplete="off" placeholder="transcript.json">
+          </div>
+          <fieldset class="field seg">
+            <legend class="legend">Style</legend>
+            <div class="segs">
+              <label><input type="radio" name="winStyle" value="dark"> Dark</label>
+              <label><input type="radio" name="winStyle" value="light"> Light</label>
+              <label><input type="radio" name="winStyle" value="plain"> No frame</label>
+            </div>
+          </fieldset>
+          <div class="row">
+            <div class="field">
+              <label for="winTurn">Turn</label>
+              <input type="range" id="winTurn" data-key="winTurn" data-unit="°" min="0" max="35">
+            </div>
+            <div class="field">
+              <label for="winTilt">Tilt</label>
+              <input type="range" id="winTilt" data-key="winTilt" data-unit="°" min="-12" max="12">
+            </div>
+          </div>
+        </details>
+
+        <details class="group" open>
+          <summary id="phoneLabel">Phone</summary>
+          <label class="tog"><input type="checkbox" id="showPhone" checked> Show a phone beside the window</label>
+          <div class="phonebits" id="phoneBits">
+            <div class="logobtns">
+              <button class="btn btn-sm" id="phonePick" aria-describedby="phoneLabel">Choose phone picture</button>
+              <button class="btn btn-sm" id="phoneReset" hidden>Use the main image</button>
+            </div>
+            <input type="file" id="phoneFile" accept="image/*" hidden>
+            <div class="row">
+              <div class="field">
+                <label for="cap1">Caption</label>
+                <input type="text" id="cap1" maxlength="18" autocomplete="off" placeholder="SO I'M">
+              </div>
+              <div class="field">
+                <label for="cap2">Highlighted</label>
+                <input type="text" id="cap2" maxlength="18" autocomplete="off" placeholder="TRYING">
+              </div>
+            </div>
+            <div class="field">
+              <label for="handle">Handle</label>
+              <input type="text" id="handle" maxlength="30" autocomplete="off" placeholder="@shortsfactory">
+            </div>
+            <label class="tog"><input type="checkbox" id="showDots" checked> Action buttons</label>
+            <fieldset class="field seg">
+              <legend class="legend">Side</legend>
+              <div class="segs">
+                <label><input type="radio" name="phoneSide" value="left"> Left</label>
+                <label><input type="radio" name="phoneSide" value="right"> Right</label>
+              </div>
+            </fieldset>
+            <div class="row">
+              <div class="field">
+                <label for="phoneSize">Size</label>
+                <input type="range" id="phoneSize" data-key="phoneSize" data-unit="%" min="70" max="130">
+              </div>
+              <div class="field">
+                <label for="phoneTilt">Tilt</label>
+                <input type="range" id="phoneTilt" data-key="phoneTilt" data-unit="°" min="-15" max="15">
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="group" open>
+          <summary>Backdrop</summary>
+          <fieldset class="field seg">
+            <legend class="legend">Glow</legend>
+            <div class="segs">
+              <label><input type="radio" name="glow" value="image"> From image</label>
+              <label><input type="radio" name="glow" value="palette"> From colours</label>
+              <label><input type="radio" name="glow" value="none"> None</label>
+            </div>
+          </fieldset>
+          <div class="field">
+            <label for="glowAmt">Strength</label>
+            <input type="range" id="glowAmt" data-key="glowAmt" data-unit="%" min="0" max="100">
+          </div>
+        </details>
         </div>
+
         <div class="row">
           <div class="field">
             <label for="zoom">Zoom</label>
             <input type="range" id="zoom" min="100" max="250" value="125">
           </div>
-          <div class="field">
+          <div class="field" id="vigField">
             <label for="vig">Shading</label>
             <input type="range" id="vig" min="0" max="100" value="70">
           </div>
@@ -733,9 +825,18 @@
     // optional phone beside it, instead of filling the frame.
     layout:'bleed', series:'', episode:'', winTitle:'',
     phone:true, cap1:'', cap2:'', handle:'', dots:true,
+    pillStyle:'light', pillSize:1, pillPos:'logo',
+    winStyle:'dark', winTurn:17, winTilt:-4,
+    phoneSide:'right', phoneSize:1, phoneTilt:6,
+    glow:'image', glowAmt:0.6,
     derived:{ frame:null, logo:null }   // colours read out of each uploaded asset
   };
 
+  // The showcase settings, saved as they are. Kept as lists so persist() and
+  // the restore below cannot drift apart.
+  var STR_KEYS = ['layout','series','episode','winTitle','cap1','cap2','handle',
+                  'pillStyle','pillPos','winStyle','phoneSide','glow'];
+  var NUM_KEYS = ['pillSize','winTurn','winTilt','phoneSize','phoneTilt','glowAmt'];
   try {
     var saved = JSON.parse(localStorage.getItem('tf-state') || 'null');
     if (saved) {
@@ -749,8 +850,11 @@
       if (saved.customStops && saved.customStops.length === 3) state.customStops = saved.customStops;
       if (saved.logoSrc) state.logoSrc = saved.logoSrc;
       if (saved.derived) state.derived = saved.derived;
-      ['layout','series','episode','winTitle','cap1','cap2','handle'].forEach(function(key){
+      STR_KEYS.forEach(function(key){
         if (typeof saved[key] === 'string') state[key] = saved[key];
+      });
+      NUM_KEYS.forEach(function(key){
+        if (typeof saved[key] === 'number' && isFinite(saved[key])) state[key] = saved[key];
       });
       if (typeof saved.phone === 'boolean') state.phone = saved.phone;
       if (typeof saved.dots === 'boolean') state.dots = saved.dots;
@@ -847,13 +951,24 @@
     glowOf = img;
     return glow;
   }
+  // Glow comes from the image, from the headline colours, or not at all. The
+  // image can be the wrong colour for the words; the palette never is.
   function drawBackdrop(c, W, H, k){
-    c.save();
-    c.globalAlpha = 0.6;
-    if (typeof c.filter === 'string') c.filter = 'blur(' + Math.round(24*k) + 'px)';
-    c.imageSmoothingQuality = 'high';
-    cover(c, glowFor(frame), -0.05*W, -0.05*H, 1.1*W, 1.1*H);
-    c.restore();
+    if (state.glow === 'image') {
+      c.save();
+      c.globalAlpha = state.glowAmt;
+      if (typeof c.filter === 'string') c.filter = 'blur(' + Math.round(24*k) + 'px)';
+      c.imageSmoothingQuality = 'high';
+      cover(c, glowFor(frame), -0.05*W, -0.05*H, 1.1*W, 1.1*H);
+      c.restore();
+    } else if (state.glow === 'palette') {
+      var st = activeStops(), R = Math.max(W, H);
+      [[0.78, 0.08, 0.55, st[0]], [0.98, 0.62, 0.45, st[2]], [0.45, 0.0, 0.35, st[1]]].forEach(function(b){
+        var rg = c.createRadialGradient(W*b[0], H*b[1], 0, W*b[0], H*b[1], R*b[2]);
+        rg.addColorStop(0, b[3]); rg.addColorStop(1, 'rgba(0,0,0,0)');
+        c.save(); c.globalAlpha = state.glowAmt*0.7; c.fillStyle = rg; c.fillRect(0, 0, W, H); c.restore();
+      });
+    }
     // Darkest where the headline sits, so the glow reads as light behind the
     // cards rather than a photo behind the words.
     var g = c.createLinearGradient(0, 0, W, 0);
@@ -875,13 +990,17 @@
     if (faceCv.width !== fw || faceCv.height !== fh) { faceCv.width = fw; faceCv.height = fh; }
     var c = faceCv.getContext('2d');
     c.clearRect(0, 0, fw, fh);
-    var r = 0.022*w, bar = Math.max(10, 0.058*w);
+    var light = state.winStyle === 'light', plain = state.winStyle === 'plain';
+    var r = (plain ? 0.03 : 0.022)*w, bar = plain ? 0 : Math.max(10, 0.058*w);
     c.save();
     roundRect(c, 0, 0, w, h, r); c.clip();
-    c.fillStyle = '#1b1c21'; c.fillRect(0, 0, w, h);
+    c.fillStyle = light ? '#f2f2f4' : '#1b1c21'; c.fillRect(0, 0, w, h);
     cover(c, frame, 0, bar, w, h - bar, state.zoom, panX, panY);
-    c.fillStyle = '#26272d'; c.fillRect(0, 0, w, bar);
-    c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(0, bar - Math.max(1, bar*0.03), w, Math.max(1, bar*0.03));
+    if (bar) {
+      c.fillStyle = light ? '#e6e6e9' : '#26272d'; c.fillRect(0, 0, w, bar);
+      c.fillStyle = light ? 'rgba(0,0,0,.12)' : 'rgba(0,0,0,.35)';
+      c.fillRect(0, bar - Math.max(1, bar*0.03), w, Math.max(1, bar*0.03));
+    }
     // Light from the upper left, falling off toward the far edge: this is
     // most of what sells the turn.
     var lit = c.createLinearGradient(0, 0, w, h);
@@ -890,13 +1009,13 @@
     c.fillStyle = lit; c.fillRect(0, 0, w, h);
     c.restore();
     var lr = bar*0.16, ly = bar/2;
-    ['#ff5f57','#febc2e','#28c840'].forEach(function(col, i){
+    if (bar) ['#ff5f57','#febc2e','#28c840'].forEach(function(col, i){
       c.beginPath(); c.arc(bar*0.5 + i*lr*3.1, ly, lr, 0, Math.PI*2);
       c.fillStyle = col; c.fill();
     });
-    if (state.winTitle) {
+    if (bar && state.winTitle) {
       c.font = '600 ' + (bar*0.34).toFixed(1) + 'px ' + UI_FONT;
-      c.fillStyle = 'rgba(255,255,255,.82)'; c.textBaseline = 'middle';
+      c.fillStyle = light ? 'rgba(0,0,0,.72)' : 'rgba(255,255,255,.82)'; c.textBaseline = 'middle';
       c.fillText(state.winTitle, bar*0.5 + lr*9.5, ly, w - bar*2 - lr*10);
     }
     roundRect(c, 0.5, 0.5, w-1, h-1, r);
@@ -909,9 +1028,10 @@
   // projective transform, so the face goes down in thin vertical strips, each
   // scaled by its own depth. The result is scaled back up to the box's width
   // and centred on it, so the layout code can treat it as an ordinary box.
-  var TURN = 17*Math.PI/180, FOCAL = 2.2;
+  var FOCAL = 2.2;
   function drawTurned(c, face, x, y, w, h, deg){
-    var f = FOCAL*w, sin = Math.sin(TURN), cos = Math.cos(TURN);
+    var turn = state.winTurn*Math.PI/180;
+    var f = FOCAL*w, sin = Math.sin(turn), cos = Math.cos(turn);
     function at(u){ var z = u*sin, sc = f/(f + z); return { x:u*cos*sc, s:sc }; }
     var L = at(-w/2), R = at(w/2);
     var fit = w / (R.x - L.x), mid = (L.x + R.x)/2;
@@ -1023,30 +1143,75 @@
     if (/^\d+$/.test(e)) e = 'EP ' + e;
     return s && e ? s + '  ·  ' + e : (s || e);
   }
+  function pillWidth(c, h){
+    var t = pillText();
+    if (!t) return 0;
+    c.font = headlineFont(h*0.44);
+    return c.measureText(t).width + h*0.84;
+  }
+  // Light and Brand are solid, so they hold up on any backdrop. Dark and
+  // Outline are quieter and lean on the backdrop being dark.
   function drawPill(c, x, cy, h){
     var t = pillText();
     if (!t) return 0;
-    var fpx = h*0.44;
+    var fpx = h*0.44, w = pillWidth(c, h), pad = h*0.42, style = state.pillStyle, ink = '#121316';
     c.font = headlineFont(fpx);
-    var tw = c.measureText(t).width, pad = h*0.42, w = tw + pad*2;
-    c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = h*0.3; c.shadowOffsetY = h*0.08;
-    roundRect(c, x, cy - h/2, w, h, h/2); c.fillStyle = '#ffffff'; c.fill();
-    noShadow(c);
-    c.fillStyle = '#121316'; c.textBaseline = 'middle';
+    roundRect(c, x, cy - h/2, w, h, h/2);
+    if (style === 'outline') {
+      c.lineWidth = Math.max(1.5, h*0.055); c.strokeStyle = 'rgba(255,255,255,.92)'; c.stroke();
+      ink = '#ffffff';
+    } else {
+      c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = h*0.3; c.shadowOffsetY = h*0.08;
+      if (style === 'dark') { c.fillStyle = 'rgba(18,19,24,.88)'; ink = '#ffffff'; }
+      else if (style === 'brand') {
+        var st = activeStops(), g = c.createLinearGradient(x, 0, x + w, 0);
+        g.addColorStop(0, st[0]); g.addColorStop(0.45, st[1]); g.addColorStop(1, st[2]);
+        c.fillStyle = g;
+      } else c.fillStyle = '#ffffff';
+      c.fill();
+      noShadow(c);
+      if (style === 'dark') {
+        c.lineWidth = Math.max(1, h*0.03); c.strokeStyle = 'rgba(255,255,255,.18)'; c.stroke();
+      }
+    }
+    c.fillStyle = ink; c.textBaseline = 'middle';
     c.fillText(t, x + pad, cy + fpx*0.04);
     c.textBaseline = 'alphabetic';
     return w;
   }
 
   // Where the window and phone sit relative to each other, in units of the
-  // window's width. Taken from the reference layout: the phone overlaps the
-  // window's lower right corner and leans the other way.
+  // window's width: the phone overlaps the window's lower right corner.
+  // arrange() applies the phone's side and size on top of this.
   // Tall rooms get the stacked version, with the phone hanging lower and bigger.
   var SHOWCASE = {
-    side:  { w:1.1, h:1.02, win:{ x:0, y:0.02, w:1, h:0.74, deg:-4 }, phone:{ x:0.66, y:0.2, w:0.42, h:0.8, deg:6 } },
-    stack: { w:1,   h:1.3,  win:{ x:0, y:0.02, w:1, h:0.72, deg:-4 }, phone:{ x:0.5, y:0.42, w:0.45, h:0.86, deg:6 } },
-    alone: { w:1,   h:0.78, win:{ x:0, y:0.02, w:1, h:0.74, deg:-4 } }
+    side:  { win:{ x:0, y:0.02, w:1, h:0.74 }, phone:{ x:0.66, y:0.2, w:0.42, h:0.8 } },
+    stack: { win:{ x:0, y:0.02, w:1, h:0.72 }, phone:{ x:0.5, y:0.42, w:0.45, h:0.86 } },
+    alone: { win:{ x:0, y:0.02, w:1, h:0.74 } }
   };
+
+  // Applies the phone's side and size to an arrangement, then measures the
+  // result, so the fitting code never has to know either setting exists.
+  function arrange(l){
+    var win = { x:l.win.x, y:l.win.y, w:l.win.w, h:l.win.h }, ph = null;
+    if (l.phone) {
+      var sz = state.phoneSize, p = l.phone;
+      // grow or shrink about the corner that overlaps the window
+      ph = { w:p.w*sz, h:p.h*sz, x:p.x, y:p.y + p.h*(1-sz)/2 };
+      if (state.phoneSide === 'left') {
+        var span = Math.max(win.x + win.w, ph.x + ph.w);
+        win.x = span - win.x - win.w;
+        ph.x = span - ph.x - ph.w;
+      }
+    }
+    var boxes = ph ? [win, ph] : [win];
+    var x0 = Math.min.apply(null, boxes.map(function(b){ return b.x; }));
+    var y0 = Math.min.apply(null, boxes.map(function(b){ return b.y; }));
+    var x1 = Math.max.apply(null, boxes.map(function(b){ return b.x + b.w; }));
+    var y1 = Math.max.apply(null, boxes.map(function(b){ return b.y + b.h; }));
+    boxes.forEach(function(b){ b.x -= x0; b.y -= y0; });
+    return { w:x1 - x0, h:y1 - y0, win:win, phone:ph };
+  }
 
   // ---- renderer ---------------------------------------------------------
   // Every measurement is derived from the target size, so one routine covers
@@ -1123,47 +1288,63 @@
       c.restore();
     }
 
-    // logo row: the logo, then the series tag beside it
-    var lh = 88*k, pillX = left;
+    // logo row. The series tag sits beside the logo, at the top right, or
+    // just above the headline.
+    var lh = 88*k, pillX = left, pillH = lh*0.56*state.pillSize, gap = 0.022*W;
+    var hasPill = !!pillText();
     if (state.logo && ready.logo) {
       var lw = logo.width * (lh/logo.height);
       c.shadowColor='rgba(0,0,0,.6)'; c.shadowBlur=20*k; c.shadowOffsetY=8*k;
       c.drawImage(logo, left, top, lw, lh);
       noShadow(c);
-      pillX = left + lw + 0.022*W;
+      pillX = left + lw + gap;
     }
-    var hasRow = drawPill(c, pillX, top + lh/2, lh*0.56) > 0 || pillX > left;
+    // Measured to the top of the capitals, not the line box, so the gap
+    // above the headline is the gap you see.
+    var capTop = bottom - (l1 ? (px2 ? px2*1.06 : 0) + px1*0.74 : px2*0.74);
+    var wordsTop = capTop;
+    if (hasPill) {
+      if (state.pillPos === 'right') {
+        drawPill(c, right - pillWidth(c, pillH), top + lh/2, pillH);
+      } else if (state.pillPos === 'headline') {
+        drawPill(c, left, capTop - 0.03*H - pillH/2, pillH);
+        wordsTop = capTop - 0.03*H - pillH;
+      } else {
+        drawPill(c, pillX, top + lh/2, pillH);
+      }
+    }
+    var hasRow = (state.logo && ready.logo) || (hasPill && state.pillPos !== 'headline');
+    var pillTopRight = hasPill && state.pillPos === 'right';
 
     // the window and phone, fitted into whatever room the words leave
     if (show) {
       var rx0, rx1, ry0, ry1;
       if (portrait) {
         rx0 = left; rx1 = right;
-        ry0 = top + (hasRow ? lh + 0.03*H : 0);
-        // Measured to the top of the capitals, not the line box, so the gap
-        // above the headline is the gap you see.
-        var capTop = l1 ? (px2 ? px2*1.06 : 0) + px1*0.74 : px2*0.74;
-        ry1 = bottom - capTop - 0.035*H;
+        ry0 = top + (hasRow ? Math.max(lh, pillH) + 0.03*H : 0);
+        ry1 = wordsTop - 0.035*H;
       } else {
-        rx0 = cardsX; rx1 = right; ry0 = top; ry1 = bottom;
+        rx0 = cardsX; rx1 = right; ry1 = bottom;
+        ry0 = top + (pillTopRight ? Math.max(lh, pillH) + 0.02*H : 0);
       }
-      // Whichever arrangement comes out bigger in this room wins. 0.92 leaves
-      // room for the corners the tilt swings outward.
       var lay = null, u = 0;
       (state.phone ? [SHOWCASE.side, SHOWCASE.stack] : [SHOWCASE.alone]).forEach(function(l){
-        var fit = 0.92 * Math.min((rx1-rx0)/l.w, (ry1-ry0)/l.h);
-        if (fit > u) { u = fit; lay = l; }
+        var b = arrange(l);
+        // 0.92 leaves room for the corners the tilt swings outward.
+        var fit = 0.92 * Math.min((rx1-rx0)/b.w, (ry1-ry0)/b.h);
+        if (fit > u) { u = fit; lay = b; }
       });
-      var ox = portrait ? rx0 + ((rx1-rx0) - lay.w*u)/2 : rx1 - lay.w*u;
-      // Width runs out first in tall rooms. The spare height goes above the
-      // cards, under the logo row, so they sit on the headline.
-      var oy = portrait ? ry1 - lay.h*u : ry0 + ((ry1-ry0) - lay.h*u)/2;
       if (lay) {
-        drawWindow(c, ox + lay.win.x*u, oy + lay.win.y*u, lay.win.w*u, lay.win.h*u, lay.win.deg,
+        // Width runs out first in tall rooms. The spare height goes above the
+        // cards, under the logo row, so they sit on the headline.
+        var ox = portrait ? rx0 + ((rx1-rx0) - lay.w*u)/2 : rx1 - lay.w*u;
+        var oy = portrait ? ry1 - lay.h*u : ry0 + ((ry1-ry0) - lay.h*u)/2;
+        var wb = lay.win;
+        drawWindow(c, ox + wb.x*u, oy + wb.y*u, wb.w*u, wb.h*u, state.winTilt,
                    state.panX*W, state.panY*H);
-        if (state.phone) {
+        if (lay.phone) {
           var ph = lay.phone;
-          drawPhone(c, ox + ph.x*u, oy + ph.y*u, ph.w*u, ph.h*u, ph.deg);
+          drawPhone(c, ox + ph.x*u, oy + ph.y*u, ph.w*u, ph.h*u, state.phoneTilt);
           if (opts.preview) phoneHit = { x:ox + ph.x*u, y:oy + ph.y*u, w:ph.w*u, h:ph.h*u };
         }
       }
@@ -1447,7 +1628,8 @@
     for (var i = 0; i < layoutEls.length; i++) layoutEls[i].checked = (layoutEls[i].value === state.layout);
     showcaseFields.hidden = !show;
     phoneBits.hidden = !state.phone;
-    vigEl.disabled = show;
+    // Shading darkens a full picture; the showcase backdrop has its own glow.
+    document.getElementById('vigField').hidden = show;
     document.getElementById('layoutHint').textContent = LAYOUT_HINTS[state.layout];
     document.getElementById('imgLabel').textContent = show ? 'Window picture' : 'Image';
     syncPresetUI();
@@ -1468,6 +1650,29 @@
     el.value = state[id];
     el.addEventListener('input', function(){ state[id] = el.value; persist(); draw(); });
   });
+  // Every segmented choice and every slider in the grouped panels maps
+  // straight onto one state key: the radio group's name, or the slider's
+  // data-key. Sliders marked % store a fraction; the rest store degrees.
+  ['pillStyle','pillPos','winStyle','phoneSide','glow'].forEach(function(key){
+    var radios = document.querySelectorAll('input[name="' + key + '"]');
+    for (var i = 0; i < radios.length; i++) {
+      radios[i].checked = (radios[i].value === state[key]);
+      radios[i].addEventListener('change', function(e){
+        if (!e.target.checked) return;
+        state[key] = e.target.value; persist(); draw();
+      });
+    }
+  });
+  var sliders = document.querySelectorAll('input[type=range][data-key]');
+  for (var si = 0; si < sliders.length; si++) (function(el){
+    var key = el.dataset.key, pct = el.dataset.unit === '%';
+    function say(){ el.setAttribute('aria-valuetext', el.value + (pct ? '%' : ' degrees')); }
+    el.value = Math.round(pct ? state[key]*100 : state[key]); say();
+    el.addEventListener('input', function(){
+      state[key] = pct ? el.value/100 : +el.value; say(); persist(); draw();
+    });
+  })(sliders[si]);
+
   var showPhoneEl = document.getElementById('showPhone'), showDotsEl = document.getElementById('showDots');
   showPhoneEl.checked = state.phone; showDotsEl.checked = state.dots;
   showPhoneEl.addEventListener('change', function(){ state.phone = showPhoneEl.checked; syncLayout(); persist(); draw(); });
@@ -1504,16 +1709,19 @@
   document.getElementById('showSafe').addEventListener('change', function(e){
     state.safe = e.target.checked; safeNote.hidden = !state.safe; draw();
   });
+  function pick(keys){
+    var o = {};
+    keys.forEach(function(key){ o[key] = state[key]; });
+    return o;
+  }
   function persist(){
-    try{ localStorage.setItem('tf-state', JSON.stringify({
+    try{ localStorage.setItem('tf-state', JSON.stringify(Object.assign({
       line1:state.line1, line2:state.line2, preset:state.preset,
       customW:state.customW, customH:state.customH,
       line1Color:state.line1Color, palette:state.palette,
       customStops:state.customStops, logoSrc:state.logoSrc, derived:state.derived,
-      layout:state.layout, series:state.series, episode:state.episode,
-      winTitle:state.winTitle, phone:state.phone, cap1:state.cap1, cap2:state.cap2,
-      handle:state.handle, dots:state.dots
-    })); }catch(e){
+      phone:state.phone, dots:state.dots
+    }, pick(STR_KEYS.concat(NUM_KEYS))))); }catch(e){
       // A big custom logo can blow the storage quota. Losing the saved copy is
       // survivable; the logo stays put for this session either way.
     }

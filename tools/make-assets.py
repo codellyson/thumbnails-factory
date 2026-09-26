@@ -14,9 +14,9 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FONT = "/System/Library/Fonts/Supplemental/Arial Black.ttf"
 
-INK    = (20, 23, 22)
-MARK   = (255, 196, 0)
-BENCH  = (146, 150, 149)
+INK    = (35, 34, 31)      # --ink
+CANVAS = (252, 249, 245)   # --canvas
+ACCENT = (238, 123, 88)    # --accent
 STOPS  = [(185, 164, 255), (217, 162, 255), (255, 178, 122)]   # the house gradient
 
 
@@ -139,22 +139,24 @@ def make_card(path, w=1200, h=630):
 
 
 def make_icons():
-    """The mark is the size chart's active tile: a wide yellow frame."""
+    """The mark is the size chart's chosen tile: a wide frame, with the one
+    coral dot the page uses to say "you are here"."""
     (ROOT / "favicon.svg").write_text(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
-        '<rect width="64" height="64" rx="10" fill="#141716"/>'
-        '<rect x="10" y="21" width="44" height="25" rx="2" fill="#ffc400" '
-        'stroke="#141716" stroke-width="3"/>'
+        '<rect width="64" height="64" rx="14" fill="#23221f"/>'
+        '<rect x="10" y="20" width="44" height="25" rx="4" fill="#fcf9f5"/>'
+        '<circle cx="32" cy="53" r="3.5" fill="#ee7b58"/>'
         "</svg>\n"
     )
-    for size, name, bg in ((32, "favicon-32.png", INK), (180, "apple-touch-icon.png", BENCH)):
-        img = Image.new("RGB", (size, size), bg)
+    for size, name in ((32, "favicon-32.png"), (180, "apple-touch-icon.png")):
+        # Drawn at 8x and shrunk, so the rounded corners come out smooth.
+        S = size * 8
+        img = Image.new("RGB", (S, S), INK)
         d = ImageDraw.Draw(img)
-        tw, th = round(size * 0.69), round(size * 0.39)
-        x, y = (size - tw) // 2, (size - th) // 2
-        d.rectangle([x, y, x + tw, y + th], fill=MARK, outline=INK,
-                    width=max(1, round(size * 0.045)))
-        img.save(ROOT / name, "PNG", optimize=True)
+        u = S / 64
+        d.rounded_rectangle([10*u, 20*u, 54*u, 45*u], radius=4*u, fill=CANVAS)
+        d.ellipse([28.5*u, 49.5*u, 35.5*u, 56.5*u], fill=ACCENT)
+        img.resize((size, size), Image.LANCZOS).save(ROOT / name, "PNG", optimize=True)
 
 
 if __name__ == "__main__":

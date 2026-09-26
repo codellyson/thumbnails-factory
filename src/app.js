@@ -138,7 +138,7 @@
   var state = {
     preset:'youtube', customW:1280, customH:720,
     zoom:1.25, panX:0, panY:0, vig:0.7,
-    line1:'BUILDING', line2:'SHORTS FACTORY', logo:true, play:true, safe:false,
+    line1:'TYPE YOUR', line2:'HEADLINE HERE', logo:true, play:true, safe:false,
     line1Color:'#ffffff', palette:'kk', customStops:['#b9a4ff','#d9a2ff','#ffb27a'],
     logoSrc:null,  // null means the logo this tool ships with
     // Showcase layout: the image sits in a window on a dark backdrop, with an

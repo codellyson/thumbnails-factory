@@ -143,7 +143,7 @@
     logoSrc:null,  // null means the logo this tool ships with
     // Showcase layout: the image sits in a window on a dark backdrop, with an
     // optional phone beside it, instead of filling the frame.
-    layout:'bleed', series:'', episode:'', winTitle:'',
+    layout:'bleed', badge:'', winTitle:'', capColor:'#ffd23f',
     phone:true, cap1:'', cap2:'', handle:'', dots:true,
     pillStyle:'light', pillSize:1, pillPos:'logo',
     winStyle:'dark', winTurn:17, winTilt:-4,
@@ -154,7 +154,7 @@
 
   // The showcase settings, saved as they are. Kept as lists so persist() and
   // the restore below cannot drift apart.
-  var STR_KEYS = ['layout','series','episode','winTitle','cap1','cap2','handle',
+  var STR_KEYS = ['layout','badge','winTitle','cap1','cap2','capColor','handle',
                   'pillStyle','pillPos','winStyle','phoneSide','glow'];
   var NUM_KEYS = ['pillSize','winTurn','winTilt','phoneSize','phoneTilt','glowAmt'];
   try {
@@ -179,6 +179,11 @@
       if (typeof saved.phone === 'boolean') state.phone = saved.phone;
       if (typeof saved.dots === 'boolean') state.dots = saved.dots;
       if (state.layout === 'showcase') state.zoom = 1;
+      // Before the badge was free text it was a series name and an episode.
+      if (typeof saved.badge !== 'string' && (saved.series || saved.episode)) {
+        state.badge = [saved.series, saved.episode && /^\d+$/.test(saved.episode) ? 'EP ' + saved.episode : saved.episode]
+          .filter(Boolean).join(' · ');
+      }
     }
   } catch(e){}
 
@@ -422,7 +427,7 @@
         var ty = cy + i*cpx*1.08;
         c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = cpx*0.3;
         c.strokeText(t, cx, ty); noShadow(c);
-        c.fillStyle = i ? '#ffd23f' : '#ffffff';
+        c.fillStyle = i ? state.capColor : '#ffffff';
         c.fillText(t, cx, ty);
       });
       c.textAlign = 'left';
@@ -456,12 +461,10 @@
     c.restore();
   }
 
-  // The series tag beside the logo: "SHORTS FACTORY · EP 3". An episode typed
-  // as a bare number gets its EP prefix; anything else is used as written.
+  // The badge: a short label in a pill, whatever it says - NEW, PART 2, a
+  // series name. A dot typed between words gets room to breathe.
   function pillText(){
-    var s = state.series.trim().toUpperCase(), e = state.episode.trim().toUpperCase();
-    if (/^\d+$/.test(e)) e = 'EP ' + e;
-    return s && e ? s + '  ·  ' + e : (s || e);
+    return state.badge.trim().toUpperCase().replace(/\s*·\s*/g, '  ·  ');
   }
   function pillWidth(c, h){
     var t = pillText();
@@ -608,7 +611,7 @@
       c.restore();
     }
 
-    // logo row. The series tag sits beside the logo, at the top right, or
+    // logo row. The badge sits beside the logo, at the top right, or
     // just above the headline.
     var lh = 88*k, pillX = left, pillH = lh*0.56*state.pillSize, gap = 0.022*W;
     var hasPill = !!pillText();
@@ -935,7 +938,7 @@
   bind('line1', function(e){ state.line1 = e.target.value; persist(); draw(); });
   bind('line2', function(e){ state.line2 = e.target.value; persist(); draw(); });
 
-  // ---- layout, series tag and the showcase cards ------------------------
+  // ---- layout, badge and the showcase cards -----------------------------
   var LAYOUT_HINTS = {
     bleed: 'The image fills the frame.',
     showcase: 'The image sits in a window on a dark backdrop, with a phone beside it.'
@@ -965,7 +968,7 @@
       syncLayout(); persist(); draw();
     });
   }
-  ['series','episode','winTitle','cap1','cap2','handle'].forEach(function(id){
+  ['badge','winTitle','cap1','cap2','capColor','handle'].forEach(function(id){
     var el = document.getElementById(id);
     el.value = state[id];
     el.addEventListener('input', function(){ state[id] = el.value; persist(); draw(); });

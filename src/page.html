@@ -56,16 +56,11 @@
           <div class="stops" id="stops" hidden></div>
         </div>
         <details class="group" open>
-          <summary>Series tag</summary>
-          <div class="row">
-            <div class="field grow">
-              <label for="series">Series</label>
-              <input type="text" id="series" maxlength="28" autocomplete="off" placeholder="SHORTS FACTORY">
-            </div>
-            <div class="field narrow">
-              <label for="episode">Episode</label>
-              <input type="text" id="episode" maxlength="8" autocomplete="off" placeholder="3">
-            </div>
+          <summary>Badge</summary>
+          <div class="field">
+            <label for="badge">Text</label>
+            <input type="text" id="badge" maxlength="32" autocomplete="off" placeholder="NEW, PART 2, TUTORIAL…">
+            <p class="hint">A short label in a pill. Leave it empty for none.</p>
           </div>
           <fieldset class="field seg">
             <legend class="legend">Style</legend>
@@ -95,7 +90,7 @@
           <summary>Window</summary>
           <div class="field">
             <label for="winTitle">Title</label>
-            <input type="text" id="winTitle" maxlength="40" autocomplete="off" placeholder="transcript.json">
+            <input type="text" id="winTitle" maxlength="40" autocomplete="off" placeholder="index.html">
           </div>
           <fieldset class="field seg">
             <legend class="legend">Style</legend>
@@ -128,19 +123,22 @@
             <input type="file" id="phoneFile" accept="image/*" hidden>
             <div class="row">
               <div class="field">
-                <label for="cap1">Caption</label>
-                <input type="text" id="cap1" maxlength="18" autocomplete="off" placeholder="SO I'M">
+                <label for="cap1">Text on screen</label>
+                <input type="text" id="cap1" maxlength="18" autocomplete="off" placeholder="First line">
               </div>
               <div class="field">
-                <label for="cap2">Highlighted</label>
-                <input type="text" id="cap2" maxlength="18" autocomplete="off" placeholder="TRYING">
+                <label for="cap2">Accent line</label>
+                <div class="inline">
+                  <input type="text" id="cap2" maxlength="18" autocomplete="off" placeholder="Second line">
+                  <input type="color" id="capColor" value="#ffd23f" aria-label="Accent line colour">
+                </div>
               </div>
             </div>
             <div class="field">
               <label for="handle">Handle</label>
-              <input type="text" id="handle" maxlength="30" autocomplete="off" placeholder="@shortsfactory">
+              <input type="text" id="handle" maxlength="30" autocomplete="off" placeholder="@yourname">
             </div>
-            <label class="tog"><input type="checkbox" id="showDots" checked> Action buttons</label>
+            <label class="tog"><input type="checkbox" id="showDots" checked> Like and share buttons</label>
             <fieldset class="field seg">
               <legend class="legend">Side</legend>
               <div class="segs">

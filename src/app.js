@@ -278,20 +278,28 @@
     c.fillStyle = g2; c.fillRect(0, 0, W, H);
   }
 
-  // A desktop window: title bar, three lights, the image below. x,y,w,h is the
-  // unrotated box; it turns about its own centre.
-  function drawWindow(c, x, y, w, h, deg, panX, panY){
+  // A desktop window: title bar, three lights, the image below. The face is
+  // painted flat on its own canvas first, then laid onto the thumbnail turned
+  // away in depth (see drawTurned).
+  var faceCv = document.createElement('canvas');
+  function paintWindowFace(w, h, panX, panY){
+    var fw = Math.max(1, Math.ceil(w)), fh = Math.max(1, Math.ceil(h));
+    if (faceCv.width !== fw || faceCv.height !== fh) { faceCv.width = fw; faceCv.height = fh; }
+    var c = faceCv.getContext('2d');
+    c.clearRect(0, 0, fw, fh);
     var r = 0.022*w, bar = Math.max(10, 0.058*w);
     c.save();
-    c.translate(x + w/2, y + h/2); c.rotate(deg*Math.PI/180); c.translate(-w/2, -h/2);
-    c.shadowColor = 'rgba(0,0,0,.7)'; c.shadowBlur = 0.09*w; c.shadowOffsetY = 0.03*w;
-    roundRect(c, 0, 0, w, h, r); c.fillStyle = '#1b1c21'; c.fill();
-    noShadow(c);
-    c.save();
     roundRect(c, 0, 0, w, h, r); c.clip();
+    c.fillStyle = '#1b1c21'; c.fillRect(0, 0, w, h);
     cover(c, frame, 0, bar, w, h - bar, state.zoom, panX, panY);
     c.fillStyle = '#26272d'; c.fillRect(0, 0, w, bar);
     c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(0, bar - Math.max(1, bar*0.03), w, Math.max(1, bar*0.03));
+    // Light from the upper left, falling off toward the far edge: this is
+    // most of what sells the turn.
+    var lit = c.createLinearGradient(0, 0, w, h);
+    lit.addColorStop(0, 'rgba(255,255,255,.07)'); lit.addColorStop(0.4, 'rgba(255,255,255,0)');
+    lit.addColorStop(1, 'rgba(0,0,0,.28)');
+    c.fillStyle = lit; c.fillRect(0, 0, w, h);
     c.restore();
     var lr = bar*0.16, ly = bar/2;
     ['#ff5f57','#febc2e','#28c840'].forEach(function(col, i){
@@ -304,8 +312,46 @@
       c.fillText(state.winTitle, bar*0.5 + lr*9.5, ly, w - bar*2 - lr*10);
     }
     roundRect(c, 0.5, 0.5, w-1, h-1, r);
-    c.strokeStyle = 'rgba(255,255,255,.1)'; c.lineWidth = Math.max(1, w*0.0015); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,.14)'; c.lineWidth = Math.max(1, w*0.0018); c.stroke();
+    return faceCv;
+  }
+
+  // Lays a flat face onto the canvas turned about its vertical axis, near edge
+  // on the left, the way CSS rotateY with perspective would. Canvas 2D has no
+  // projective transform, so the face goes down in thin vertical strips, each
+  // scaled by its own depth. The result is scaled back up to the box's width
+  // and centred on it, so the layout code can treat it as an ordinary box.
+  var TURN = 17*Math.PI/180, FOCAL = 2.2;
+  function drawTurned(c, face, x, y, w, h, deg){
+    var f = FOCAL*w, sin = Math.sin(TURN), cos = Math.cos(TURN);
+    function at(u){ var z = u*sin, sc = f/(f + z); return { x:u*cos*sc, s:sc }; }
+    var L = at(-w/2), R = at(w/2);
+    var fit = w / (R.x - L.x), mid = (L.x + R.x)/2;
+    function px(u){ var q = at(u); return { x:(q.x - mid)*fit, s:q.s*fit }; }
+    // Cast from an outline pulled in off the rounded corners, so none of its
+    // square corners peek out from behind the face.
+    var ins = 0.016*w, tl = px(-w/2 + ins), tr = px(w/2 - ins), ih = h - 2*ins;
+
+    c.save();
+    c.translate(x + w/2, y + h/2); c.rotate(deg*Math.PI/180);
+    c.shadowColor = 'rgba(0,0,0,.75)'; c.shadowBlur = 0.1*w; c.shadowOffsetY = 0.035*w;
+    c.beginPath();
+    c.moveTo(tl.x, -ih*tl.s/2); c.lineTo(tr.x, -ih*tr.s/2);
+    c.lineTo(tr.x, ih*tr.s/2); c.lineTo(tl.x, ih*tl.s/2); c.closePath();
+    c.fillStyle = '#15161a'; c.fill();
+    noShadow(c);
+    c.imageSmoothingQuality = 'high';
+    var n = Math.max(24, Math.min(480, Math.ceil(w/2))), sw = face.width/n;
+    for (var i = 0; i < n; i++) {
+      var a = px(-w/2 + i*w/n), b = px(-w/2 + (i+1)*w/n);
+      var dh = h * (a.s + b.s)/2;
+      // Half a pixel of overlap hides the seams between strips.
+      c.drawImage(face, i*sw, 0, sw, face.height, a.x, -dh/2, b.x - a.x + 0.5, dh);
+    }
     c.restore();
+  }
+  function drawWindow(c, x, y, w, h, deg, panX, panY){
+    drawTurned(c, paintWindowFace(w, h, panX, panY), x, y, w, h, deg);
   }
 
   // A phone playing a Short: frame, island, the picture, and optionally the
@@ -315,11 +361,19 @@
     var r = 0.16*w, bez = 0.035*w, sw = w - 2*bez, sh = h - 2*bez;
     c.save();
     c.translate(x + w/2, y + h/2); c.rotate(deg*Math.PI/180); c.translate(-w/2, -h/2);
+    // side buttons, behind the body so only their outer edge shows
+    c.fillStyle = '#2c2d32';
+    [[-1, 0.2, 0.05], [-1, 0.29, 0.09], [-1, 0.4, 0.09], [1, 0.3, 0.13]].forEach(function(b){
+      roundRect(c, b[0] < 0 ? -w*0.012 : w - w*0.008, h*b[1], w*0.02, h*b[2], w*0.008); c.fill();
+    });
     c.shadowColor = 'rgba(0,0,0,.75)'; c.shadowBlur = 0.2*w; c.shadowOffsetY = 0.07*w;
     roundRect(c, 0, 0, w, h, r); c.fillStyle = '#0c0c0e'; c.fill();
     noShadow(c);
+    // The frame catches the same upper-left light as the window.
+    var rim = c.createLinearGradient(0, 0, w, h);
+    rim.addColorStop(0, '#6a6b72'); rim.addColorStop(0.35, '#34353a'); rim.addColorStop(1, '#232428');
     roundRect(c, w*0.006, w*0.006, w - w*0.012, h - w*0.012, r);
-    c.strokeStyle = '#3a3b40'; c.lineWidth = w*0.012; c.stroke();
+    c.strokeStyle = rim; c.lineWidth = w*0.012; c.stroke();
 
     c.save();
     roundRect(c, bez, bez, sw, sh, r - bez); c.clip();
@@ -361,6 +415,11 @@
       c.fillText(handle, bez + sw*0.07, bez + sh*0.94, sw*0.7);
       noShadow(c);
     }
+    // glass: a faint diagonal sheen across the upper part of the screen
+    var sheen = c.createLinearGradient(bez, bez, bez + sw*0.9, bez + sh*0.5);
+    sheen.addColorStop(0, 'rgba(255,255,255,.1)'); sheen.addColorStop(0.5, 'rgba(255,255,255,.03)');
+    sheen.addColorStop(0.5001, 'rgba(255,255,255,0)');
+    c.fillStyle = sheen; c.fillRect(bez, bez, sw, sh);
     c.restore();
 
     // island
@@ -396,9 +455,9 @@
   // window's lower right corner and leans the other way.
   // Tall rooms get the stacked version, with the phone hanging lower and bigger.
   var SHOWCASE = {
-    side:  { w:1.1, h:1.02, win:{ x:0, y:0.02, w:1, h:0.74, deg:-3 }, phone:{ x:0.66, y:0.2, w:0.42, h:0.8, deg:6 } },
-    stack: { w:1,   h:1.3,  win:{ x:0, y:0.02, w:1, h:0.72, deg:-3 }, phone:{ x:0.5, y:0.42, w:0.45, h:0.86, deg:6 } },
-    alone: { w:1,   h:0.78, win:{ x:0, y:0.02, w:1, h:0.74, deg:-3 } }
+    side:  { w:1.1, h:1.02, win:{ x:0, y:0.02, w:1, h:0.74, deg:-4 }, phone:{ x:0.66, y:0.2, w:0.42, h:0.8, deg:6 } },
+    stack: { w:1,   h:1.3,  win:{ x:0, y:0.02, w:1, h:0.72, deg:-4 }, phone:{ x:0.5, y:0.42, w:0.45, h:0.86, deg:6 } },
+    alone: { w:1,   h:0.78, win:{ x:0, y:0.02, w:1, h:0.74, deg:-4 } }
   };
 
   // ---- renderer ---------------------------------------------------------

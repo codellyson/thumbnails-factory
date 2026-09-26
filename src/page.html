@@ -20,6 +20,11 @@
         <span class="what" id="what">YouTube thumbnail</span>
         <span class="dims" id="dims">1280 &times; 720</span>
       </p>
+      <section class="feed" id="feed" aria-labelledby="feedTitle" hidden>
+        <h3 id="feedTitle">At feed size</h3>
+        <p class="hint">Shown at the size people scroll past it. If the words are hard to read here, make them fewer or bigger.</p>
+        <div class="feedrow" id="feedRow"></div>
+      </section>
       <div class="howto" id="howto">
         <p>Drag the image to move it inside the frame, or focus it and use the arrow keys.</p>
         <p>Paste a screenshot with &#8984;V, or drop a file anywhere on the preview.</p>
@@ -29,36 +34,175 @@
     <div class="bench">
       <h2 class="sr-only">Options</h2>
       <div class="fields">
+        <fieldset class="field seg">
+          <legend class="legend">Layout</legend>
+          <div class="segs">
+            <label><input type="radio" name="layout" value="bleed"> Full picture</label>
+            <label><input type="radio" name="layout" value="showcase"> Showcase</label>
+          </div>
+          <p class="hint" id="layoutHint">The image fills the frame.</p>
+        </fieldset>
         <div class="field">
           <span class="legend" id="imgLabel">Image</span>
           <button class="btn" id="pick" aria-describedby="imgLabel">Choose an image</button>
           <input type="file" id="file" accept="image/*" hidden>
-        </div>
-        <div class="field">
-          <label for="line1">Top line</label>
-          <div class="inline">
-            <input type="text" id="line1" value="BUILDING" maxlength="24" autocomplete="off">
-            <input type="color" id="line1Color" value="#ffffff" aria-label="Top line colour">
-          </div>
-        </div>
-        <div class="field">
-          <label for="line2">Bottom line</label>
-          <input type="text" id="line2" value="SHORTS FACTORY" maxlength="24" autocomplete="off">
-          <div class="palettes" id="palettes" role="radiogroup" aria-label="Bottom line colour"></div>
-          <div class="stops" id="stops" hidden></div>
         </div>
         <div class="row">
           <div class="field">
             <label for="zoom">Zoom</label>
             <input type="range" id="zoom" min="100" max="250" value="125">
           </div>
-          <div class="field">
+          <div class="field" id="vigField">
             <label for="vig">Shading</label>
             <input type="range" id="vig" min="0" max="100" value="70">
           </div>
         </div>
         <div class="field">
-          <span class="legend" id="logoLabel">Logo</span>
+          <label for="line1">Top line</label>
+          <div class="inline">
+            <input type="text" id="line1" value="TYPE YOUR" maxlength="24" autocomplete="off">
+            <input type="color" id="line1Color" value="#ffffff" aria-label="Top line colour">
+          </div>
+        </div>
+        <div class="field">
+          <label for="line2">Bottom line</label>
+          <input type="text" id="line2" value="HEADLINE HERE" maxlength="24" autocomplete="off">
+          <div class="palettes" id="palettes" role="radiogroup" aria-label="Bottom line colour"></div>
+          <div class="stops" id="stops" hidden></div>
+        </div>
+        <details class="group" name="panel">
+          <summary>Badge</summary>
+          <div class="field">
+            <label for="badge">Text</label>
+            <input type="text" id="badge" maxlength="32" autocomplete="off" placeholder="NEW, PART 2, TUTORIAL…">
+            <p class="hint">A short label in a pill. Leave it empty for none.</p>
+          </div>
+          <fieldset class="field seg">
+            <legend class="legend">Style</legend>
+            <div class="segs">
+              <label><input type="radio" name="pillStyle" value="light"> Light</label>
+              <label><input type="radio" name="pillStyle" value="dark"> Dark</label>
+              <label><input type="radio" name="pillStyle" value="outline"> Outline</label>
+              <label><input type="radio" name="pillStyle" value="brand"> Colour</label>
+            </div>
+          </fieldset>
+          <fieldset class="field seg">
+            <legend class="legend">Position</legend>
+            <div class="segs">
+              <label><input type="radio" name="pillPos" value="logo"> By logo</label>
+              <label><input type="radio" name="pillPos" value="right"> Top right</label>
+              <label><input type="radio" name="pillPos" value="headline"> On headline</label>
+            </div>
+          </fieldset>
+          <div class="field">
+            <label for="pillSize">Size</label>
+            <input type="range" id="pillSize" data-key="pillSize" data-unit="%" min="70" max="160">
+          </div>
+        </details>
+
+        <div class="showcase" id="showcaseFields" hidden>
+        <details class="group" name="panel">
+          <summary>Window</summary>
+          <div class="field">
+            <label for="winTitle">Title</label>
+            <input type="text" id="winTitle" maxlength="40" autocomplete="off" placeholder="index.html">
+          </div>
+          <fieldset class="field seg">
+            <legend class="legend">Style</legend>
+            <div class="segs">
+              <label><input type="radio" name="winStyle" value="dark"> Dark</label>
+              <label><input type="radio" name="winStyle" value="light"> Light</label>
+              <label><input type="radio" name="winStyle" value="plain"> No frame</label>
+            </div>
+          </fieldset>
+          <div class="row">
+            <div class="field">
+              <label for="winTurn">Turn</label>
+              <input type="range" id="winTurn" data-key="winTurn" data-unit="°" min="0" max="35">
+            </div>
+            <div class="field">
+              <label for="winTilt">Tilt</label>
+              <input type="range" id="winTilt" data-key="winTilt" data-unit="°" min="-12" max="12">
+            </div>
+          </div>
+        </details>
+
+        <details class="group" name="panel">
+          <summary id="phoneLabel">Phone</summary>
+          <label class="tog"><input type="checkbox" id="showPhone" checked> Show a phone beside the window</label>
+          <div class="phonebits" id="phoneBits">
+            <div class="logobtns">
+              <button class="btn btn-sm" id="phonePick" aria-describedby="phoneLabel">Choose phone picture</button>
+              <button class="btn btn-sm" id="phoneReset" hidden>Remove picture</button>
+            </div>
+            <input type="file" id="phoneFile" accept="image/*" hidden>
+            <p class="hint">Drag on the phone to move its picture.</p>
+            <div class="field">
+              <label for="phoneZoom">Zoom</label>
+              <input type="range" id="phoneZoom" data-key="phoneZoom" data-unit="%" min="100" max="250">
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="cap1">Text on screen</label>
+                <input type="text" id="cap1" maxlength="18" autocomplete="off" placeholder="First line">
+              </div>
+              <div class="field">
+                <label for="cap2">Accent line</label>
+                <div class="inline">
+                  <input type="text" id="cap2" maxlength="18" autocomplete="off" placeholder="Second line">
+                  <input type="color" id="capColor" value="#ffd23f" aria-label="Accent line colour">
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label for="handle">Handle</label>
+              <input type="text" id="handle" maxlength="30" autocomplete="off" placeholder="@yourname">
+            </div>
+            <label class="tog"><input type="checkbox" id="showDots" checked> Like and share buttons</label>
+            <fieldset class="field seg">
+              <legend class="legend">Side</legend>
+              <div class="segs">
+                <label><input type="radio" name="phoneSide" value="left"> Left</label>
+                <label><input type="radio" name="phoneSide" value="right"> Right</label>
+              </div>
+            </fieldset>
+            <div class="row">
+              <div class="field">
+                <label for="phoneSize">Size</label>
+                <input type="range" id="phoneSize" data-key="phoneSize" data-unit="%" min="70" max="130">
+              </div>
+              <div class="field">
+                <label for="phoneTilt">Tilt</label>
+                <input type="range" id="phoneTilt" data-key="phoneTilt" data-unit="°" min="-15" max="15">
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="group" name="panel">
+          <summary>Backdrop</summary>
+          <fieldset class="field seg">
+            <legend class="legend">Glow</legend>
+            <div class="segs">
+              <label><input type="radio" name="glow" value="image"> Picture</label>
+              <label><input type="radio" name="glow" value="palette"> Colours</label>
+              <label><input type="radio" name="glow" value="none"> None</label>
+            </div>
+          </fieldset>
+          <div class="field">
+            <label for="glowAmt">Strength</label>
+            <input type="range" id="glowAmt" data-key="glowAmt" data-unit="%" min="0" max="100">
+          </div>
+          <div class="logobtns">
+            <button class="btn btn-sm" id="bgPick">Choose backdrop picture</button>
+            <button class="btn btn-sm" id="bgReset" hidden>Use the window picture</button>
+          </div>
+          <input type="file" id="bgFile" accept="image/*" hidden>
+        </details>
+        </div>
+
+        <details class="group" name="panel">
+          <summary id="logoLabel">Logo</summary>
           <div class="logorow">
             <span class="logopreview"><img id="logoThumb" alt="The logo on your thumbnail"></span>
             <div class="logobtns">
@@ -68,11 +212,12 @@
           </div>
           <label class="tog"><input type="checkbox" id="showLogo" checked> Show it on the thumbnail</label>
           <input type="file" id="logoFile" accept="image/*" hidden>
-        </div>
+        </details>
       </div>
 
       <div class="toggles">
         <label class="tog" id="playTog"><input type="checkbox" id="showPlay" checked> Play badge</label>
+        <label class="tog"><input type="checkbox" id="showFeed"> Show at feed size</label>
         <label class="tog"><input type="checkbox" id="showSafe"> Show safe areas</label>
         <p class="note" id="safeNote" hidden>Keep the text and logo inside the dashed box. Everything outside it can be covered by the app's own buttons and captions. The box is not saved with the image.</p>
       </div>

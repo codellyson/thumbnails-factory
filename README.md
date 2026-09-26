@@ -55,6 +55,48 @@ The social card is built the way the tool builds a thumbnail — same painted
 backdrop, same vignette, same gradient on the lower line — so it stays honest
 about what the page produces. The icon is the size chart's active tile.
 
+## Layouts
+
+**Full picture** fills the frame with the image, darkens the bottom, and sets the
+headline over it.
+
+**Showcase** is for build and tutorial videos. The image goes into a desktop
+window (title bar, three lights, an optional title), turned away in perspective,
+on a dark backdrop lit by a blurred copy of the same image. Beside it sits an optional phone playing a Short:
+its own picture, or the main image if none is given, with a two-line caption
+(the second line highlighted), a handle and the action buttons, each optional.
+The window takes the picture's own shape (held between 1.2:1 and 2.2:1), so a
+screenshot shows whole instead of cut mid-line. The window, the phone and the
+backdrop each take their own picture: the phone shows an empty tinted screen until
+it gets one, and the backdrop glow falls back to the window's picture. Drop a file on the phone to set its picture,
+and drag on either screen to reframe just that one. The headline takes the left half in
+landscape and runs under the cards in tall and square sizes; the window and phone
+switch between side-by-side and stacked, whichever comes out bigger in the room
+left over. The play badge is full-picture only.
+
+On a YouTube thumbnail the bottom-right corner belongs to the video's length.
+The showcase pieces and the play badge are kept out of it, and **Show safe areas**
+draws a stand-in timestamp there.
+
+Both layouts take a **badge**: any short label in a pill, such as `NEW`,
+`PART 2` or a series name. Leave it empty for none.
+
+Each piece has its own panel. Only one panel is open at a time, and on a wide
+screen the preview stays in view while you scroll the controls:
+
+| Panel | Controls |
+| --- | --- |
+| Badge | text, style (light, dark, outline, headline colours), position (by the logo, top right, on the headline), size |
+| Window | title, style (dark, light, no frame), turn in depth, tilt |
+| Phone | picture, zoom, two lines of on-screen text with an accent colour, handle, like and share buttons, side, size, tilt |
+| Backdrop | glow from a picture (its own, or the window's), from the headline colours, or none, and its strength |
+
+**Show at feed size** puts the thumbnail beside the editor at the size people
+actually meet it: 168 px wide in YouTube's suggested list, 124 px in a TikTok or
+Instagram profile grid, 64 px in a podcast app, and so on for each size. Each is
+drawn from the same render that downloads, shrunk in steps so small text looks as
+it will, not better or worse.
+
 ## Platforms
 
 | Preset | Size |

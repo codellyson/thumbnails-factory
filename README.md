@@ -128,7 +128,7 @@ screen the preview stays in view while you scroll the controls:
 
 | Panel | Controls |
 | --- | --- |
-| Badge | text, style (light, dark, outline, headline colours), position (by the logo, top right, on the headline), size |
+| Badge | text, style (tag in the accent, light, dark, headline colours), position (by the logo, top right, on the headline), size |
 | Window | title, style (dark, light, no frame), turn in depth, tilt |
 | Phone | picture, zoom, two lines of on-screen text with an accent colour, handle, like and share buttons, side, size, tilt |
 | Backdrop | glow from a picture (its own, or the window's), from the headline colours, or none, and its strength |

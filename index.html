@@ -620,10 +620,10 @@
           <fieldset class="field seg" data-for="bleed showcase">
             <legend class="legend">Style</legend>
             <div class="segs">
-              <label><input type="radio" name="pillStyle" value="light"> Light</label>
-              <label><input type="radio" name="pillStyle" value="dark"> Dark</label>
-              <label><input type="radio" name="pillStyle" value="outline"> Outline</label>
-              <label><input type="radio" name="pillStyle" value="brand"> Colour</label>
+              <label><input type="radio" name="badgeStyle" value="tag"> Tag</label>
+              <label><input type="radio" name="badgeStyle" value="light"> Light</label>
+              <label><input type="radio" name="badgeStyle" value="dark"> Dark</label>
+              <label><input type="radio" name="badgeStyle" value="brand"> Colour</label>
             </div>
           </fieldset>
           <fieldset class="field seg" data-for="bleed showcase">
@@ -1023,7 +1023,7 @@
     phone:true, cap1:'', cap2:'', handle:'', dots:true, feed:false,
     kick1:'YOUR CHANNEL', kick2:'EPISODE 01', sticker:'',   // Launch and Before -> After
     headFont:'archivo-black', monoFont:'jetbrains',
-    pillStyle:'light', pillSize:1, pillPos:'logo',
+    badgeStyle:'tag', pillSize:1, pillPos:'logo',   // badgeStyle replaced pillStyle when the tag became the default
     winStyle:'dark', winTurn:17, winTilt:-4,
     phoneSide:'right', phoneSize:1, phoneTilt:6,
     glow:'image', glowAmt:0.6,
@@ -1034,7 +1034,7 @@
   // The showcase settings, saved as they are. Kept as lists so persist() and
   // the restore below cannot drift apart.
   var STR_KEYS = ['layout','badge','winTitle','cap1','cap2','capColor','handle',
-                  'pillStyle','pillPos','winStyle','phoneSide','glow','kick1','kick2','sticker','headFont','monoFont'];
+                  'badgeStyle','pillPos','winStyle','phoneSide','glow','kick1','kick2','sticker','headFont','monoFont'];
   var NUM_KEYS = ['pillSize','winTurn','winTilt','phoneSize','phoneTilt','glowAmt'];
   try {
     var saved = JSON.parse(localStorage.getItem('tf-state') || 'null');
@@ -1430,21 +1430,31 @@
   function pillWidth(c, h){
     var t = pillText();
     if (!t) return 0;
-    c.font = headlineFont(h*0.44);
-    return c.measureText(t).width + h*0.84;
+    var tag = state.badgeStyle === 'tag';
+    c.font = headlineFont(h*(tag ? 0.5 : 0.44));
+    return c.measureText(t).width + h*(tag ? 0.9 : 0.84);
   }
   // Light and Brand are solid, so they hold up on any backdrop. Dark and
   // Outline are quieter and lean on the backdrop being dark.
   function drawPill(c, x, cy, h){
     var t = pillText();
     if (!t) return 0;
-    var fpx = h*0.44, w = pillWidth(c, h), pad = h*0.42, style = state.pillStyle, ink = '#121316';
+    var style = state.badgeStyle, w = pillWidth(c, h), ink = '#121316';
+    // The tag: an outline and letters in the accent, corners only softened,
+    // no shadow - it labels the thumbnail without competing with the words.
+    if (style === 'tag') {
+      var A = accent();
+      roundRect(c, x, cy - h/2, w, h, h*0.2);
+      c.lineWidth = Math.max(1.5, h*0.06); c.strokeStyle = A; c.stroke();
+      c.font = headlineFont(h*0.5); c.fillStyle = A; c.textBaseline = 'middle';
+      c.fillText(t, x + h*0.45, cy + h*0.04);
+      c.textBaseline = 'alphabetic';
+      return w;
+    }
+    var fpx = h*0.44, pad = h*0.42;
     c.font = headlineFont(fpx);
     roundRect(c, x, cy - h/2, w, h, h/2);
-    if (style === 'outline') {
-      c.lineWidth = Math.max(1.5, h*0.055); c.strokeStyle = 'rgba(255,255,255,.92)'; c.stroke();
-      ink = '#ffffff';
-    } else {
+    {
       c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = h*0.3; c.shadowOffsetY = h*0.08;
       if (style === 'dark') { c.fillStyle = 'rgba(18,19,24,.88)'; ink = '#ffffff'; }
       else if (style === 'brand') {
@@ -2510,7 +2520,7 @@
     var radios = document.querySelectorAll('input[name="' + key + '"]');
     for (var i = 0; i < radios.length; i++) radios[i].checked = (radios[i].value === state[key]);
   }
-  ['pillStyle','pillPos','winStyle','phoneSide','glow'].forEach(function(key){
+  ['badgeStyle','pillPos','winStyle','phoneSide','glow'].forEach(function(key){
     syncRadios(key);
     var radios = document.querySelectorAll('input[name="' + key + '"]');
     for (var i = 0; i < radios.length; i++) {

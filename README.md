@@ -83,8 +83,9 @@ the screenshot in a window framed in the accent. It adds an outlined tag (the
 badge text), a sticker in the window's title bar, and a dot-grid backdrop.
 
 **Before → After** splits the frame on a diagonal: the dim "before" word over the
-before picture on the dark side, and an arrow and the "after" word over the after
-picture, in a card with a hard offset shadow, on the palette side. Tall and square
+before picture on the dark side, and the "after" word over the after picture, in a
+card with a hard offset shadow, on the palette side. An arrow in a dark disc sits
+on the split between them. Tall and square
 sizes split top and bottom, with the split centred on the room left after the
 kicker and the platform's bottom strip.
 

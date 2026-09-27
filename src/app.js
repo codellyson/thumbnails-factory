@@ -1112,7 +1112,9 @@
     // Wide: the words in the left column, centred in the height below the
     // kicker. Otherwise the words sit at the bottom and the window takes the
     // room between them and the kicker.
-    var capTop = g.wide ? textTop + Math.max(0, (g.bottom - textTop - blockH)/2) : g.bottom - blockH;
+    // Wide: the words centre on the same band as the window - the full safe
+    // height - and only drop when the kicker is in the way.
+    var capTop = g.wide ? Math.max(textTop, g.top + (g.bottom - g.top - blockH)/2) : g.bottom - blockH;
     if (tagH) { drawTag(c, g.left, capTop, tagH); capTop += tagH + 0.035*H; }
     var base = capTop;
     if (l1) {
@@ -1137,6 +1139,7 @@
     var r = g.wide
       ? fitBox(g, g.left + (g.right - g.left)*0.5, g.top, g.right, g.bottom, winAspect, 0.94)
       : fitBox(g, g.left, textTop, g.right, capTop - (tagH ? tagH + 0.035*H : 0) - 0.05*H, winAspect, 0.94);
+    if (!g.wide) r.x = g.left;   // stacked: on the words' edge, not centred
     if (r.w > 0) drawLaunchWindow(c, r.x, r.y, r.w, r.h, state.winTilt, state.panX*W, state.panY*H);
   }
 
@@ -1189,7 +1192,7 @@
     // equal cards, so the comparison is fair
     var cw = Math.min(ra.w, rb.w), ch = cw / aspect;
     ra = { x:A.x0, y:cardTop(A), w:cw, h:ch };
-    rb = { x:g.wide ? B.x1 - cw - 12*k : B.x0, y:cardTop(B), w:cw, h:ch };
+    rb = { x:B.x0, y:cardTop(B), w:cw, h:ch };   // on the after word's edge, as the before card is on its own
 
     // words
     c.textBaseline = 'alphabetic';

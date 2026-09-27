@@ -45,7 +45,7 @@
   .home img{ display:block; }   /* the SVG carries its own corners */
   .home span{ font-size:16px; font-weight:600; letter-spacing:-.02em; }
   .home:focus-visible{ outline:2px solid var(--ink); outline-offset:4px; border-radius:6px; }
-  header nav{ margin-left:auto; display:flex; gap:6px; }
+  header nav{ margin-inline-start:auto; display:flex; gap:6px; }
   header nav a{
     position:relative; color:var(--muted); font-size:15px; font-weight:500; text-decoration:none;
     padding:8px 12px; border-radius:var(--pill); transition:color .14s linear, background-color .14s linear;
@@ -55,7 +55,7 @@
   /* the current page gets a small coral dot, the one bit of colour up here */
   header nav a[aria-current="page"]::after{
     content:""; position:absolute; left:50%; bottom:1px; width:5px; height:5px;
-    margin-left:-2.5px; border-radius:50%; background:var(--accent);
+    transform:translateX(-50%); border-radius:50%; background:var(--accent);   /* centred: same either way round */
   }
   header nav a:focus-visible{ outline:2px solid var(--ink); outline-offset:1px; }
 
@@ -70,7 +70,7 @@
   .prose{ max-width:68ch; }
   .prose h2{ font-size:22px; font-weight:500; letter-spacing:-.03em; margin:34px 0 10px; }
   .prose p, .prose li{ font-size:16px; margin:0 0 14px; }
-  .prose ul{ margin:0 0 16px; padding-left:20px; }
+  .prose ul{ margin:0 0 16px; padding-inline-start:20px; }
   .prose li{ margin:0 0 6px; }
   .prose li::marker{ color:var(--accent); }
   .prose code{ font-size:14px; background:var(--cream); padding:2px 6px; border-radius:6px; }
@@ -144,7 +144,7 @@
     padding:14px 4px 0; margin:0;
   }
   .readout .what{ font-weight:600; letter-spacing:-.01em; }
-  .readout .dims{ margin-left:auto; color:var(--muted); }
+  .readout .dims{ margin-inline-start:auto; color:var(--muted); }
   .howto{ margin:10px 4px 0; max-width:56ch; color:var(--muted); font-size:14px; }
   .howto p{ margin:0 0 3px; }
 
@@ -172,7 +172,6 @@
   .bench h2, .sizegroup h2{
     font-size:13px; font-weight:500; margin:0 0 10px; color:var(--muted);
   }
-  .rule{ height:1px; background:var(--line-strong); }
 
   /* ---- size chart: the point of the page ---- */
   .sizes{
@@ -182,7 +181,7 @@
     padding:18px 0 20px; margin:0 0 26px; min-width:0;
   }
   .sizegroup{ min-width:0; }
-  .sizegroup + .sizegroup{ border-left:1px solid var(--line); padding-left:28px; margin-left:0; }
+  .sizegroup + .sizegroup{ border-inline-start:1px solid var(--line); padding-inline-start:28px; margin-inline-start:0; }
   .tiles{ display:flex; flex-wrap:wrap; gap:14px; max-width:286px; }
   .tile{ width:86px; }
   .sizegroup.customgroup .tile{ width:54px; }
@@ -246,7 +245,7 @@
   .fields [hidden], .toggles [hidden]{ display:none !important; }
 
   /* template picker: a live preview of each, your content in its arrangement */
-  .tpls{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .tpls{ display:grid; grid-template-columns:1fr 1fr; gap:14px 10px; }
   .tpl{ position:relative; display:flex; flex-direction:column; gap:6px; cursor:pointer; font-size:13px; font-weight:500; color:var(--muted); }
   .tpl input{ position:absolute; opacity:0; width:1px; height:1px; }
   .tpl canvas{
@@ -279,10 +278,12 @@
   .showcase[hidden], .phonebits[hidden]{ display:none; }
   .phonebits{ display:flex; flex-direction:column; gap:12px; margin-top:4px; }
   .group{ border-top:1px solid var(--line-strong); padding-top:12px; display:flex; flex-direction:column; gap:14px; }
+  /* a panel's first control hangs closer to its title than controls sit to each other */
+  .group[open] > summary + *{ margin-top:-4px; }
   .group > summary{ font-size:14px; font-weight:500; cursor:pointer;
     list-style:none; display:flex; align-items:center; gap:8px; min-height:28px; }
   .group > summary::-webkit-details-marker{ display:none; }
-  .group > summary::after{ content:""; margin-left:auto; width:6px; height:6px; border:solid var(--muted);
+  .group > summary::after{ content:""; margin-inline-start:auto; width:6px; height:6px; border:solid var(--muted);
     border-width:0 1.5px 1.5px 0; transform:translateY(-2px) rotate(45deg); transition:transform .16s cubic-bezier(0.2, 0, 0, 1); }
   .group[open] > summary::after{ transform:translateY(1px) rotate(-135deg); }
   .group[open] > summary{ font-weight:600; }
@@ -308,7 +309,7 @@
   .tog{ display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer; min-height:24px; }
   .tog input{ width:16px; height:16px; margin:0; accent-color:var(--ink); }
   .tog.off{ opacity:.45; cursor:default; }
-  .note{ font-size:12.5px; margin:-2px 0 0 26px; max-width:34ch; color:var(--muted); }
+  .note{ font-size:12.5px; margin:-2px 0 0; margin-inline-start:26px; max-width:34ch; color:var(--muted); }
   .note[hidden]{ display:none; }
 
   /* ---- brand controls ---- */
@@ -389,7 +390,15 @@
     .btn:disabled:hover{ box-shadow:0 0 0 1px var(--line-strong); }
     .btn-go:disabled:hover{ box-shadow:none; opacity:.45; }
   }
-  .actions{ display:flex; flex-direction:column; gap:10px; }
+  /* The one decisive action stays in reach however long the panel gets: it
+     rides the bottom of the view while the controls above it scroll. */
+  .actions{
+    display:flex; flex-direction:column; gap:10px;
+    position:sticky; bottom:0; z-index:2; margin:8px -20px -20px;
+    padding:14px 20px calc(20px + env(safe-area-inset-bottom));
+    background:var(--cream); border-radius:0 0 var(--r-panel) var(--r-panel);
+    box-shadow:0 -10px 16px -12px rgb(35 34 31 / .18);
+  }
 
   .status{ font-size:13px; min-height:19px; font-weight:500; color:var(--muted); }
   .status.ok{ color:var(--ok); }
@@ -407,7 +416,7 @@
   .sizeref h2{ font-size:22px; font-weight:500; letter-spacing:-.03em; margin:0 0 8px; }
   .sizeref > p{ margin:0 0 18px; max-width:66ch; font-size:15.5px; color:var(--muted); }
   .sizeref table{ border-collapse:collapse; width:100%; font-size:14.5px; }
-  .sizeref th, .sizeref td{ text-align:left; padding:11px 14px 11px 0; vertical-align:top;
+  .sizeref th, .sizeref td{ text-align:start; padding-block:11px; padding-inline:0 14px; vertical-align:top;
     border-bottom:1px solid var(--line); }
   .sizeref thead th{ font-size:12.5px; font-weight:500; color:var(--muted); }
   .sizeref tbody th{ font-weight:500; }
@@ -447,13 +456,21 @@
     /* one scrolling row, so the preview is still on the first screen */
     .sizes{ flex-wrap:nowrap; overflow-x:auto; gap:0 18px; padding-bottom:14px; }
     .sizegroup{ flex:0 0 auto; }
-    .sizegroup + .sizegroup{ padding-left:18px; }
+    .sizegroup + .sizegroup{ padding-inline-start:18px; }
     .tiles{ flex-wrap:nowrap; max-width:none; gap:12px; }
     .customgroup .row{ width:150px; }
     .canvas-wrap{ min-height:0; padding:10px; border-radius:16px; }
     canvas{ border-radius:6px; }
     .bench{ border-radius:24px; padding:16px; }
+    .actions{ margin:8px -16px -16px; padding:12px 16px calc(16px + env(safe-area-inset-bottom)); border-radius:0 0 24px 24px; }
     header{ margin-bottom:28px; }
+    /* One column: the preview pins to the top, small, so a change further
+       down the panel is seen as it is made. With the feed strip open the
+       column would be too tall to pin, so it scrolls as before. */
+    .stage{ position:sticky; top:0; z-index:3; background:var(--canvas); padding-block:8px; }
+    .stage canvas{ max-height:30vh; }
+    .stage .howto{ display:none; }
+    .stage:has(.feed:not([hidden])){ position:static; }
   }
 
   @media (prefers-reduced-motion:reduce){

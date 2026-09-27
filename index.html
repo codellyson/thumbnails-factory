@@ -610,30 +610,13 @@
           <div class="palettes" id="palettes" role="radiogroup" aria-label="Bottom line colour"></div>
           <div class="stops" id="stops" hidden></div>
         </div>
-        <details class="group" name="panel" data-for="bleed showcase launch">
-          <summary>Badge</summary>
+        <details class="group" name="panel" data-for="launch">
+          <summary>Project tag</summary>
           <div class="field">
             <label for="badge">Text</label>
-            <input type="text" id="badge" maxlength="32" autocomplete="off" placeholder="NEW, PART 2, TUTORIAL…">
-            <p class="hint">A short label in a pill. Leave it empty for none.</p>
+            <input type="text" id="badge" maxlength="32" autocomplete="off" placeholder="JUSTDB">
+            <p class="hint">An outlined label above the headline. Leave it empty for none.</p>
           </div>
-          <fieldset class="field seg" data-for="bleed showcase">
-            <legend class="legend">Style</legend>
-            <div class="segs">
-              <label><input type="radio" name="badgeStyle" value="tag"> Tag</label>
-              <label><input type="radio" name="badgeStyle" value="light"> Light</label>
-              <label><input type="radio" name="badgeStyle" value="dark"> Dark</label>
-              <label><input type="radio" name="badgeStyle" value="brand"> Colour</label>
-            </div>
-          </fieldset>
-          <fieldset class="field seg" data-for="bleed showcase">
-            <legend class="legend">Position</legend>
-            <div class="segs">
-              <label><input type="radio" name="pillPos" value="logo"> By logo</label>
-              <label><input type="radio" name="pillPos" value="right"> Top right</label>
-              <label><input type="radio" name="pillPos" value="headline"> On headline</label>
-            </div>
-          </fieldset>
           <div class="field">
             <label for="pillSize">Size</label>
             <input type="range" id="pillSize" data-key="pillSize" data-unit="%" min="70" max="160">
@@ -1023,7 +1006,7 @@
     phone:true, cap1:'', cap2:'', handle:'', dots:true, feed:false,
     kick1:'YOUR CHANNEL', kick2:'EPISODE 01', sticker:'',   // Launch and Before -> After
     headFont:'archivo-black', monoFont:'jetbrains',
-    badgeStyle:'tag', pillSize:1, pillPos:'logo',   // badgeStyle replaced pillStyle when the tag became the default
+    pillSize:1,   // Launch's project tag
     winStyle:'dark', winTurn:17, winTilt:-4,
     phoneSide:'right', phoneSize:1, phoneTilt:6,
     glow:'image', glowAmt:0.6,
@@ -1034,7 +1017,7 @@
   // The showcase settings, saved as they are. Kept as lists so persist() and
   // the restore below cannot drift apart.
   var STR_KEYS = ['layout','badge','winTitle','cap1','cap2','capColor','handle',
-                  'badgeStyle','pillPos','winStyle','phoneSide','glow','kick1','kick2','sticker','headFont','monoFont'];
+                  'winStyle','phoneSide','glow','kick1','kick2','sticker','headFont','monoFont'];
   var NUM_KEYS = ['pillSize','winTurn','winTilt','phoneSize','phoneTilt','glowAmt'];
   try {
     var saved = JSON.parse(localStorage.getItem('tf-state') || 'null');
@@ -1422,58 +1405,11 @@
     c.restore();
   }
 
-  // The badge: a short label in a pill, whatever it says - NEW, PART 2, a
-  // series name. A dot typed between words gets room to breathe.
+  // Launch's project tag, the outlined label above its headline. A dot typed
+  // between words gets room to breathe.
   function pillText(){
     return state.badge.trim().toUpperCase().replace(/\s*·\s*/g, '  ·  ');
   }
-  function pillWidth(c, h){
-    var t = pillText();
-    if (!t) return 0;
-    var tag = state.badgeStyle === 'tag';
-    c.font = headlineFont(h*(tag ? 0.5 : 0.44));
-    return c.measureText(t).width + h*(tag ? 0.9 : 0.84);
-  }
-  // Light and Brand are solid, so they hold up on any backdrop. Dark and
-  // Outline are quieter and lean on the backdrop being dark.
-  function drawPill(c, x, cy, h){
-    var t = pillText();
-    if (!t) return 0;
-    var style = state.badgeStyle, w = pillWidth(c, h), ink = '#121316';
-    // The tag: an outline and letters in the accent, corners only softened,
-    // no shadow - it labels the thumbnail without competing with the words.
-    if (style === 'tag') {
-      var A = accent();
-      roundRect(c, x, cy - h/2, w, h, h*0.2);
-      c.lineWidth = Math.max(1.5, h*0.06); c.strokeStyle = A; c.stroke();
-      c.font = headlineFont(h*0.5); c.fillStyle = A; c.textBaseline = 'middle';
-      c.fillText(t, x + h*0.45, cy + h*0.04);
-      c.textBaseline = 'alphabetic';
-      return w;
-    }
-    var fpx = h*0.44, pad = h*0.42;
-    c.font = headlineFont(fpx);
-    roundRect(c, x, cy - h/2, w, h, h/2);
-    {
-      c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = h*0.3; c.shadowOffsetY = h*0.08;
-      if (style === 'dark') { c.fillStyle = 'rgba(18,19,24,.88)'; ink = '#ffffff'; }
-      else if (style === 'brand') {
-        var st = activeStops(), g = c.createLinearGradient(x, 0, x + w, 0);
-        g.addColorStop(0, st[0]); g.addColorStop(0.45, st[1]); g.addColorStop(1, st[2]);
-        c.fillStyle = g;
-      } else c.fillStyle = '#ffffff';
-      c.fill();
-      noShadow(c);
-      if (style === 'dark') {
-        c.lineWidth = Math.max(1, h*0.03); c.strokeStyle = 'rgba(255,255,255,.18)'; c.stroke();
-      }
-    }
-    c.fillStyle = ink; c.textBaseline = 'middle';
-    c.fillText(t, x + pad, cy + fpx*0.04);
-    c.textBaseline = 'alphabetic';
-    return w;
-  }
-
   // Where the window and phone sit relative to each other, in units of the
   // window's width: the phone overlaps the window's lower right corner.
   // arrange() applies the phone's side and size on top of this.
@@ -1601,44 +1537,28 @@
       c.restore();
     }
 
-    // logo row. The badge sits beside the logo, at the top right, or
-    // just above the headline.
-    var lh = 88*k, pillX = left, pillH = lh*0.56*state.pillSize, gap = 0.022*W;
-    var hasPill = !!pillText();
-    if (state.logo && ready.logo) {
-      var lw = logo.width * (lh/logo.height);
+    // the logo, top left
+    var lh = 88*k;
+    var hasRow = !!(state.logo && ready.logo);
+    if (hasRow) {
       c.shadowColor='rgba(0,0,0,.6)'; c.shadowBlur=20*k; c.shadowOffsetY=8*k;
-      c.drawImage(logo, left, top, lw, lh);
+      c.drawImage(logo, left, top, logo.width * (lh/logo.height), lh);
       noShadow(c);
-      pillX = left + lw + gap;
     }
     // Measured to the top of the capitals, not the line box, so the gap
     // above the headline is the gap you see.
-    var capTop = bottom - (l1 ? (px2 ? px2*1.06 : 0) + px1*0.74 : px2*0.74);
-    var wordsTop = capTop;
-    if (hasPill) {
-      if (state.pillPos === 'right') {
-        drawPill(c, right - pillWidth(c, pillH), top + lh/2, pillH);
-      } else if (state.pillPos === 'headline') {
-        drawPill(c, left, capTop - 0.03*H - pillH/2, pillH);
-        wordsTop = capTop - 0.03*H - pillH;
-      } else {
-        drawPill(c, pillX, top + lh/2, pillH);
-      }
-    }
-    var hasRow = (state.logo && ready.logo) || (hasPill && state.pillPos !== 'headline');
-    var pillTopRight = hasPill && state.pillPos === 'right';
+    var wordsTop = bottom - (l1 ? (px2 ? px2*1.06 : 0) + px1*0.74 : px2*0.74);
 
     // the window and phone, fitted into whatever room the words leave
     if (show) {
       var rx0, rx1, ry0, ry1;
       if (portrait) {
         rx0 = left; rx1 = right;
-        ry0 = top + (hasRow ? Math.max(lh, pillH) + 0.03*H : 0);
+        ry0 = top + (hasRow ? lh + 0.03*H : 0);
         ry1 = wordsTop - 0.035*H;
       } else {
         rx0 = cardsX; rx1 = right; ry1 = bottom;
-        ry0 = top + (pillTopRight ? Math.max(lh, pillH) + 0.02*H : 0);
+        ry0 = top;
       }
       var lay = null, u = 0;
       (state.phone ? [SHOWCASE.side, SHOWCASE.stack] : [SHOWCASE.alone]).forEach(function(l){
@@ -2537,7 +2457,7 @@
     var radios = document.querySelectorAll('input[name="' + key + '"]');
     for (var i = 0; i < radios.length; i++) radios[i].checked = (radios[i].value === state[key]);
   }
-  ['badgeStyle','pillPos','winStyle','phoneSide','glow'].forEach(function(key){
+  ['winStyle','phoneSide','glow'].forEach(function(key){
     syncRadios(key);
     var radios = document.querySelectorAll('input[name="' + key + '"]');
     for (var i = 0; i < radios.length; i++) {

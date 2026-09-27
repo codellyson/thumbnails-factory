@@ -77,30 +77,13 @@
           <div class="palettes" id="palettes" role="radiogroup" aria-label="Bottom line colour"></div>
           <div class="stops" id="stops" hidden></div>
         </div>
-        <details class="group" name="panel" data-for="bleed showcase launch">
-          <summary>Badge</summary>
+        <details class="group" name="panel" data-for="launch">
+          <summary>Project tag</summary>
           <div class="field">
             <label for="badge">Text</label>
-            <input type="text" id="badge" maxlength="32" autocomplete="off" placeholder="NEW, PART 2, TUTORIAL…">
-            <p class="hint">A short label in a pill. Leave it empty for none.</p>
+            <input type="text" id="badge" maxlength="32" autocomplete="off" placeholder="JUSTDB">
+            <p class="hint">An outlined label above the headline. Leave it empty for none.</p>
           </div>
-          <fieldset class="field seg" data-for="bleed showcase">
-            <legend class="legend">Style</legend>
-            <div class="segs">
-              <label><input type="radio" name="badgeStyle" value="tag"> Tag</label>
-              <label><input type="radio" name="badgeStyle" value="light"> Light</label>
-              <label><input type="radio" name="badgeStyle" value="dark"> Dark</label>
-              <label><input type="radio" name="badgeStyle" value="brand"> Colour</label>
-            </div>
-          </fieldset>
-          <fieldset class="field seg" data-for="bleed showcase">
-            <legend class="legend">Position</legend>
-            <div class="segs">
-              <label><input type="radio" name="pillPos" value="logo"> By logo</label>
-              <label><input type="radio" name="pillPos" value="right"> Top right</label>
-              <label><input type="radio" name="pillPos" value="headline"> On headline</label>
-            </div>
-          </fieldset>
           <div class="field">
             <label for="pillSize">Size</label>
             <input type="range" id="pillSize" data-key="pillSize" data-unit="%" min="70" max="160">

@@ -79,8 +79,7 @@ solid palette for the flat yellow look.
 headline over it.
 
 **Launch** sets a big two-line headline, with an arrow after the first line, beside
-the screenshot in a window framed in the accent. It adds an outlined tag (the
-badge text), a sticker in the window's title bar, and a dot-grid backdrop.
+the screenshot in a window framed in the accent. It adds an outlined project tag, a sticker in the window's title bar, and a dot-grid backdrop.
 
 **Before → After** splits the frame on a diagonal: the dim "before" word over the
 before picture on the dark side, and the "after" word over the after picture, in a
@@ -120,16 +119,16 @@ On a YouTube thumbnail the bottom-right corner belongs to the video's length.
 The showcase pieces and the play badge are kept out of it, and **Show safe areas**
 draws a stand-in timestamp there.
 
-Full picture, Showcase and Launch take a **badge**: any short label, such as
-`NEW`, `PART 2` or a series name, in a pill (an outlined tag in Launch). Leave it
-empty for none.
+Launch takes a **project tag**: a short outlined label above its headline, such as
+`JUSTDB`. Leave it empty for none. The other templates carry only the logo in
+that corner.
 
 Each piece has its own panel. Only one panel is open at a time, and on a wide
 screen the preview stays in view while you scroll the controls:
 
 | Panel | Controls |
 | --- | --- |
-| Badge | text, style (tag in the accent, light, dark, headline colours), position (by the logo, top right, on the headline), size |
+| Project tag (Launch) | text, size |
 | Window | title, style (dark, light, no frame), turn in depth, tilt |
 | Phone | picture, zoom, two lines of on-screen text with an accent colour, handle, like and share buttons, side, size, tilt |
 | Backdrop | glow from a picture (its own, or the window's), from the headline colours, or none, and its strength |

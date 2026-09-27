@@ -47,4 +47,5 @@ size. The helper is not there when the page is served from anywhere else.
 |---|---|
 | Before → After | Rebuilt to this bar. Passes rules 1–3 at all 12 sizes with nothing dropped in, and with real photos and a short headline. A long accent word ("TRANSFORMATION") still fails rule 1 on 9:16 covers, which is the bar asking for fewer letters |
 | Collage | Built to this bar. Passes rules 1–3 at all 12 sizes, with nothing dropped in and with four photos |
+| Talking point | Built to this bar. Passes rules 1–3 at all 12 sizes, empty and with a photo. Its reference's circle covers 0.25 of the frame, under rule 2's line; ours is sized to 0.34–0.38 to beat it |
 | Launch | Not yet reviewed against it |

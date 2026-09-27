@@ -201,17 +201,17 @@
     { key:'layout', type:'custom', label:'Template', def:'collage', build:buildTemplatePicker,
       change:function(){ ensureFont(headFace()); } },
     { key:'main', type:'image', slot:'main', big:true, persist:false,
-      label:{ _:'Picture', launch:'Window picture', versus:'After picture', collage:'Main photo' },
+      label:{ _:'Picture', launch:'Window picture', versus:'After picture', collage:'Main photo', talking:'Photo' },
       button:'Choose an image', ids:{ pick:'pick', file:'file' } },
     { key:'zoom', type:'range', label:'Zoom', min:100, max:250, unit:'%', def:1, persist:false },
     { key:'second', type:'image', slot:'second', persist:false, for:['versus'], label:'Before picture',
       button:'Choose before picture', reset:'Remove',
       hint:'Or drop a file on the before picture. Drag on it to move the picture.' },
     { key:'phoneZoom', type:'range', label:'Before zoom', min:100, max:250, unit:'%', def:1, persist:false, for:['versus'], id:'beforeZoom' },
-    { key:'line1', type:'text', label:{ _:'Top line', versus:'Headline', collage:'Headline' }, def:'TYPE YOUR', maxlength:32,
+    { key:'line1', type:'text', label:{ _:'Top line', versus:'Headline', collage:'Headline', talking:'Headline' }, def:'TYPE YOUR', maxlength:32,
       pair:{ key:'line1Color', aria:'Headline colour' } },
     { key:'line1Color', type:'color', def:'#ffffff', paired:true },
-    { key:'line2', type:'text', label:{ _:'Bottom line', versus:'Accent words', collage:'Accent words' }, def:'HEADLINE HERE', maxlength:24 },
+    { key:'line2', type:'text', label:{ _:'Bottom line', versus:'Accent words', collage:'Accent words', talking:'Key word' }, def:'HEADLINE HERE', maxlength:24 },
     { id:'palette', type:'custom', build:buildPaletteSlot, join:true },
 
     // Launch's own label above its headline
@@ -256,6 +256,8 @@
     { key:'dotGrid', type:'toggle', group:'Background', for:['launch'], label:'Dot grid', def:true },
     { key:'paper', type:'color', group:'Background', for:['collage'], label:'Paper', def:'#f6f3ec' },
     { key:'brush', type:'toggle', group:'Background', for:['collage'], label:'Brush bands and underline', def:true },
+    { key:'paper2', type:'color', group:'Background', for:['talking'], label:'Paper', def:'#ecebe8' },
+    { key:'arrow2', type:'toggle', group:'Background', for:['talking'], label:'Hand-drawn arrow', def:true },
 
     { key:'beforeLabel', type:'text', group:'Pictures', for:['versus'], label:'Before label', def:'BEFORE', maxlength:16, row:'labels' },
     { key:'afterLabel', type:'text', group:'Pictures', for:['versus'], label:'After label', def:'AFTER', maxlength:16, row:'labels' },
@@ -1257,9 +1259,201 @@
     }
   }
 
+  // Talking point, built to docs/quality-bar.md: light textured paper, a
+  // stacked slanted headline whose accent word takes its own line at half
+  // again the size in the palette's gradient, a thick hand-drawn arrow
+  // pointing at the words, and one big circular photo over a bow-tie of two
+  // gradient triangles, with a thin arc and dot beside it.
+
+  // Paper grain: speckles and a few scratches from a fixed hash, so the
+  // texture is the same on every render and scales with the frame.
+  function paperGrain(c, W, H, k, paper){
+    c.fillStyle = paper; c.fillRect(0, 0, W, H);
+    function h(i){ var x = Math.sin(i*127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+    var n = Math.round(W*H / (700*k*k));
+    for (var i = 0; i < n; i++) {
+      c.fillStyle = h(i*3) < 0.5 ? 'rgba(0,0,0,.05)' : 'rgba(255,255,255,.6)';
+      var r = (0.6 + h(i*3 + 2)*1.1) * k;
+      c.fillRect(h(i*3 + 1)*W, h(i*3 + 7)*H, r, r);
+    }
+    c.save(); c.strokeStyle = 'rgba(0,0,0,.05)'; c.lineWidth = Math.max(1, k);
+    for (var j = 0; j < 14; j++) {
+      var x0 = h(j + 900)*W, y0 = h(j + 950)*H, len = (40 + h(j + 990)*120)*k, a = h(j + 1030)*Math.PI;
+      c.beginPath(); c.moveTo(x0, y0); c.lineTo(x0 + Math.cos(a)*len, y0 + Math.sin(a)*len); c.stroke();
+    }
+    c.restore();
+  }
+
+  // A thick, hand-drawn arrow along a curve: it swells from a thin tail and
+  // ends in a solid head.
+  function handArrow(c, x0, y0, cx, cy, x1, y1, t, color){
+    var n = 30, pts = [];
+    for (var i = 0; i <= n; i++) {
+      var u = i/n, v = 1 - u;
+      pts.push([v*v*x0 + 2*v*u*cx + u*u*x1, v*v*y0 + 2*v*u*cy + u*u*y1]);
+    }
+    var head = t*2.6, cut = Math.max(2, Math.round(n * 0.12));
+    function normal(i){
+      var a = pts[Math.max(0, i - 1)], b = pts[Math.min(n, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
+      return [-dy/l, dx/l];
+    }
+    c.beginPath();
+    var side = [];
+    for (var s = 0; s <= n - cut; s++) { var w = t*(0.25 + 0.75*Math.sin(Math.PI/2 * s/(n - cut))), nn = normal(s); side.push([pts[s][0] + nn[0]*w/2, pts[s][1] + nn[1]*w/2, pts[s][0] - nn[0]*w/2, pts[s][1] - nn[1]*w/2]); }
+    side.forEach(function(q, i){ c[i ? 'lineTo' : 'moveTo'](q[0], q[1]); });
+    // the head: a wide triangle on the last stretch
+    var base = pts[n - cut], nb = normal(n - cut);
+    c.lineTo(base[0] + nb[0]*head/2, base[1] + nb[1]*head/2);
+    c.lineTo(x1, y1);
+    c.lineTo(base[0] - nb[0]*head/2, base[1] - nb[1]*head/2);
+    for (var r = side.length - 1; r >= 0; r--) c.lineTo(side[r][2], side[r][3]);
+    c.closePath(); c.fillStyle = color; c.fill();
+  }
+
+  function drawTalking(c, p, opts){
+    var g = box(p), W = g.W, H = g.H, k = g.k, st = activeStops();
+    var report = opts.report || {};
+    var paper = state.paper2;
+    paperGrain(c, W, H, k, paper);
+    var ink = contrast(state.line1Color, paper) >= 3 ? state.line1Color : '#2a292e';
+    var tall = (W/H) < 0.85, square = !tall && (W/H) < 1.2;
+    var g0 = deepShade(st[0], 0.46), g1 = deepShade(st[2], 0.5);
+
+    // the circle claims its side first; the words get the rest
+    var d, cx, cy;
+    // Big enough to beat the reference's share of the frame (0.25): a photo
+    // may run under a platform's buttons, since only words must stay clear.
+    if (!tall) {
+      d = Math.min(H*0.96, W*(square ? 0.66 : 0.5));
+      cx = W - Math.max(0.01*W, (W - g.right)*0.5) - d/2; cy = H/2;
+    } else {
+      d = Math.min(W*0.98, H*((W/H) < 0.7 ? 0.5 : 0.6));   // 9:16, then 4:5
+      cx = W/2; cy = Math.max(g.top*0.6, 0.02*H) + d/2;
+    }
+
+    // the bow-tie behind it, pointing at the circle's centre
+    var grad = c.createLinearGradient(cx - d/2, 0, cx + d/2, H);
+    grad.addColorStop(0, g0); grad.addColorStop(1, g1);
+    c.fillStyle = grad;
+    var bw = d*0.62;
+    c.beginPath();
+    if (!tall) {
+      c.moveTo(cx - bw, 0); c.lineTo(cx + bw, 0); c.lineTo(cx, cy); c.closePath();
+      c.moveTo(cx - bw*0.9, H); c.lineTo(cx + bw*1.1, H); c.lineTo(cx, cy); c.closePath();
+    } else {
+      c.moveTo(0, cy - bw*0.8); c.lineTo(0, cy + bw*0.8); c.lineTo(cx, cy); c.closePath();
+      c.moveTo(W, cy - bw*0.8); c.lineTo(W, cy + bw*0.8); c.lineTo(cx, cy); c.closePath();
+    }
+    c.fill();
+
+    // the arc and its dot, just outside the ring on the open side
+    c.save();
+    c.strokeStyle = ink; c.lineWidth = Math.max(1.5, 2.5*k);
+    var ar = d/2 + Math.max(10*k, d*0.07), a0 = tall ? -0.35*Math.PI : -0.38*Math.PI, a1 = tall ? 0.05*Math.PI : 0.3*Math.PI;
+    c.beginPath(); c.arc(cx, cy, ar, a0, a1); c.stroke();
+    c.beginPath(); c.arc(cx + Math.cos(a0)*ar, cy + Math.sin(a0)*ar, Math.max(3, 5*k), 0, Math.PI*2); c.fillStyle = ink; c.fill();
+    c.restore();
+
+    // the photo
+    var ring = Math.max(2, d*0.014);
+    c.save();
+    c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = d*0.08; c.shadowOffsetY = d*0.03;
+    c.beginPath(); c.arc(cx, cy, d/2, 0, Math.PI*2); c.fillStyle = '#ffffff'; c.fill();
+    c.restore();
+    c.save(); c.beginPath(); c.arc(cx, cy, d/2 - ring, 0, Math.PI*2); c.clip();
+    if (frame !== paintedFrame) shown.win = cover(c, frame, cx - d/2, cy - d/2, d, d, state.zoom, state.panX*W, state.panY*H);
+    else {
+      paintStandIn(c, cx - d/2, cy - d/2, d, d, true, st);
+      if (opts.preview) placeholderLabel(c, cx - d/2, cy - d/2, d, d, 'Drop the photo', 'rgba(255,255,255,.8)');
+    }
+    c.restore();
+    report.pictures = Math.PI*d*d/4 / (W*H);
+
+    // the words: main lines stacked and slanted, the accent line half again
+    // as big, in the gradient
+    var tb = !tall ? { x0:g.left, x1:cx - d/2 - 0.04*W, y0:g.top, y1:g.bottom }
+                   : { x0:g.left, x1:g.right, y0:cy + d/2 + 0.04*H, y1:g.bottom };
+    var main = state.line1.toUpperCase().trim().split(/\s+/).filter(Boolean);
+    var accent = state.line2.toUpperCase().trim();
+    var colW = tb.x1 - tb.x0, room = tb.y1 - tb.y0;
+    // For each way of breaking the main words, size them to the width, then
+    // give the key word whatever height is left - up to 2.6 times the main
+    // size, so it leads without swallowing the rest. The key word's size
+    // decides between arrangements first, the main lines' second.
+    var best = null, big = 0.3*H*state.headScale;
+    for (var n = 1; n <= Math.min(4, Math.max(1, main.length)); n++) {
+      var per = Math.ceil(main.length / n), lines = [];
+      for (var i = 0; i < main.length; i += per) lines.push(main.slice(i, i + per).join(' '));
+      var fits = lines.map(function(t){ return fitWith(c, t, colW, big, 10*k, function(q){ return q*0.2; }); });
+      var px = fits.length ? Math.min.apply(null, fits) : big;
+      var capM = lines.length ? capOf(c, px) : 0, mainH = lines.length ? capM + (lines.length - 1)*capM*1.2 : 0;
+      if (mainH > room*0.6) { px *= room*0.6 / mainH; capM = capOf(c, px); mainH = room*0.6; }
+      var apx = 0, capA = 0;
+      if (accent) {
+        var left = room - mainH - (lines.length ? capM*0.35 : 0);
+        apx = Math.min(fitWith(c, accent, colW, big*1.6, 10*k, function(q){ return q*0.2; }), px*2.6);
+        capA = capOf(c, apx);
+        if (capA > left) { apx *= left / capA; capA = capOf(c, apx); }
+      }
+      var hgt = mainH + (accent ? (lines.length ? capM*0.35 : 0) + capA : 0);
+      var score = capA*10 + capM;
+      if (!best || score > best.score) best = { px:px, apx:apx, lines:lines, capM:capM, capA:capA, h:hgt, score:score };
+    }
+    var y = tb.y0 + (room - best.h)/2;
+    function slant(text, x, base, px, fill){
+      c.save();
+      c.translate(0, base); c.transform(1, 0, -0.2, 1, 0, 0); c.translate(0, -base);
+      tightFont(c, px); c.fillStyle = fill; c.fillText(text, x, base);
+      looseFont(c); c.restore();
+    }
+    var lastEnd = tb.x0, firstEnd = tb.x0, firstTop = y;
+    best.lines.forEach(function(t, i){
+      var base = y + best.capM + i*best.capM*1.2;
+      slant(t, tb.x0 + best.capM*0.2, base, best.px, ink);
+      tightFont(c, best.px);
+      var end = tb.x0 + best.capM*0.2 + c.measureText(t).width;
+      looseFont(c);
+      lastEnd = Math.max(lastEnd, end); if (!i) firstEnd = end;
+    });
+    if (accent) {
+      var abase = y + best.h;
+      var apx = best.apx;
+      tightFont(c, apx); var aw = c.measureText(accent).width; looseFont(c);
+      var ax = tb.x0 + Math.min(best.capM*0.8, Math.max(0, colW - aw));
+      var ag = c.createLinearGradient(ax, 0, ax + aw, 0);
+      ag.addColorStop(0, g0); ag.addColorStop(1, g1);
+      slant(accent, ax + best.capA*0.2, abase, apx, ag);
+    }
+    report.headCap = Math.max(best.capM, best.capA) / H;
+
+    // the arrow: from beside the circle, curling down onto the words
+    if (state.arrow2 && best.lines.length) {
+      var t = Math.max(4, 0.03*H);
+      if (!tall) {
+        // down from beside the circle's top onto the end of the first line,
+        // above the longer lines that follow
+        var hx = firstEnd + 0.025*W, hy = firstTop + best.capM*0.45;
+        var tx = Math.min(cx - d*0.42, hx + 0.16*W), ty = Math.max(g.top*0.5, firstTop - best.capM*0.9);
+        if (tx - hx > 0.05*W) handArrow(c, tx, ty, tx - 0.01*W, hy, hx, hy, t, ink);
+      } else if (g.right - lastEnd > 0.16*W) {
+        // only where the first line leaves room beside it
+        var sx0 = g.right - 0.05*W, sy0 = firstTop + best.capM;
+        handArrow(c, sx0, sy0, sx0 + 0.03*W, cy + d/2 + 0.02*H, cx + d*0.25, cy + d/2 - d*0.02, t, ink);
+      }
+    }
+
+    // the logo, small, in the top corner over the photo's side
+    if (state.logo && ready.logo) {
+      var lh = 52*k*state.logoSize, lw = logo.width * lh / logo.height;
+      c.drawImage(logo, tall ? g.left : g.right - lw, g.top, lw, lh);
+    }
+  }
+
   var TEMPLATES = [
     { id:'collage', name:'Collage', hint:'A stacked headline on paper, a leaning strip of three pictures, and one big photo to the edge.',
       labels:{}, font:'anton', draw:drawCollage },
+    { id:'talking', name:'Talking point', hint:'A stacked headline with one big key word, an arrow at the words, and a circular photo over a bow-tie of colour.',
+      labels:{}, font:'anton', draw:drawTalking },
     { id:'versus', name:'Before → After', hint:'Two big pictures, a slash and an arrow between them, and one loud headline across the bottom.',
       labels:{}, font:'anton', draw:drawVersus },
     { id:'launch', name:'Launch', hint:'A big two-line headline with an arrow, and the screenshot in a framed window.',

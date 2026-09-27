@@ -93,7 +93,7 @@ template picker, the palette swatches, the logo and the font upload.
 | Text | headline font, headline size, kicker font, your own font file | all |
 | Strip | show, top, middle and bottom pictures | Collage |
 | Window | title, sticker and its colour, tilt | Launch |
-| Background | base colour (neutral, from the palette, or custom), dot grid, paper colour, brush bands, background picture | per control |
+| Background | base colour (neutral, from the palette, or custom), dot grid, paper colour, brush bands, hand-drawn arrow, background picture | per control |
 | Pictures | before and after labels, shape, divider (slash or split field), lean, arrow | Before → After (lean also Collage) |
 | Logo | the logo, show, size | all |
 
@@ -109,6 +109,14 @@ edge. Tall sizes stack the same three bands top to bottom: paper, strip, photo.
 Drop a file straight onto any panel. The headline keeps its colour only where it
 reads on the paper; otherwise it sets in near-black.
 
+**Talking point** is built to the quality bar. Light textured paper, a stacked
+slanted headline whose key word takes its own line - sized from whatever room the
+lines above it leave, up to 2.6 times their size - in the palette's gradient, a
+thick hand-drawn arrow curling onto the first line, and one big circular photo
+over a bow-tie of two gradient triangles, with a thin arc and dot beside it. Tall
+sizes put the photo on top and the words below. The photo may run under a
+platform's buttons; the words never do.
+
 **Launch** sets a big two-line headline, with an arrow after the first line, beside
 the screenshot in a window framed in the accent. It adds an outlined project tag, a sticker in the window's title bar, and a dot-grid backdrop.
 
@@ -123,8 +131,8 @@ in, painted stand-ins keep it looking finished. It sets its headline in Anton
 unless another face is picked; each template can name its own face.
 
 Fonts are a choice, not a fixture. The **Text** panel picks the headline face
-(by default each template's own - Anton for Collage and Before → After, Archivo
-Black for Launch - or Archivo Black, Anton, Bebas Neue, Inter, Montserrat, Poppins,
+(by default each template's own - Anton for Collage, Talking point and Before →
+After, Archivo Black for Launch - or Archivo Black, Anton, Bebas Neue, Inter, Montserrat, Poppins,
 Bricolage Grotesque, Space Grotesk, Oswald, DM Serif Display, Playfair Display) and
 the monospace face for the kicker and labels (JetBrains Mono by default). Each stock
 face loads from Google Fonts only when picked, and carries its own tracking so a

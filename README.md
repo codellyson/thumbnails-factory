@@ -95,7 +95,7 @@ both lines empty to show the logo there instead.
 **Showcase** is for build and tutorial videos. The image goes into a desktop
 window (title bar, three lights, an optional title), turned away in perspective,
 on a dark backdrop lit by a blurred copy of the same image. Beside it sits an optional phone playing a Short:
-its own picture, or the main image if none is given, with a two-line caption
+its own picture, with a two-line caption
 (the second line highlighted), a handle and the action buttons, each optional.
 The window takes the picture's own shape (held between 1.2:1 and 2.2:1), so a
 screenshot shows whole instead of cut mid-line. The window, the phone and the
@@ -110,8 +110,9 @@ On a YouTube thumbnail the bottom-right corner belongs to the video's length.
 The showcase pieces and the play badge are kept out of it, and **Show safe areas**
 draws a stand-in timestamp there.
 
-Both layouts take a **badge**: any short label in a pill, such as `NEW`,
-`PART 2` or a series name. Leave it empty for none.
+Full picture, Showcase and Launch take a **badge**: any short label, such as
+`NEW`, `PART 2` or a series name, in a pill (an outlined tag in Launch). Leave it
+empty for none.
 
 Each piece has its own panel. Only one panel is open at a time, and on a wide
 screen the preview stays in view while you scroll the controls:

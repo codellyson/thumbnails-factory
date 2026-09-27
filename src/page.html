@@ -36,11 +36,9 @@
       <h2 class="sr-only">Options</h2>
       <div class="fields">
         <fieldset class="field seg">
-          <legend class="legend">Layout</legend>
-          <div class="segs">
-            <label><input type="radio" name="layout" value="bleed"> Full picture</label>
-            <label><input type="radio" name="layout" value="showcase"> Showcase</label>
-          </div>
+          <legend class="legend">Template</legend>
+          <!-- Filled from TEMPLATES in app.js: one live preview per template. -->
+          <div class="tpls" id="tpls"></div>
           <p class="hint" id="layoutHint">The image fills the frame.</p>
         </fieldset>
         <div class="field">
@@ -53,10 +51,18 @@
             <label for="zoom">Zoom</label>
             <input type="range" id="zoom" min="100" max="250" value="125">
           </div>
-          <div class="field" id="vigField">
+          <div class="field" id="vigField" data-for="bleed">
             <label for="vig">Shading</label>
             <input type="range" id="vig" min="0" max="100" value="70">
           </div>
+        </div>
+        <div class="field" data-for="versus">
+          <span class="legend" id="beforeLabel">Before picture</span>
+          <div class="logobtns">
+            <button class="btn btn-sm" id="beforePick" aria-describedby="beforeLabel">Choose before picture</button>
+            <button class="btn btn-sm" id="beforeReset" hidden>Remove</button>
+          </div>
+          <p class="hint">Or drop a file on the left card. Drag on it to move the picture.</p>
         </div>
         <div class="field">
           <label for="line1">Top line</label>
@@ -71,14 +77,14 @@
           <div class="palettes" id="palettes" role="radiogroup" aria-label="Bottom line colour"></div>
           <div class="stops" id="stops" hidden></div>
         </div>
-        <details class="group" name="panel">
+        <details class="group" name="panel" data-for="bleed showcase launch">
           <summary>Badge</summary>
           <div class="field">
             <label for="badge">Text</label>
             <input type="text" id="badge" maxlength="32" autocomplete="off" placeholder="NEW, PART 2, TUTORIAL…">
             <p class="hint">A short label in a pill. Leave it empty for none.</p>
           </div>
-          <fieldset class="field seg">
+          <fieldset class="field seg" data-for="bleed showcase">
             <legend class="legend">Style</legend>
             <div class="segs">
               <label><input type="radio" name="pillStyle" value="light"> Light</label>
@@ -87,7 +93,7 @@
               <label><input type="radio" name="pillStyle" value="brand"> Colour</label>
             </div>
           </fieldset>
-          <fieldset class="field seg">
+          <fieldset class="field seg" data-for="bleed showcase">
             <legend class="legend">Position</legend>
             <div class="segs">
               <label><input type="radio" name="pillPos" value="logo"> By logo</label>
@@ -101,14 +107,31 @@
           </div>
         </details>
 
-        <div class="showcase" id="showcaseFields" hidden>
-        <details class="group" name="panel">
+        <details class="group" name="panel" data-for="launch versus">
+          <summary>Kicker</summary>
+          <div class="field">
+            <label for="kick1">First line</label>
+            <input type="text" id="kick1" maxlength="32" autocomplete="off" placeholder="YOUR CHANNEL">
+          </div>
+          <div class="field">
+            <label for="kick2">Accent line</label>
+            <input type="text" id="kick2" maxlength="24" autocomplete="off" placeholder="EPISODE 01">
+          </div>
+          <p class="hint">Two short lines in a corner bracket. Leave both empty to show the logo instead.</p>
+        </details>
+
+        <details class="group" name="panel" data-for="showcase launch">
           <summary>Window</summary>
           <div class="field">
             <label for="winTitle">Title</label>
             <input type="text" id="winTitle" maxlength="40" autocomplete="off" placeholder="index.html">
           </div>
-          <fieldset class="field seg">
+          <div class="field" data-for="launch">
+            <label for="sticker">Sticker</label>
+            <input type="text" id="sticker" maxlength="28" autocomplete="off" placeholder="IT BROKE. I LEFT IT IN.">
+            <p class="hint">A label in the title bar. It takes the title's place.</p>
+          </div>
+          <fieldset class="field seg" data-for="showcase">
             <legend class="legend">Style</legend>
             <div class="segs">
               <label><input type="radio" name="winStyle" value="dark"> Dark</label>
@@ -117,7 +140,7 @@
             </div>
           </fieldset>
           <div class="row">
-            <div class="field">
+            <div class="field" data-for="showcase">
               <label for="winTurn">Turn</label>
               <input type="range" id="winTurn" data-key="winTurn" data-unit="°" min="0" max="35">
             </div>
@@ -128,7 +151,7 @@
           </div>
         </details>
 
-        <details class="group" name="panel">
+        <details class="group" name="panel" data-for="showcase">
           <summary id="phoneLabel">Phone</summary>
           <label class="tog"><input type="checkbox" id="showPhone" checked> Show a phone beside the window</label>
           <div class="phonebits" id="phoneBits">
@@ -180,7 +203,7 @@
           </div>
         </details>
 
-        <details class="group" name="panel">
+        <details class="group" name="panel" data-for="showcase">
           <summary>Backdrop</summary>
           <fieldset class="field seg">
             <legend class="legend">Glow</legend>
@@ -200,7 +223,6 @@
           </div>
           <input type="file" id="bgFile" accept="image/*" hidden>
         </details>
-        </div>
 
         <details class="group" name="panel">
           <summary id="logoLabel">Logo</summary>

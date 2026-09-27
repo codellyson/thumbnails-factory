@@ -62,10 +62,35 @@ card, the SVG and both PNGs draw it from one function. The card's text is set in
 Instrument Sans, kept in `tools/fonts/` under the SIL Open Font License, so the
 card comes out the same on any machine.
 
-## Layouts
+## Templates
+
+The **Template** picker at the top of the controls shows a live preview of each
+template, drawn with your own headline and pictures at the size you picked. All
+templates draw from the same content, so switching keeps what you typed; each
+control declares which templates it belongs to (`data-for` in `src/page.html`) and
+steps aside for the rest. Adding a template is one entry in `TEMPLATES` in
+`src/app.js` with a name, a hint, its field labels and a draw function.
+
+Colours follow the headline palette: the gradient runs where a template uses one,
+and the palette's last stop is the template's solid accent. **Signal yellow** is a
+solid palette for the flat yellow look.
 
 **Full picture** fills the frame with the image, darkens the bottom, and sets the
 headline over it.
+
+**Launch** sets a big two-line headline, with an arrow after the first line, beside
+the screenshot in a window framed in the accent. It adds an outlined tag (the
+badge text), a sticker in the window's title bar, and a dot-grid backdrop.
+
+**Before → After** splits the frame on a diagonal: the dim "before" word over the
+before picture on the dark side, and an arrow and the "after" word over the after
+picture, in a card with a hard offset shadow, on the palette side. Tall and square
+sizes split top and bottom, with the split centred on the room left after the
+kicker and the platform's bottom strip.
+
+Launch and Before → After share a **kicker**: a corner bracket in the accent with
+two short monospace lines (JetBrains Mono), such as a series and an episode. Leave
+both lines empty to show the logo there instead.
 
 **Showcase** is for build and tutorial videos. The image goes into a desktop
 window (title bar, three lights, an optional title), turned away in perspective,

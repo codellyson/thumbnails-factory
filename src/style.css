@@ -233,6 +233,22 @@
   .row .field.narrow{ flex:1; min-width:70px; }
   .row[hidden]{ display:none; }
   .field[hidden]{ display:none; }
+  /* controls that belong to other templates; beats the panels' own display */
+  [data-for][hidden]{ display:none !important; }
+
+  /* template picker: a live preview of each, your content in its arrangement */
+  .tpls{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .tpl{ position:relative; display:flex; flex-direction:column; gap:6px; cursor:pointer; font-size:13px; font-weight:500; color:var(--muted); }
+  .tpl input{ position:absolute; opacity:0; width:1px; height:1px; }
+  .tpl canvas{
+    display:block; width:100%; height:auto; aspect-ratio:16/9; object-fit:contain;
+    max-height:none; border-radius:10px; background:var(--well); cursor:pointer;
+    box-shadow:0 0 0 1px var(--line-strong); transition:box-shadow .14s linear;
+  }
+  @media (hover: hover){ .tpl:hover canvas{ box-shadow:0 0 0 1px var(--muted); } }
+  .tpl:has(input:checked){ color:var(--ink); }
+  .tpl:has(input:checked) canvas{ box-shadow:0 0 0 2px var(--canvas), 0 0 0 3.5px var(--ink); }
+  .tpl:has(input:focus-visible) canvas{ outline:2px solid var(--ink); outline-offset:4px; }
   .customgroup .row{ width:190px; }
   .customgroup .row .field{ gap:4px; }
 

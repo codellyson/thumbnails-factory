@@ -59,6 +59,7 @@
   var PALETTES = [
     { id:'kk',    name:'KreativeKorna', stops:['#b9a4ff','#d9a2ff','#ffb27a'] },
     { id:'white', name:'Plain white',   stops:['#ffffff','#ffffff','#ffffff'] },
+    { id:'signal',name:'Signal yellow', stops:['#ffc21a','#ffc21a','#ffc21a'] },
     { id:'ember', name:'Ember',         stops:['#ff512f','#f09819','#ffd200'] },
     { id:'mint',  name:'Mint',          stops:['#a8ff78','#78ffd6','#43c6ac'] },
     { id:'ice',   name:'Ice',           stops:['#a1c4fd','#c2e9fb','#ffffff'] },
@@ -175,6 +176,7 @@
     // optional phone beside it, instead of filling the frame.
     layout:'bleed', badge:'', winTitle:'', capColor:'#ffd23f',
     phone:true, cap1:'', cap2:'', handle:'', dots:true, feed:false,
+    kick1:'YOUR CHANNEL', kick2:'EPISODE 01', sticker:'',   // Launch and Before -> After
     pillStyle:'light', pillSize:1, pillPos:'logo',
     winStyle:'dark', winTurn:17, winTilt:-4,
     phoneSide:'right', phoneSize:1, phoneTilt:6,
@@ -186,7 +188,7 @@
   // The showcase settings, saved as they are. Kept as lists so persist() and
   // the restore below cannot drift apart.
   var STR_KEYS = ['layout','badge','winTitle','cap1','cap2','capColor','handle',
-                  'pillStyle','pillPos','winStyle','phoneSide','glow'];
+                  'pillStyle','pillPos','winStyle','phoneSide','glow','kick1','kick2','sticker'];
   var NUM_KEYS = ['pillSize','winTurn','winTilt','phoneSize','phoneTilt','glowAmt'];
   try {
     var saved = JSON.parse(localStorage.getItem('tf-state') || 'null');
@@ -210,7 +212,7 @@
       if (typeof saved.phone === 'boolean') state.phone = saved.phone;
       if (typeof saved.dots === 'boolean') state.dots = saved.dots;
       if (typeof saved.feed === 'boolean') state.feed = saved.feed;
-      if (state.layout === 'showcase') state.zoom = 1;
+      if (state.layout !== 'bleed') state.zoom = 1;
       // Before the badge was free text it was a series name and an episode.
       if (typeof saved.badge !== 'string' && (saved.series || saved.episode)) {
         state.badge = [saved.series, saved.episode && /^\d+$/.test(saved.episode) ? 'EP ' + saved.episode : saved.episode]
@@ -259,6 +261,7 @@
   logo.src = state.logoSrc || DEFAULT_LOGO;
   if (document.fonts && document.fonts.ready) {
     document.fonts.load('88px "Archivo Black"').then(function(){ ready.font = true; draw(); });
+    document.fonts.load('700 20px "JetBrains Mono"').then(function(){ draw(); });
     document.fonts.ready.then(function(){ ready.font = true; draw(); });
   } else { ready.font = true; }
 
@@ -605,7 +608,7 @@
     return { w:x1 - x0, h:y1 - y0, win:win, phone:ph };
   }
 
-  // ---- renderer ---------------------------------------------------------
+  // ---- sizes and corners -------------------------------------------------
   // Every measurement is derived from the target size, so one routine covers
   // 1280x720 and 1080x1920 alike. k is the geometric-mean scale against the
   // original 1280x720 design.
@@ -619,8 +622,9 @@
   // the edge. A drag starts from here, so pulling past the edge and back
   // does not leave a dead zone to cross first.
   var shown = { win:[0,0], phone:[0,0] };
-  function render(c, p, opts){
-    opts = opts || {};
+  // Full picture and Showcase: the tool's first two layouts, which share one
+  // routine because they share their headline and logo row.
+  function drawClassic(c, p, opts){
     var W = p.w, H = p.h;
     var k = Math.sqrt((W*H)/(1280*720));
     var s = p.safe;
@@ -628,9 +632,6 @@
     var stamp = STAMPS[p.id], stampX = stamp ? W*(1-stamp.w) : W, stampY = stamp ? H*(1-stamp.h) : H;
     var portrait = (W/H) < 1.2;
     var show = state.layout === 'showcase';
-    if (opts.preview) phoneHit = null;
-
-    c.clearRect(0,0,W,H);
     c.fillStyle = '#0b0e14'; c.fillRect(0,0,W,H);
 
     if (show) {
@@ -783,28 +784,382 @@
       noShadow(c);
     }
 
-    // safe-area guides: preview only, never exported
-    if (opts.guides) {
-      c.save();
-      c.strokeStyle = 'rgba(255,196,0,.95)';
-      c.lineWidth = Math.max(2, 3*k);
-      c.setLineDash([14*k, 10*k]);
-      c.strokeRect(left, top, right-left, bottom-top);
-      if (stamp) {
-        // a stand-in for the platform's own timestamp, where it will land
-        var bw = 0.07*W, bh = 0.05*H, bx = W - 0.012*W - bw, by = H - 0.02*H - bh;
-        c.setLineDash([]);
-        roundRect(c, bx, by, bw, bh, bh*0.18); c.fillStyle = 'rgba(0,0,0,.8)'; c.fill();
-        c.font = '600 ' + (bh*0.55).toFixed(1) + 'px ' + UI_FONT;
-        c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle';
-        c.fillText('12:34', bx + bw/2, by + bh/2);
-        c.textAlign = 'left'; c.textBaseline = 'alphabetic';
-        c.setLineDash([8*k, 6*k]);
-        c.strokeRect(stampX, stampY, W - stampX, H - stampY);
-      }
+  }
+
+  // ---- templates --------------------------------------------------------
+  // A template is a whole arrangement of the thumbnail. Every template draws
+  // from the same content - headline, pictures, badge, kicker, palette - so
+  // switching keeps what was typed. Each one gets the canvas, the size and the
+  // render options, and reads everything else from state.
+
+  // The size's working box: safe edges, the timestamp corner, and its shape.
+  function box(p){
+    var W = p.w, H = p.h, s = p.safe, stamp = STAMPS[p.id];
+    return {
+      W:W, H:H, k:Math.sqrt((W*H)/(1280*720)),
+      left:W*s.l, right:W*(1-s.r), top:H*s.t, bottom:H*(1-s.b),
+      stamp:stamp, stampX: stamp ? W*(1-stamp.w) : W, stampY: stamp ? H*(1-stamp.h) : H,
+      wide:(W/H) >= 1.2
+    };
+  }
+
+  // The one solid colour a template leans on: the palette's last stop, the
+  // bright end of every stock gradient.
+  function accent(){ return activeStops()[2]; }
+  // Near-black or white, whichever reads on the given colour.
+  function inkOn(hex){
+    var n = parseInt(hex.slice(1), 16);
+    return (0.299*(n>>16&255) + 0.587*(n>>8&255) + 0.114*(n&255)) > 150 ? '#16151a' : '#ffffff';
+  }
+  function monoFont(px){ return '700 ' + px.toFixed(1) + 'px "JetBrains Mono", ui-monospace, Menlo, monospace'; }
+  // Canvas letter-spacing support is still patchy, so the kicker is set a
+  // letter at a time.
+  function spaced(c, text, x, y, track){
+    for (var i = 0; i < text.length; i++) { c.fillText(text[i], x, y); x += c.measureText(text[i]).width + track; }
+    return x;
+  }
+
+  // The kicker: a corner bracket in the accent and two short monospace lines
+  // inside it, say a series and an episode. With both lines empty the logo
+  // takes its place. Returns the height it used.
+  function drawKicker(c, x, y, k){
+    var a = state.kick1.trim().toUpperCase(), b = state.kick2.trim().toUpperCase();
+    if (!a && !b) {
+      if (!(state.logo && ready.logo)) return 0;
+      var lh = 88*k;
+      c.drawImage(logo, x, y, logo.width * lh / logo.height, lh);
+      return lh;
+    }
+    var arm = 100*k, th = 20*k, fpx = 21*k, tx = x + 40*k;
+    c.fillStyle = accent();
+    c.fillRect(x, y, arm, th); c.fillRect(x, y, th, arm);
+    c.font = monoFont(fpx); c.textBaseline = 'alphabetic';
+    c.fillStyle = '#ffffff'; if (a) spaced(c, a, tx, y + 52*k, fpx*0.12);
+    c.fillStyle = accent();  if (b) spaced(c, b, tx, y + 82*k, fpx*0.12);
+    return arm;
+  }
+
+  // A drawn arrow, so it carries the headline's weight whatever the font has.
+  function drawArrow(c, x, midY, px, color){
+    var len = px*0.8, head = len*0.42;
+    c.save();
+    c.strokeStyle = color; c.lineWidth = px*0.15; c.lineCap = 'round'; c.lineJoin = 'round';
+    c.beginPath();
+    c.moveTo(x, midY); c.lineTo(x + len, midY);
+    c.moveTo(x + len - head, midY - head); c.lineTo(x + len, midY); c.lineTo(x + len - head, midY + head);
+    c.stroke();
+    c.restore();
+    return len + px*0.3;   // the room it took, gap included
+  }
+
+  // Largest box of a shape that fits a region, centred, then lifted - or
+  // shrunk, when there is no room to lift - out of the timestamp corner.
+  function fitBox(g, x0, y0, x1, y1, aspect, slack){
+    var w = Math.max(0, Math.min(x1 - x0, (y1 - y0) * aspect) * (slack || 1)), h = w / aspect;
+    var x = x0 + (x1 - x0 - w)/2, y = y0 + (y1 - y0 - h)/2;
+    var clearY = g.stampY - 0.02*g.H;
+    if (x + w > g.stampX && y + h > clearY) {
+      y = clearY - h;
+      if (y < y0) { h = Math.max(0, clearY - y0); w = h * aspect; y = y0; x = x0 + (x1 - x0 - w)/2; }
+    }
+    return { x:x, y:y, w:w, h:h };
+  }
+
+  // The screenshot's own shape, held to a sane window.
+  function shotAspect(img){
+    return Math.max(WIN_ASPECT.min, Math.min(WIN_ASPECT.max, img.width / img.height));
+  }
+
+  // A fine grid, the stand-in for a picture that has not been dropped yet.
+  function gridFill(c, x, y, w, h, line, step){
+    c.save();
+    c.beginPath(); c.rect(x, y, w, h); c.clip();
+    c.strokeStyle = line; c.lineWidth = Math.max(1, step*0.03);
+    c.beginPath();
+    for (var gx = x + step; gx < x + w; gx += step) { c.moveTo(gx, y); c.lineTo(gx, y + h); }
+    for (var gy = y + step; gy < y + h; gy += step) { c.moveTo(x, gy); c.lineTo(x + w, gy); }
+    c.stroke();
+    c.restore();
+  }
+  function placeholderLabel(c, x, y, w, h, text, color){
+    c.font = '600 ' + Math.max(10, w*0.045).toFixed(1) + 'px ' + UI_FONT;
+    c.fillStyle = color; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(text, x + w/2, y + h/2);
+    c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+  }
+
+  // The newer templates set their headline tight, the way display type is
+  // set, which makes the words bigger in the same width. Browsers without
+  // canvas letter-spacing get the font's own spacing; the fitting measures
+  // whichever is in effect, so nothing overflows either way.
+  function tightFont(c, px){
+    c.font = headlineFont(px);
+    if ('letterSpacing' in c) c.letterSpacing = (-0.045*px).toFixed(1) + 'px';
+  }
+  function looseFont(c){ if ('letterSpacing' in c) c.letterSpacing = '0px'; }
+
+  // Shrinks a headline until it and whatever sits beside it fit the width.
+  function fitWith(c, text, maxW, startPx, minPx, extra){
+    var px = startPx, step = Math.max(1, startPx/30);
+    while (px > minPx) {
+      tightFont(c, px);
+      if (c.measureText(text).width + extra(px) <= maxW) break;
+      px -= step;
+    }
+    looseFont(c);
+    return px;
+  }
+  function none(){ return 0; }
+
+  // The outlined tag the Launch template sets above its headline.
+  function drawTag(c, x, capTop, h){
+    var t = pillText(); if (!t) return 0;
+    var fpx = h*0.52, A = accent();
+    c.font = headlineFont(fpx);
+    var w = c.measureText(t).width + h*0.9;
+    roundRect(c, x, capTop, w, h, h*0.2);
+    c.lineWidth = Math.max(1.5, h*0.06); c.strokeStyle = A; c.stroke();
+    c.fillStyle = A; c.textBaseline = 'middle';
+    c.fillText(t, x + h*0.45, capTop + h*0.54);
+    c.textBaseline = 'alphabetic';
+    return h;
+  }
+
+  // Launch: dot-grid dark, kicker, outlined tag, a big two-line headline with
+  // an arrow after the first line, and the screenshot in a window framed in
+  // the accent, with an optional sticker in its title bar.
+  var LAUNCH_BAR = 0.07, LAUNCH_EDGE = 0.014;
+  function drawLaunchWindow(c, x, y, w, h, deg, panX, panY){
+    var A = accent(), bw = Math.max(3, w*LAUNCH_EDGE), r = w*0.035, bar = w*LAUNCH_BAR;
+    c.save();
+    c.translate(x + w/2, y + h/2); c.rotate(deg*Math.PI/180); c.translate(-w/2, -h/2);
+    c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = w*0.06; c.shadowOffsetY = w*0.02;
+    roundRect(c, 0, 0, w, h, r); c.fillStyle = A; c.fill();
+    noShadow(c);
+    var ix = bw, iy = bw, iw = w - 2*bw, ih = h - 2*bw;
+    c.save();
+    roundRect(c, ix, iy, iw, ih, r - bw); c.clip();
+    c.fillStyle = '#1c1b21'; c.fillRect(ix, iy, iw, ih);
+    shown.win = cover(c, frame, ix, iy + bar, iw, ih - bar, state.zoom, panX, panY);
+    c.fillStyle = '#29282f'; c.fillRect(ix, iy, iw, bar);
+    c.restore();
+    var lr = bar*0.16;
+    ['#ff5f57', A, '#6b6870'].forEach(function(col, i){
+      c.beginPath(); c.arc(ix + bar*0.5 + i*lr*3.1, iy + bar/2, lr, 0, Math.PI*2);
+      c.fillStyle = col; c.fill();
+    });
+    var label = state.sticker.trim().toUpperCase();
+    if (label) {
+      var sh = bar*0.62, fpx = sh*0.5;
+      c.font = monoFont(fpx);
+      var sw = c.measureText(label).width + fpx*0.1*label.length + sh*0.9;
+      var sx = ix + iw - bar*0.25 - sw, sy = iy + (bar - sh)/2;
+      roundRect(c, sx, sy, sw, sh, sh*0.14); c.fillStyle = '#ff5b3a'; c.fill();
+      c.fillStyle = '#16151a'; c.textBaseline = 'middle';
+      spaced(c, label, sx + sh*0.45, sy + sh*0.55, fpx*0.1);
+      c.textBaseline = 'alphabetic';
+    } else if (state.winTitle) {
+      c.font = monoFont(bar*0.3); c.fillStyle = 'rgba(255,255,255,.6)'; c.textBaseline = 'middle';
+      c.fillText(state.winTitle, ix + bar*0.5 + lr*9.5, iy + bar/2);
+      c.textBaseline = 'alphabetic';
+    }
+    c.restore();
+  }
+
+  function drawLaunch(c, p, opts){
+    var g = box(p), W = g.W, H = g.H, k = g.k;
+    c.fillStyle = '#0f0e12'; c.fillRect(0, 0, W, H);
+    // The dot grid, all in one path: at podcast size it is a couple of
+    // thousand dots, and one fill keeps that cheap.
+    var step = 32*k, dr = Math.max(0.8, 1.6*k);
+    c.beginPath();
+    for (var y = step/2; y < H; y += step) for (var x = step/2; x < W; x += step) { c.moveTo(x + dr, y); c.arc(x, y, dr, 0, Math.PI*2); }
+    c.fillStyle = 'rgba(255,255,255,.07)'; c.fill();
+
+    var kh = drawKicker(c, g.left, g.top, k);
+    var textTop = g.top + (kh ? kh + 0.06*H : 0);
+    var colR = g.wide ? g.left + (g.right - g.left)*0.46 : g.right;
+    var maxW = colR - g.left;
+    var l1 = state.line1.toUpperCase(), l2 = state.line2.toUpperCase();
+    var start = (g.wide ? 150 : 130)*k;
+    var px1 = l1 ? fitWith(c, l1, maxW, start, 24*k, function(px){ return px*1.1; }) : 0;
+    var px2 = l2 ? fitWith(c, l2, maxW, start, 24*k, none) : 0;
+    var tagH = pillText() ? 56*k*state.pillSize : 0;
+    var blockH = (tagH ? tagH + 0.035*H : 0) + (px1 ? px1*0.74 : 0) + (px1 && px2 ? px2*1.02 : px2*0.74);
+
+    // Wide: the words in the left column, centred in the height below the
+    // kicker. Otherwise the words sit at the bottom and the window takes the
+    // room between them and the kicker.
+    var capTop = g.wide ? textTop + Math.max(0, (g.bottom - textTop - blockH)/2) : g.bottom - blockH;
+    if (tagH) { drawTag(c, g.left, capTop, tagH); capTop += tagH + 0.035*H; }
+    var base = capTop;
+    if (l1) {
+      base += px1*0.74;
+      tightFont(c, px1); c.fillStyle = state.line1Color;
+      c.fillText(l1, g.left, base);
+      var after = c.measureText(l1).width;
+      looseFont(c);
+      drawArrow(c, g.left + after + px1*0.28, base - px1*0.36, px1, state.line1Color);
+    }
+    if (l2) {
+      base += l1 ? px2*1.02 : px2*0.74;
+      tightFont(c, px2);
+      var st = activeStops(), lg = c.createLinearGradient(g.left, 0, g.left + Math.min(c.measureText(l2).width, maxW), 0);
+      lg.addColorStop(0, st[0]); lg.addColorStop(0.45, st[1]); lg.addColorStop(1, st[2]);
+      c.fillStyle = lg; c.fillText(l2, g.left, base);
+      looseFont(c);
+    }
+
+    var a = shotAspect(frame);
+    var winAspect = 1 / (1/a + LAUNCH_BAR + 2*LAUNCH_EDGE);
+    var r = g.wide
+      ? fitBox(g, g.left + (g.right - g.left)*0.5, g.top, g.right, g.bottom, winAspect, 0.94)
+      : fitBox(g, g.left, textTop, g.right, capTop - (tagH ? tagH + 0.035*H : 0) - 0.05*H, winAspect, 0.94);
+    if (r.w > 0) drawLaunchWindow(c, r.x, r.y, r.w, r.h, state.winTilt, state.panX*W, state.panY*H);
+  }
+
+  // Before -> After: a diagonal split, dark on one side and the palette on
+  // the other. The top line is the dim "before" word over the before
+  // picture; the bottom line follows an arrow over the after picture, which
+  // gets the heavier card with a hard offset shadow.
+  function drawVersus(c, p, opts){
+    var g = box(p), W = g.W, H = g.H, k = g.k, st = activeStops(), ink = inkOn(st[2]);
+    c.fillStyle = '#18171d'; c.fillRect(0, 0, W, H);
+    // In a tall frame the split sits halfway through the room that is
+    // actually usable - below the kicker, above the platform's own bottom
+    // strip - so both halves get the same space, not the same pixels.
+    var kickRoom = (state.kick1.trim() || state.kick2.trim()) ? 100*k : (state.logo && ready.logo ? 88*k : 0);
+    var mid = (g.top + (kickRoom ? kickRoom + 0.03*H : 0) + g.bottom) / 2, tilt = 0.02*H;
+    var fill = c.createLinearGradient(0, 0, W, H);
+    fill.addColorStop(0, st[1]); fill.addColorStop(1, st[2]);
+    c.beginPath();
+    if (g.wide) { c.moveTo(W*0.53, 0); c.lineTo(W, 0); c.lineTo(W, H); c.lineTo(W*0.47, H); }
+    else { c.moveTo(0, mid + tilt); c.lineTo(W, mid - tilt); c.lineTo(W, H); c.lineTo(0, H); }
+    c.closePath(); c.fillStyle = fill; c.fill();
+
+    var kh = drawKicker(c, g.left, g.top, k);
+    var l1 = state.line1.toUpperCase(), l2 = state.line2.toUpperCase();
+    var gap = 0.03*W;
+    // the two halves: where each word and its card may go
+    var A, B;
+    if (g.wide) {
+      var y0 = g.top + (kh ? kh + 0.07*H : 0);
+      A = { x0:g.left, x1:W*0.455 - gap*0.5, y0:y0, y1:g.bottom };
+      B = { x0:W*0.545 + gap*0.5, x1:g.right, y0:y0, y1:g.bottom };
+    } else {
+      A = { x0:g.left, x1:g.right, y0:g.top + (kh ? kh + 0.03*H : 0), y1:mid - tilt - 0.02*H };
+      B = { x0:g.left, x1:g.right, y0:mid + tilt + 0.025*H, y1:g.bottom };
+    }
+    // One size for both words, so neither side shouts over the other; never
+    // more than a fifth of a half's height.
+    var start = Math.min(130*k, (A.y1 - A.y0)*0.2, (B.y1 - B.y0)*0.2);
+    var px = Math.min(
+      l1 ? fitWith(c, l1, A.x1 - A.x0, start, 20*k, none) : start,
+      l2 ? fitWith(c, l2, B.x1 - B.x0, start, 20*k, function(q){ return q*1.1; }) : start);
+
+    var aspect = shotAspect(frame);
+    var cardTop = function(R){ return R.y0 + px*0.74 + (g.wide ? 0.05 : 0.025)*H; };
+    var ra = fitBox(g, A.x0, cardTop(A), A.x1, A.y1, aspect, 0.96);
+    var rb = fitBox(g, B.x0, cardTop(B), B.x1, B.y1 - 12*k, aspect, 0.96);
+    // equal cards, so the comparison is fair
+    var cw = Math.min(ra.w, rb.w), ch = cw / aspect;
+    ra = { x:A.x0, y:cardTop(A), w:cw, h:ch };
+    rb = { x:g.wide ? B.x1 - cw - 12*k : B.x0, y:cardTop(B), w:cw, h:ch };
+
+    // words
+    c.textBaseline = 'alphabetic';
+    if (l1) {
+      c.save(); c.globalAlpha = 0.55;
+      tightFont(c, px); c.fillStyle = state.line1Color;
+      c.fillText(l1, A.x0, A.y0 + px*0.74);
+      looseFont(c);
       c.restore();
     }
+    if (l2) {
+      var ax = B.x0;
+      var used = drawArrow(c, ax, B.y0 + px*0.37, px, ink);
+      tightFont(c, px); c.fillStyle = ink;
+      c.fillText(l2, ax + used, B.y0 + px*0.74);
+      looseFont(c);
+    }
+
+    // before card: quiet, dark, soft edge
+    var rad = 16*k;
+    if (cw > 0) {
+      roundRect(c, ra.x, ra.y, ra.w, ra.h, rad); c.fillStyle = '#1d1c22'; c.fill();
+      c.save(); roundRect(c, ra.x, ra.y, ra.w, ra.h, rad); c.clip();
+      if (phoneImg) shown.phone = cover(c, phoneImg, ra.x, ra.y, ra.w, ra.h, state.phoneZoom, state.phonePanX*ra.w, state.phonePanY*ra.w);
+      else {
+        gridFill(c, ra.x, ra.y, ra.w, ra.h, 'rgba(255,255,255,.06)', ra.w/15);
+        if (opts.preview) placeholderLabel(c, ra.x, ra.y, ra.w, ra.h, 'Drop the before picture here', 'rgba(255,255,255,.4)');
+      }
+      c.restore();
+      roundRect(c, ra.x, ra.y, ra.w, ra.h, rad);
+      c.lineWidth = Math.max(1.5, 3*k); c.strokeStyle = '#4a4652'; c.stroke();
+      if (opts.preview) phoneHit = { x:ra.x, y:ra.y, w:ra.w, h:ra.h };
+
+      // after card: bright, ink edge, hard shadow
+      var off = 12*k, edge = Math.max(2, 5*k);
+      roundRect(c, rb.x + off, rb.y + off, rb.w, rb.h, rad); c.fillStyle = '#16151a'; c.fill();
+      roundRect(c, rb.x, rb.y, rb.w, rb.h, rad); c.fillStyle = '#ffffff'; c.fill();
+      c.save(); roundRect(c, rb.x + edge, rb.y + edge, rb.w - 2*edge, rb.h - 2*edge, rad - edge); c.clip();
+      shown.win = cover(c, frame, rb.x + edge, rb.y + edge, rb.w - 2*edge, rb.h - 2*edge, state.zoom, state.panX*W, state.panY*H);
+      c.restore();
+      roundRect(c, rb.x, rb.y, rb.w, rb.h, rad);
+      c.lineWidth = edge; c.strokeStyle = '#16151a'; c.stroke();
+    }
   }
+
+  var TEMPLATES = [
+    { id:'bleed', name:'Full picture', hint:'The image fills the frame.',
+      labels:{ img:'Image', l1:'Top line', l2:'Bottom line' },
+      draw:function(c, p, o){ drawClassic(c, p, o); } },
+    { id:'showcase', name:'Showcase', hint:'The image sits in a window on a dark backdrop, with a phone beside it.',
+      labels:{ img:'Window picture', l1:'Top line', l2:'Bottom line' },
+      draw:function(c, p, o){ drawClassic(c, p, o); } },
+    { id:'launch', name:'Launch', hint:'A big two-line headline with an arrow, and the screenshot in a framed window.',
+      labels:{ img:'Window picture', l1:'Top line', l2:'Bottom line' },
+      draw:drawLaunch },
+    { id:'versus', name:'Before → After', hint:'Two pictures side by side on a split, the second one lifted.',
+      labels:{ img:'After picture', l1:'Before', l2:'After' },
+      draw:drawVersus }
+  ];
+  function templateById(id){
+    for (var i = 0; i < TEMPLATES.length; i++) if (TEMPLATES[i].id === id) return TEMPLATES[i];
+    return TEMPLATES[0];
+  }
+
+  function drawGuides(c, p){
+    var g = box(p), k = g.k, W = g.W, H = g.H;
+    c.save();
+    c.strokeStyle = 'rgba(255,196,0,.95)';
+    c.lineWidth = Math.max(2, 3*k);
+    c.setLineDash([14*k, 10*k]);
+    c.strokeRect(g.left, g.top, g.right - g.left, g.bottom - g.top);
+    if (g.stamp) {
+      // a stand-in for the platform's own timestamp, where it will land
+      var bw = 0.07*W, bh = 0.05*H, bx = W - 0.012*W - bw, by = H - 0.02*H - bh;
+      c.setLineDash([]);
+      roundRect(c, bx, by, bw, bh, bh*0.18); c.fillStyle = 'rgba(0,0,0,.8)'; c.fill();
+      c.font = '600 ' + (bh*0.55).toFixed(1) + 'px ' + UI_FONT;
+      c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText('12:34', bx + bw/2, by + bh/2);
+      c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+      c.setLineDash([8*k, 6*k]);
+      c.strokeRect(g.stampX, g.stampY, W - g.stampX, H - g.stampY);
+    }
+    c.restore();
+  }
+
+  // ---- renderer ---------------------------------------------------------
+  function render(c, p, opts){
+    opts = opts || {};
+    if (opts.preview) phoneHit = null;
+    c.clearRect(0, 0, p.w, p.h);
+    templateById(state.layout).draw(c, p, opts);
+    if (opts.guides) drawGuides(c, p);
+  }
+
 
   var firstDraw = true;
   function draw(){
@@ -828,6 +1183,7 @@
     if (customChip) sizeChip(customChip, p.id === 'custom' ? p : presetById('custom'));
     firstDraw = false;
     scheduleFeed();
+    scheduleThumbs();
   }
 
   // ---- the well around the preview --------------------------------------
@@ -1121,8 +1477,9 @@
   function syncPresetUI(){
     var p = presetById(state.preset);
     customRow.hidden = (p.id !== 'custom');
-    // The badge sits where the showcase puts its cards, so it is full-picture only.
-    var canPlay = p.play && state.layout !== 'showcase';
+    // The badge sits where the other templates put their cards, so it is
+    // full-picture only.
+    var canPlay = p.play && state.layout === 'bleed';
     playEl.disabled = !canPlay;
     playTog.classList.toggle('off', !canPlay);
   }
@@ -1138,36 +1495,65 @@
   bind('line2', function(e){ state.line2 = e.target.value; persist(); draw(); });
 
   // ---- layout, badge and the showcase cards -----------------------------
-  var LAYOUT_HINTS = {
-    bleed: 'The image fills the frame.',
-    showcase: 'The image sits in a window on a dark backdrop, with a phone beside it.'
-  };
+  // The picker: one live preview per template, drawn with your own content
+  // at the size you picked, so choosing is comparing rather than imagining.
+  var tplsEl = document.getElementById('tpls'), tplThumbs = [];
+  TEMPLATES.forEach(function(t){
+    var lab = document.createElement('label'); lab.className = 'tpl';
+    var input = document.createElement('input');
+    input.type = 'radio'; input.name = 'layout'; input.value = t.id;
+    var thumb = document.createElement('canvas');
+    thumb.width = 240; thumb.height = 135; thumb.setAttribute('aria-hidden', 'true');
+    var name = document.createElement('span'); name.textContent = t.name;
+    lab.appendChild(input); lab.appendChild(thumb); lab.appendChild(name);
+    tplsEl.appendChild(lab);
+    tplThumbs.push({ t:t, cv:thumb });
+  });
+  var thumbTimer = 0;
+  function scheduleThumbs(){
+    clearTimeout(thumbTimer);
+    thumbTimer = setTimeout(renderThumbs, 250);
+  }
+  // Each preview borrows the state for one render, at a small copy of the
+  // current size; k scales everything down with it.
+  function renderThumbs(){
+    var p = current(), keep = state.layout, tw = 240, th = Math.round(tw * p.h / p.w);
+    var small = { id:p.id, w:tw, h:th, safe:p.safe, play:p.play };
+    tplThumbs.forEach(function(e){
+      if (e.cv.width !== tw || e.cv.height !== th) { e.cv.width = tw; e.cv.height = th; }
+      state.layout = e.t.id;
+      render(e.cv.getContext('2d'), small, { guides:false });
+    });
+    state.layout = keep;
+  }
+
   var layoutEls = document.querySelectorAll('input[name="layout"]');
-  var showcaseFields = document.getElementById('showcaseFields');
   var phoneBits = document.getElementById('phoneBits');
+  var forEls = document.querySelectorAll('[data-for]');
   function syncLayout(){
-    var show = state.layout === 'showcase';
-    for (var i = 0; i < layoutEls.length; i++) layoutEls[i].checked = (layoutEls[i].value === state.layout);
-    showcaseFields.hidden = !show;
+    var t = templateById(state.layout);
+    for (var i = 0; i < layoutEls.length; i++) layoutEls[i].checked = (layoutEls[i].value === t.id);
+    // Each control says which templates it belongs to; the rest step aside.
+    for (var f = 0; f < forEls.length; f++) forEls[f].hidden = forEls[f].dataset.for.split(' ').indexOf(t.id) < 0;
     phoneBits.hidden = !state.phone;
-    // Shading darkens a full picture; the showcase backdrop has its own glow.
-    document.getElementById('vigField').hidden = show;
-    document.getElementById('layoutHint').textContent = LAYOUT_HINTS[state.layout];
-    document.getElementById('imgLabel').textContent = show ? 'Window picture' : 'Image';
+    document.getElementById('layoutHint').textContent = t.hint;
+    document.getElementById('imgLabel').textContent = t.labels.img;
+    document.querySelector('label[for="line1"]').textContent = t.labels.l1;
+    document.querySelector('label[for="line2"]').textContent = t.labels.l2;
     syncPresetUI();
   }
   for (var li = 0; li < layoutEls.length; li++) {
     layoutEls[li].addEventListener('change', function(e){
       if (!e.target.checked) return;
       state.layout = e.target.value; state.panX = 0; state.panY = 0;
-      // A full picture wants a little zoom to crop; a window wants the whole
-      // screenshot, edge to edge.
-      state.zoom = state.layout === 'showcase' ? 1 : 1.25;
+      // A full picture wants a little zoom to crop; a window or card wants the
+      // whole screenshot, edge to edge.
+      state.zoom = state.layout === 'bleed' ? 1.25 : 1;
       zoomEl.value = Math.round(state.zoom*100); sayPercent(zoomEl);
       syncLayout(); persist(); draw();
     });
   }
-  ['badge','winTitle','cap1','cap2','capColor','handle'].forEach(function(id){
+  ['badge','winTitle','cap1','cap2','capColor','handle','kick1','kick2','sticker'].forEach(function(id){
     var el = document.getElementById(id);
     el.value = state[id];
     el.addEventListener('input', function(){ state[id] = el.value; persist(); draw(); });
@@ -1209,16 +1595,23 @@
   var phoneFile = document.getElementById('phoneFile'), phoneResetBtn = document.getElementById('phoneReset');
   document.getElementById('phonePick').addEventListener('click', function(){ phoneFile.click(); });
   phoneFile.addEventListener('change', function(){ if (phoneFile.files[0]) loadPhone(phoneFile.files[0]); phoneFile.value = ''; });
-  phoneResetBtn.addEventListener('click', function(){
-    phoneImg = null; phoneResetBtn.hidden = true; draw();
-    setStatus('Phone picture removed.', 'ok');
-  });
+  function clearSecond(){
+    phoneImg = null; phoneResetBtn.hidden = true; beforeResetBtn.hidden = true; draw();
+    setStatus('Picture removed.', 'ok');
+  }
+  phoneResetBtn.addEventListener('click', clearSecond);
+  // Before -> After keeps its before picture in the same slot as the phone's:
+  // the second picture, whichever template is showing it.
+  var beforeResetBtn = document.getElementById('beforeReset');
+  document.getElementById('beforePick').addEventListener('click', function(){ phoneFile.click(); });
+  beforeResetBtn.addEventListener('click', clearSecond);
   function loadPhone(blob){
     var img = new Image();
     img.onload = function(){
-      phoneImg = img; phoneResetBtn.hidden = false;
+      phoneImg = img; phoneResetBtn.hidden = false; beforeResetBtn.hidden = false;
       state.phonePanX = 0; state.phonePanY = 0; draw();
-      setStatus('Phone picture loaded. Drag it on the phone to reframe it.', 'ok');
+      setStatus(state.layout === 'versus' ? 'Before picture loaded. Drag it on the left card to reframe it.'
+                                          : 'Phone picture loaded. Drag it on the phone to reframe it.', 'ok');
     };
     img.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
     img.src = URL.createObjectURL(blob);
@@ -1302,11 +1695,13 @@
   var wrap = document.getElementById('wrap');
   ['dragenter','dragover'].forEach(function(ev){ wrap.addEventListener(ev, function(e){ e.preventDefault(); wrap.classList.add('dropping'); }); });
   ['dragleave','drop'].forEach(function(ev){ wrap.addEventListener(ev, function(e){ e.preventDefault(); wrap.classList.remove('dropping'); }); });
-  // In the showcase, a file dropped on the phone goes to the phone.
+  // A file dropped on the second picture - the phone, or the before card -
+  // goes there; anywhere else it becomes the main picture.
   // phoneHit is the phone's box before its tilt; at a few degrees the
   // corners it misses are too small to matter.
   function overPhone(e){
-    if (state.layout !== 'showcase' || !state.phone || !phoneHit) return false;
+    // phoneHit is set by whichever template draws the second picture.
+    if (!phoneHit) return false;
     var rect = cv.getBoundingClientRect();
     var x = (e.clientX - rect.left) * cv.width / (rect.width || 1);
     var y = (e.clientY - rect.top) * cv.height / (rect.height || 1);

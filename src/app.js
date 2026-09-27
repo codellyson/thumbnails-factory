@@ -1240,7 +1240,8 @@
         c.beginPath(); c.arc(cx, cy, dr, 0, Math.PI*2); c.fillStyle = '#16151a'; c.fill();
         noShadow(c);
         c.translate(cx, cy); if (!g.wide) c.rotate(Math.PI/2);
-        drawArrow(c, -dr*0.46, 0, dr*1.15, st[2]);
+        // started a touch left of centre: the head carries the weight
+        drawArrow(c, -dr*0.5, 0, dr*1.15, st[2]);
         c.restore();
       }
     }

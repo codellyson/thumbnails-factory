@@ -120,6 +120,23 @@
           <p class="hint">Two short lines in a corner bracket. Leave both empty to show the logo instead.</p>
         </details>
 
+        <details class="group" name="panel">
+          <summary>Fonts</summary>
+          <div class="field">
+            <label for="headFont">Headline</label>
+            <select id="headFont"></select>
+          </div>
+          <div class="field" data-for="launch versus">
+            <label for="monoFont">Kicker and labels</label>
+            <select id="monoFont"></select>
+          </div>
+          <div class="logobtns">
+            <button class="btn btn-sm" id="fontPick">Use your own font file</button>
+          </div>
+          <input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2,font/*" hidden>
+          <p class="hint">Stock fonts load from Google Fonts when you pick them. Your own file stays in this tab and is gone when you close it.</p>
+        </details>
+
         <details class="group" name="panel" data-for="showcase launch">
           <summary>Window</summary>
           <div class="field">

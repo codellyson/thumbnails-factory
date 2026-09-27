@@ -88,6 +88,15 @@ picture, in a card with a hard offset shadow, on the palette side. Tall and squa
 sizes split top and bottom, with the split centred on the room left after the
 kicker and the platform's bottom strip.
 
+Fonts are a choice, not a fixture. The **Fonts** panel picks the headline face
+(Archivo Black by default, or Anton, Bebas Neue, Inter, Montserrat, Poppins,
+Bricolage Grotesque, Space Grotesk, Oswald, DM Serif Display, Playfair Display) and
+the monospace face for the kicker and labels (JetBrains Mono by default). Each stock
+face loads from Google Fonts only when picked, and carries its own tracking so a
+condensed face is not squeezed further. **Use your own font file** adds a
+.ttf/.otf/.woff to both lists for the open tab; it is read in the browser and never
+sent anywhere.
+
 Launch and Before → After share a **kicker**: a corner bracket in the accent with
 two short monospace lines (JetBrains Mono), such as a series and an episode. Leave
 both lines empty to show the logo there instead.

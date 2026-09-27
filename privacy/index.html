@@ -258,6 +258,15 @@
     transition:box-shadow .14s linear;
   }
   input::placeholder{ color:var(--muted); opacity:.8; }
+  select{
+    -webkit-appearance:none; appearance:none; width:100%;
+    font-family:var(--ui); font-size:15px; color:var(--ink);
+    background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%237f7c77' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 14px center;
+    border:0; box-shadow:0 0 0 1px var(--line-strong); border-radius:var(--r);
+    padding:10px 36px 10px 12px; cursor:pointer; transition:box-shadow .14s linear;
+  }
+  @media (hover: hover){ select:hover{ box-shadow:0 0 0 1px var(--muted); } }
+  select:focus-visible{ outline:none; box-shadow:0 0 0 1.5px var(--ink), 0 0 0 5px rgb(35 34 31 / .08); }
   @media (hover: hover){ input[type=text]:hover, input[type=number]:hover{ box-shadow:0 0 0 1px var(--muted); } }
   input[type=text]:focus-visible, input[type=number]:focus-visible{
     outline:none; box-shadow:0 0 0 1.5px var(--ink), 0 0 0 5px rgb(35 34 31 / .08);
@@ -564,11 +573,14 @@
       Opening the page as a file from your own disk sends nothing at all.</p>
 
       <h2>What the page does load from elsewhere</h2>
-      <p>One stylesheet, from Google Fonts, for the typefaces the page and the headlines are set in.
-      That request tells Google the font was requested from this site, in the ordinary way
-      any web font does. It carries nothing about your image or your text. If you would
-      rather avoid it, the page still works with that request blocked; the headline simply
-      falls back to a system typeface.</p>
+      <p>One stylesheet, from Google Fonts, for the typefaces the page and the headlines
+      are set in, and one more for each other font you pick in the Fonts panel. Each
+      request tells Google a font was requested from this site, in the ordinary way any
+      web font does. It carries nothing about your image or your text. If you would
+      rather avoid it, the page still works with those requests blocked; the headline
+      simply falls back to a system typeface.</p>
+      <p>A font file of your own is read in the browser, used in the open tab, and not
+      sent anywhere.</p>
 
       <h2>Why it is built this way</h2>
       <p>Most free thumbnail tools upload your picture to process it. That is a reasonable

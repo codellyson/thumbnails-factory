@@ -305,6 +305,15 @@
     transition:box-shadow .14s linear;
   }
   input::placeholder{ color:var(--muted); opacity:.8; }
+  select{
+    -webkit-appearance:none; appearance:none; width:100%;
+    font-family:var(--ui); font-size:15px; color:var(--ink);
+    background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%237f7c77' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 14px center;
+    border:0; box-shadow:0 0 0 1px var(--line-strong); border-radius:var(--r);
+    padding:10px 36px 10px 12px; cursor:pointer; transition:box-shadow .14s linear;
+  }
+  @media (hover: hover){ select:hover{ box-shadow:0 0 0 1px var(--muted); } }
+  select:focus-visible{ outline:none; box-shadow:0 0 0 1.5px var(--ink), 0 0 0 5px rgb(35 34 31 / .08); }
   @media (hover: hover){ input[type=text]:hover, input[type=number]:hover{ box-shadow:0 0 0 1px var(--muted); } }
   input[type=text]:focus-visible, input[type=number]:focus-visible{
     outline:none; box-shadow:0 0 0 1.5px var(--ink), 0 0 0 5px rgb(35 34 31 / .08);

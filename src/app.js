@@ -177,6 +177,7 @@
     layout:'bleed', badge:'', winTitle:'', capColor:'#ffd23f',
     phone:true, cap1:'', cap2:'', handle:'', dots:true, feed:false,
     kick1:'YOUR CHANNEL', kick2:'EPISODE 01', sticker:'',   // Launch and Before -> After
+    headFont:'archivo-black', monoFont:'jetbrains',
     pillStyle:'light', pillSize:1, pillPos:'logo',
     winStyle:'dark', winTurn:17, winTilt:-4,
     phoneSide:'right', phoneSize:1, phoneTilt:6,
@@ -188,7 +189,7 @@
   // The showcase settings, saved as they are. Kept as lists so persist() and
   // the restore below cannot drift apart.
   var STR_KEYS = ['layout','badge','winTitle','cap1','cap2','capColor','handle',
-                  'pillStyle','pillPos','winStyle','phoneSide','glow','kick1','kick2','sticker'];
+                  'pillStyle','pillPos','winStyle','phoneSide','glow','kick1','kick2','sticker','headFont','monoFont'];
   var NUM_KEYS = ['pillSize','winTurn','winTilt','phoneSize','phoneTilt','glowAmt'];
   try {
     var saved = JSON.parse(localStorage.getItem('tf-state') || 'null');
@@ -265,7 +266,61 @@
     document.fonts.ready.then(function(){ ready.font = true; draw(); });
   } else { ready.font = true; }
 
-  function headlineFont(px){ return px + 'px "Archivo Black", Helvetica, Arial, sans-serif'; }
+  // ---- fonts ------------------------------------------------------------
+  // Two roles, each with a choice: the headline face, and the monospace face
+  // the kicker and labels are set in. Stock faces come from Google Fonts and
+  // load only when picked; `track` is the tight tracking, in em, that the
+  // newer templates apply, since a condensed face needs far less than a wide
+  // one. A font file of your own can join either list for the session.
+  var HEAD_FONTS = [
+    { id:'archivo-black', name:'Archivo Black', family:'Archivo Black', weight:400, track:-0.045, css:'Archivo+Black' },
+    { id:'anton',         name:'Anton',         family:'Anton',         weight:400, track:-0.01,  css:'Anton' },
+    { id:'bebas',         name:'Bebas Neue',    family:'Bebas Neue',    weight:400, track:0,      css:'Bebas+Neue' },
+    { id:'inter',         name:'Inter Black',   family:'Inter',         weight:900, track:-0.05,  css:'Inter:wght@900' },
+    { id:'montserrat',    name:'Montserrat Black', family:'Montserrat', weight:900, track:-0.04,  css:'Montserrat:wght@900' },
+    { id:'poppins',       name:'Poppins ExtraBold', family:'Poppins',   weight:800, track:-0.04,  css:'Poppins:wght@800' },
+    { id:'bricolage',     name:'Bricolage Grotesque', family:'Bricolage Grotesque', weight:800, track:-0.045, css:'Bricolage+Grotesque:wght@800' },
+    { id:'space-grotesk', name:'Space Grotesk', family:'Space Grotesk', weight:700, track:-0.04,  css:'Space+Grotesk:wght@700' },
+    { id:'oswald',        name:'Oswald',        family:'Oswald',        weight:700, track:-0.01,  css:'Oswald:wght@700' },
+    { id:'dm-serif',      name:'DM Serif Display', family:'DM Serif Display', weight:400, track:-0.02, css:'DM+Serif+Display' },
+    { id:'playfair',      name:'Playfair Display Black', family:'Playfair Display', weight:900, track:-0.03, css:'Playfair+Display:wght@900' }
+  ];
+  var MONO_FONTS = [
+    { id:'jetbrains',  name:'JetBrains Mono', family:'JetBrains Mono', weight:700, css:'JetBrains+Mono:wght@700' },
+    { id:'space-mono', name:'Space Mono',     family:'Space Mono',     weight:700, css:'Space+Mono:wght@700' },
+    { id:'ibm-plex',   name:'IBM Plex Mono',  family:'IBM Plex Mono',  weight:700, css:'IBM+Plex+Mono:wght@700' },
+    { id:'dm-mono',    name:'DM Mono',        family:'DM Mono',        weight:500, css:'DM+Mono:wght@500' },
+    { id:'fira-code',  name:'Fira Code',      family:'Fira Code',      weight:700, css:'Fira+Code:wght@700' },
+    { id:'courier',    name:'Courier Prime',  family:'Courier Prime',  weight:700, css:'Courier+Prime:wght@700' }
+  ];
+  function fontById(list, id){
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return list[0];
+  }
+  var headFace = function(){ return fontById(HEAD_FONTS, state.headFont); };
+  var monoFace = function(){ return fontById(MONO_FONTS, state.monoFont); };
+
+  // Fetches a stock face the first time it is picked, then redraws once the
+  // browser has it. A face that fails to load leaves the fallback in place.
+  var fontLinks = { 'archivo-black':true, 'jetbrains':true };   // already in the page's own stylesheet link
+  function ensureFont(f){
+    if (!f.css || fontLinks[f.id]) return;
+    fontLinks[f.id] = true;
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=' + f.css + '&display=swap';
+    document.head.appendChild(link);
+    if (document.fonts && document.fonts.load) {
+      link.onload = function(){
+        document.fonts.load(f.weight + ' 40px "' + f.family + '"').then(function(){ draw(); }, function(){});
+      };
+    }
+  }
+
+  function headlineFont(px){
+    var f = headFace();
+    return f.weight + ' ' + px + 'px "' + f.family + '", "Archivo Black", Helvetica, Arial, sans-serif';
+  }
 
   function fitSize(c, text, maxW, startPx, minPx){
     var px = startPx, step = Math.max(1, startPx/22);
@@ -811,7 +866,10 @@
     var n = parseInt(hex.slice(1), 16);
     return (0.299*(n>>16&255) + 0.587*(n>>8&255) + 0.114*(n&255)) > 150 ? '#16151a' : '#ffffff';
   }
-  function monoFont(px){ return '700 ' + px.toFixed(1) + 'px "JetBrains Mono", ui-monospace, Menlo, monospace'; }
+  function monoFont(px){
+    var f = monoFace();
+    return f.weight + ' ' + px.toFixed(1) + 'px "' + f.family + '", "JetBrains Mono", ui-monospace, Menlo, monospace';
+  }
   // Canvas letter-spacing support is still patchy, so the kicker is set a
   // letter at a time.
   function spaced(c, text, x, y, track){
@@ -894,7 +952,7 @@
   // whichever is in effect, so nothing overflows either way.
   function tightFont(c, px){
     c.font = headlineFont(px);
-    if ('letterSpacing' in c) c.letterSpacing = (-0.045*px).toFixed(1) + 'px';
+    if ('letterSpacing' in c) c.letterSpacing = (headFace().track * px).toFixed(1) + 'px';
   }
   function looseFont(c){ if ('letterSpacing' in c) c.letterSpacing = '0px'; }
 
@@ -1553,6 +1611,48 @@
       syncLayout(); persist(); draw();
     });
   }
+  // ---- font pickers -----------------------------------------------------
+  var headSel = document.getElementById('headFont'), monoSel = document.getElementById('monoFont');
+  function fillFonts(sel, list, key){
+    sel.textContent = '';
+    list.forEach(function(f){
+      var o = document.createElement('option'); o.value = f.id; o.textContent = f.name;
+      sel.appendChild(o);
+    });
+    sel.value = fontById(list, state[key]).id;
+  }
+  function syncFonts(){ fillFonts(headSel, HEAD_FONTS, 'headFont'); fillFonts(monoSel, MONO_FONTS, 'monoFont'); }
+  headSel.addEventListener('change', function(){
+    state.headFont = headSel.value; ensureFont(headFace()); persist(); draw();
+  });
+  monoSel.addEventListener('change', function(){
+    state.monoFont = monoSel.value; ensureFont(monoFace()); persist(); draw();
+  });
+  // Your own font file: read in the browser, added for this tab only, and
+  // offered in both lists. It never leaves the page, like the pictures.
+  var fontFile = document.getElementById('fontFile'), ownFonts = 0;
+  document.getElementById('fontPick').addEventListener('click', function(){ fontFile.click(); });
+  fontFile.addEventListener('change', function(){
+    var f = fontFile.files[0];
+    fontFile.value = '';
+    if (!f) return;
+    if (typeof FontFace !== 'function') { setStatus('This browser cannot load a font file.', 'err'); return; }
+    f.arrayBuffer().then(function(buf){
+      var family = 'Your font ' + (++ownFonts), face = new FontFace(family, buf);
+      return face.load().then(function(loaded){
+        document.fonts.add(loaded);
+        var label = f.name.replace(/\.(ttf|otf|woff2?)$/i, '') + ' (yours)';
+        var id = 'own-' + ownFonts;
+        HEAD_FONTS.push({ id:id, name:label, family:family, weight:400, track:-0.02 });
+        MONO_FONTS.push({ id:id, name:label, family:family, weight:400 });
+        state.headFont = id; syncFonts(); draw();
+        setStatus(label.replace(' (yours)', '') + ' is now the headline font. It lasts until you close the tab.', 'ok');
+      });
+    }).catch(function(){ setStatus('That file could not be read as a font.', 'err'); });
+  });
+  syncFonts();
+  ensureFont(headFace()); ensureFont(monoFace());
+
   ['badge','winTitle','cap1','cap2','capColor','handle','kick1','kick2','sticker'].forEach(function(id){
     var el = document.getElementById(id);
     el.value = state[id];

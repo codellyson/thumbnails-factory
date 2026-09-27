@@ -882,29 +882,40 @@
     c.restore(); looseFont(c);
     return total;
   }
-  // Tries breaking each part of the headline into 1-3 balanced lines and
-  // keeps the arrangement that sets the words biggest while the block still
-  // fits the height it is given.
+  // Tries every way of breaking each part of the headline into lines - up
+  // to four for the main words, two for the accent - and keeps the one that
+  // sets the words biggest while the block still fits the height it is
+  // given. Headlines are a handful of words, so trying them all is cheap;
+  // the answer is cached, since the same words are set on every redraw.
+  var breakCache = {};
+  function splits(words, most){
+    var out = [];
+    (function walk(start, acc){
+      if (start === words.length) { out.push(acc); return; }
+      if (acc.length === most) return;
+      for (var end = start + 1; end <= words.length; end++) walk(end, acc.concat([words.slice(start, end).join(' ')]));
+    })(0, []);
+    return out;
+  }
   function bestBreak(c, main, accent, maxW, startPx, minPx, maxH){
-    function chunks(words, n){
-      if (!words.length) return [];
-      n = Math.min(n, words.length);
-      var out = [], per = Math.ceil(words.length / n);
-      for (var i = 0; i < words.length; i += per) out.push(words.slice(i, i + per).join(' '));
-      return out;
-    }
+    var key = [main, accent, Math.round(maxW), Math.round(startPx), Math.round(minPx), Math.round(maxH), c.font && headlineFont(10), state.headFont, state.layout].join('|');
+    if (breakCache[key]) return breakCache[key];
     var w1 = main.toUpperCase().trim().split(/\s+/).filter(Boolean), w2 = accent.toUpperCase().trim().split(/\s+/).filter(Boolean);
+    var fitCache = {};
+    function fit(t){ return fitCache[t] || (fitCache[t] = fitWith(c, t, maxW, startPx, minPx, function(q){ return q*0.2; })); }
+    var mains = w1.length ? splits(w1, 4) : [[]], accs = w2.length ? splits(w2, 2) : [[]];
     var best = { px:0, lines:[] };
-    for (var a = 1; a <= 3; a++) for (var b = 1; b <= 2; b++) {
-      var lines = chunks(w1, a).map(function(t){ return { t:t, accent:false }; })
-        .concat(chunks(w2, b).map(function(t){ return { t:t, accent:true }; }));
-      if (!lines.length) continue;
-      var px = Math.min.apply(null, lines.map(function(l){ return fitWith(c, l.t, maxW, startPx, minPx, function(q){ return q*0.2; }); }));
+    mains.forEach(function(m){ accs.forEach(function(a){
+      var lines = m.map(function(t){ return { t:t, accent:false }; }).concat(a.map(function(t){ return { t:t, accent:true }; }));
+      if (!lines.length) return;
+      var px = Math.min.apply(null, lines.map(function(l){ return fit(l.t); }));
       var cap = capOf(c, px), h = cap + (lines.length - 1)*cap*1.28;
       if (h > maxH) px *= maxH / h;
-      if (px > best.px + 0.5) best = { px:px, lines:lines };
-    }
-    return best;
+      // fewer lines win a tie, so words are only broken when it pays
+      if (px > best.px + 0.5 || (Math.abs(px - best.px) <= 0.5 && lines.length < best.lines.length)) best = { px:px, lines:lines };
+    }); });
+    if (Object.keys(breakCache).length > 200) breakCache = {};
+    return (breakCache[key] = best);
   }
   function capOf(c, px){ tightFont(c, px); var m = c.measureText('H'); looseFont(c); return m.actualBoundingBoxAscent || px*0.72; }
 
@@ -1187,9 +1198,14 @@
       // three columns leaning together: paper, strip, photo
       var xa = W*(square ? 0.46 : 0.4), sw = state.strip ? W*(square ? 0.15 : 0.17) : 0;
       var sx = function(x, y){ return x + lean*(y - H/2); };
+      // The bands belong to the paper: clipped to its leaning edge, they stop
+      // where the strip begins, so every gutter stays plain paper.
       if (state.brush) {
-        brushBand(c, 0, sx(xa + sw, 0) + gap, 0, H*0.075, true, acc, k);
-        brushBand(c, 0, sx(xa + sw, H) + gap, H*0.925, H*0.075, false, acc, k);
+        c.save();
+        c.beginPath(); c.moveTo(0, 0); c.lineTo(sx(xa, 0), 0); c.lineTo(sx(xa, H), H); c.lineTo(0, H); c.closePath(); c.clip();
+        brushBand(c, 0, W, 0, H*0.075, true, acc, k);
+        brushBand(c, 0, W, H*0.925, H*0.075, false, acc, k);
+        c.restore();
       }
       if (state.strip) {
         var rows = 3, rg = gap, rh = (H - rg*(rows - 1)) / rows;

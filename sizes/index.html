@@ -361,9 +361,10 @@
   .showcase{ display:flex; flex-direction:column; gap:16px; }
   .showcase[hidden], .phonebits[hidden]{ display:none; }
   .phonebits{ display:flex; flex-direction:column; gap:12px; margin-top:4px; }
-  .group{ border-top:1px solid var(--line-strong); padding-top:12px; display:flex; flex-direction:column; gap:14px; }
+  .group{ border-top:1px solid var(--line-strong); padding-top:12px; }
+  /* a panel's first control hangs closer to its title (10) than controls sit to each other (16) */
+  .gbody{ display:flex; flex-direction:column; gap:16px; padding-top:10px; }
   /* a panel's first control hangs closer to its title than controls sit to each other */
-  .group[open] > summary + *{ margin-top:-4px; }
   .group > summary{ font-size:14px; font-weight:500; cursor:pointer;
     list-style:none; display:flex; align-items:center; gap:8px; min-height:28px; }
   .group > summary::-webkit-details-marker{ display:none; }
@@ -372,7 +373,6 @@
   .group[open] > summary::after{ transform:translateY(1px) rotate(-135deg); border-width:0 2px 2px 0; }   /* matches the semibold open title */
   .group[open] > summary{ font-weight:600; }
   .group > summary:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; border-radius:6px; }
-  .group:not([open]){ gap:0; }
 
   input[type=range]{
     -webkit-appearance:none; appearance:none; width:100%; background:transparent; margin:8px 0;

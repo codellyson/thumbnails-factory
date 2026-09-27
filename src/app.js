@@ -1661,7 +1661,11 @@
         if (!groups[ctl.group]) {
           var d = el('details', 'group'); d.setAttribute('name', 'panel');
           d.appendChild(el('summary', null, ctl.group));
-          groups[ctl.group] = d; order.push(d);
+          // Chrome wraps a <details> element's content in its own box, which
+          // eats any gap set on the <details>; the controls go in a plain
+          // container so the spacing is ours.
+          var body = el('div', 'gbody'); d.appendChild(body);
+          groups[ctl.group] = body; order.push(d);
         }
         parent = groups[ctl.group];
       }

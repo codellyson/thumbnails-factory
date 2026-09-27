@@ -131,8 +131,9 @@ in, painted stand-ins keep it looking finished. It sets its headline in Anton
 unless another face is picked; each template can name its own face.
 
 Fonts are a choice, not a fixture. The **Text** panel picks the headline face
-(by default each template's own - Anton for Collage, Talking point and Before →
-After, Archivo Black for Launch - or Archivo Black, Anton, Bebas Neue, Inter, Montserrat, Poppins,
+(by default each template's own - League Gothic for Collage, Anton for Talking
+point and Before → After, Archivo Black for Launch - or Archivo Black, Anton,
+League Gothic, Bebas Neue, Inter, Montserrat, Poppins,
 Bricolage Grotesque, Space Grotesk, Oswald, DM Serif Display, Playfair Display) and
 the monospace face for the kicker and labels (JetBrains Mono by default). Each stock
 face loads from Google Fonts only when picked, and carries its own tracking so a

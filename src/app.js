@@ -374,6 +374,7 @@
     { id:'auto', name:'The template\u2019s own' },   // each template names the face it was designed with
     { id:'archivo-black', name:'Archivo Black', family:'Archivo Black', weight:400, track:-0.045, css:'Archivo+Black' },
     { id:'anton',         name:'Anton',         family:'Anton',         weight:400, track:-0.01,  css:'Anton' },
+    { id:'league-gothic', name:'League Gothic', family:'League Gothic', weight:400, track:0,      css:'League+Gothic' },
     { id:'bebas',         name:'Bebas Neue',    family:'Bebas Neue',    weight:400, track:0,      css:'Bebas+Neue' },
     { id:'inter',         name:'Inter Black',   family:'Inter',         weight:900, track:-0.05,  css:'Inter:wght@900' },
     { id:'montserrat',    name:'Montserrat Black', family:'Montserrat', weight:900, track:-0.04,  css:'Montserrat:wght@900' },
@@ -890,6 +891,11 @@
   // given. Headlines are a handful of words, so trying them all is cheap;
   // the answer is cached, since the same words are set on every redraw.
   var breakCache = {};
+  // A break worked out while a face was still loading was measured in the
+  // fallback, so every finished font load throws the cached answers away.
+  if (document.fonts && document.fonts.addEventListener) {
+    document.fonts.addEventListener('loadingdone', function(){ breakCache = {}; draw(); });
+  }
   function splits(words, most){
     var out = [];
     (function walk(start, acc){
@@ -1231,7 +1237,8 @@
       // The paper's right edge leans, so the room for a line depends on its
       // height: lower lines get more, as in the reference.
       var edgeAt = function(y){ return sx(xa, y) - 0.025*W; };
-      textBox = { x0:g.left, x1:edgeAt(H*0.5), y0:H*0.09, y1:H*0.9, edge:edgeAt };
+      // down to 0.87 of the height, so the underline clears the bottom band
+      textBox = { x0:g.left, x1:edgeAt(H*0.5), y0:H*0.09, y1:H*0.87, edge:edgeAt };
     } else {
       // tall: paper on top, the strip across, the photo below
       var ya = H*0.5, sh = state.strip ? H*0.12 : 0;
@@ -1494,7 +1501,7 @@
 
   var TEMPLATES = [
     { id:'collage', name:'Collage', hint:'A stacked headline on paper, a leaning strip of three pictures, and one big photo to the edge.',
-      labels:{}, font:'anton', draw:drawCollage },
+      labels:{}, font:'league-gothic', draw:drawCollage },
     { id:'talking', name:'Talking point', hint:'A stacked headline with one big key word, an arrow at the words, and a circular photo over a bow-tie of colour.',
       labels:{}, font:'anton', draw:drawTalking },
     { id:'versus', name:'Before → After', hint:'Two big pictures, a slash and an arrow between them, and one loud headline across the bottom.',

@@ -268,6 +268,8 @@
     { key:'splitAngle', type:'range', group:'Pictures', for:['versus'], label:'Lean', min:0, max:20, unit:'°', def:8 },
     // measured off the reference: its strip and photo lean about 16 degrees
     { key:'collageLean', type:'range', group:'Strip', for:['collage'], label:'Lean', min:0, max:24, unit:'°', def:16 },
+    // the reference's headline is turned too: -3.7 degrees, measured off ILLEGAL
+    { key:'collageTilt', type:'range', group:'Text', for:['collage'], label:'Headline tilt', min:-10, max:10, unit:'°', def:-4 },
     { key:'arrow', type:'toggle', group:'Pictures', for:['versus'], label:'Curved arrow from one to the other', def:true },
     { key:'backdrop', type:'image', slot:'backdrop', persist:false, group:'Background', for:['versus'], label:'Background picture',
       button:'Choose background picture', reset:'Remove', id:'vsBackdrop',
@@ -1237,8 +1239,10 @@
       // The paper's right edge leans, so the room for a line depends on its
       // height: lower lines get more, as in the reference.
       var edgeAt = function(y){ return sx(xa, y) - 0.025*W; };
-      // down to 0.87 of the height, so the underline clears the bottom band
-      textBox = { x0:g.left, x1:edgeAt(H*0.5), y0:H*0.09, y1:H*0.87, edge:edgeAt };
+      // The reference keeps its words between 0.13 and 0.83 of the height and
+      // its underline just below; this band leaves room for the tilt to lift
+      // one end without touching the brushed bands.
+      textBox = { x0:g.left, x1:edgeAt(H*0.5), y0:H*0.12, y1:H*0.86, edge:edgeAt };
     } else {
       // tall: paper on top, the strip across, the photo below
       var ya = H*0.5, sh = state.strip ? H*0.12 : 0;
@@ -1286,6 +1290,11 @@
       }
     }
     var base = top + cap;
+    // The whole block - words and underline - turns about its centre, rising
+    // to the right, as the reference's does (measured at -3.7 degrees).
+    c.save();
+    var pivotY = top + blockH/2;
+    c.translate(cx, pivotY); c.rotate(state.collageTilt * Math.PI/180); c.translate(-cx, -pivotY);
     c.textAlign = 'center';
     set.lines.forEach(function(l){
       tightFont(c, px); c.fillStyle = l.accent ? acc : ink;
@@ -1298,6 +1307,7 @@
       tightFont(c, px); var widest = Math.max.apply(null, set.lines.map(function(l){ return c.measureText(l.t).width; })); looseFont(c);
       brushSwoosh(c, cx, base - lead + cap*0.62, widest*0.78, Math.max(3, cap*0.2), ink);
     }
+    c.restore();
 
     // the logo, small, in the photo's top corner - the paper belongs to the words
     if (state.logo && ready.logo) {

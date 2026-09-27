@@ -240,7 +240,9 @@
     { key:'winStyle', type:'choice', group:'Window', for:['showcase'], label:'Style', def:'dark',
       options:[['dark','Dark'], ['light','Light'], ['plain','No frame']] },
     { key:'winTurn', type:'range', group:'Window', for:['showcase'], label:'Turn', min:0, max:35, unit:'°', def:17, row:'win' },
-    { key:'winTilt', type:'range', group:'Window', for:['showcase', 'launch'], label:'Tilt', min:-12, max:12, unit:'°', def:-4, row:'win' },
+    { key:'winTilt', type:'range', group:'Window', for:['showcase'], label:'Tilt', min:-12, max:12, unit:'°', def:-4, row:'win' },
+    // Launch's window leans less than Showcase's by design, so it keeps its own.
+    { key:'launchTilt', type:'range', group:'Window', for:['launch'], label:'Tilt', min:-12, max:12, unit:'°', def:-2 },
 
     { key:'phone', type:'toggle', group:'Phone', for:['showcase'], label:'Show a phone beside the window', def:true },
     { key:'second', type:'image', slot:'second', persist:false, group:'Phone', for:['showcase'], when:hasPhone,
@@ -358,6 +360,7 @@
   // frame fills the window (or the whole frame in Full picture); the phone and
   // the backdrop glow have their own pictures and fall back to it.
   var logo = new Image(), frame = makeDefaultFrame(), phoneImg = null, bgImg = null;
+  var paintedFrame = frame;   // the stand-in until a picture is dropped
   var ready = { logo:false, frame:true, font:false };
   logo.onload = function(){ ready.logo = true; updateLogoThumb(); refreshDerived('logo', logo); draw(); };
   logo.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
@@ -701,8 +704,7 @@
   // wide pictures are held to a sane window and cropped from there.
   var WIN_ASPECT = { min:1.2, max:2.2 }, BAR = 0.058;
   function windowHeight(){
-    var a = frame.width / frame.height;
-    a = Math.max(WIN_ASPECT.min, Math.min(WIN_ASPECT.max, a));
+    var a = shotAspect(frame);
     return 1/a + (state.winStyle === 'plain' ? 0 : BAR);
   }
   function arrange(l){
@@ -986,7 +988,10 @@
   }
 
   // The screenshot's own shape, held to a sane window.
+  // The stand-in backdrop is square, but it stands in for a screenshot, so
+  // until a real picture arrives windows and cards take a screen's 16:10.
   function shotAspect(img){
+    if (img === paintedFrame) return 1.6;
     return Math.max(WIN_ASPECT.min, Math.min(WIN_ASPECT.max, img.width / img.height));
   }
 
@@ -1100,7 +1105,7 @@
 
     var kh = drawKicker(c, g.left, g.top, k);
     var textTop = g.top + (kh ? kh + 0.06*H : 0);
-    var colR = g.wide ? g.left + (g.right - g.left)*0.46 : g.right;
+    var colR = g.wide ? g.left + (g.right - g.left)*0.5 : g.right;
     var maxW = colR - g.left;
     var l1 = state.line1.toUpperCase(), l2 = state.line2.toUpperCase();
     var start = (g.wide ? 150 : 130)*k*state.headScale;
@@ -1137,10 +1142,10 @@
     var a = shotAspect(frame);
     var winAspect = 1 / (1/a + LAUNCH_BAR + 2*LAUNCH_EDGE);
     var r = g.wide
-      ? fitBox(g, g.left + (g.right - g.left)*0.5, g.top, g.right, g.bottom, winAspect, 0.94)
+      ? fitBox(g, g.left + (g.right - g.left)*0.54, g.top, g.right, g.bottom, winAspect, 0.94)
       : fitBox(g, g.left, textTop, g.right, capTop - (tagH ? tagH + 0.035*H : 0) - 0.05*H, winAspect, 0.94);
     if (!g.wide) r.x = g.left;   // stacked: on the words' edge, not centred
-    if (r.w > 0) drawLaunchWindow(c, r.x, r.y, r.w, r.h, state.winTilt, state.panX*W, state.panY*H);
+    if (r.w > 0) drawLaunchWindow(c, r.x, r.y, r.w, r.h, state.launchTilt, state.panX*W, state.panY*H);
   }
 
   // Before -> After: a diagonal split, dark on one side and the palette on

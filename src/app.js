@@ -168,52 +168,152 @@
   var cv = document.getElementById('cv'), ctx = cv.getContext('2d');
   var state = {
     preset:'youtube', customW:1280, customH:720,
-    zoom:1.25, panX:0, panY:0, vig:0.7,
-    line1:'TYPE YOUR', line2:'HEADLINE HERE', logo:true, play:true, safe:false,
-    line1Color:'#ffffff', palette:'kk', customStops:['#b9a4ff','#d9a2ff','#ffb27a'],
+    panX:0, panY:0, safe:false, feed:false,
+    palette:'kk', customStops:['#b9a4ff','#d9a2ff','#ffb27a'],
     logoSrc:null,  // null means the logo this tool ships with
-    // Showcase layout: the image sits in a window on a dark backdrop, with an
-    // optional phone beside it, instead of filling the frame.
-    layout:'bleed', badge:'', winTitle:'', capColor:'#ffd23f',
-    phone:true, cap1:'', cap2:'', handle:'', dots:true, feed:false,
-    kick1:'YOUR CHANNEL', kick2:'EPISODE 01', sticker:'',   // Launch and Before -> After
-    headFont:'archivo-black', monoFont:'jetbrains',
-    pillSize:1,   // Launch's project tag
-    winStyle:'dark', winTurn:17, winTilt:-4,
-    phoneSide:'right', phoneSize:1, phoneTilt:6,
-    glow:'image', glowAmt:0.6,
-    phoneZoom:1, phonePanX:0, phonePanY:0,   // framing inside the phone, as fractions of its width
+    phonePanX:0, phonePanY:0,   // framing of the second picture, as fractions of its box
     derived:{ frame:null, logo:null }   // colours read out of each uploaded asset
   };
 
-  // The showcase settings, saved as they are. Kept as lists so persist() and
-  // the restore below cannot drift apart.
-  var STR_KEYS = ['layout','badge','winTitle','cap1','cap2','capColor','handle',
-                  'winStyle','phoneSide','glow','kick1','kick2','sticker','headFont','monoFont'];
-  var NUM_KEYS = ['pillSize','winTurn','winTilt','phoneSize','phoneTilt','glowAmt'];
+  // ---- the control schema -----------------------------------------------
+  // Every setting a person can change is declared here, once. From this list
+  // the page builds the panel, sets each default, decides what is remembered
+  // between visits, wires the handler, and shows each control only for the
+  // templates that use it. A template reads state[key] while drawing and
+  // nothing else; adding a control is adding an entry.
+  //
+  //   key       the state key it sets (custom widgets without a key set none)
+  //   type      text, color, range, choice, toggle, font, image or custom
+  //   label     a string, or { _:default, <template>:override }
+  //   def       the default value; its type is the type a saved value must have
+  //   group     the folding panel it sits in; none means the top of the panel,
+  //             'toggles' means the checkbox list under the panels
+  //   for       the templates it belongs to; absent means every template
+  //   when      a further condition, e.g. the phone's parts need a phone
+  //   row       controls sharing a row name sit side by side
+  //   pair      a colour picker to set beside a text field
+  //   unit      for a range: '%' stores a fraction (times scale), else a number
+  //   persist   false for settings that start fresh on every visit
+  //   change    extra work after the value is set (the redraw is automatic)
+  //
+  // Groups appear in the order they are first mentioned.
+  var ALL = ['bleed', 'showcase', 'launch', 'versus'];
+  var CONTROLS = [
+    { key:'layout', type:'custom', label:'Template', def:'bleed', build:buildTemplatePicker },
+    { key:'main', type:'image', slot:'main', big:true, persist:false,
+      label:{ _:'Image', showcase:'Window picture', launch:'Window picture', versus:'After picture' },
+      button:'Choose an image', ids:{ pick:'pick', file:'file' } },
+    { key:'zoom', type:'range', label:'Zoom', min:100, max:250, unit:'%', def:1.25, persist:false, row:'frame' },
+    { key:'vig', type:'range', label:'Shading', min:0, max:100, unit:'%', scale:0.7, def:0.7, persist:false, row:'frame', for:['bleed'] },
+    { key:'second', type:'image', slot:'second', persist:false, for:['versus'], label:'Before picture',
+      button:'Choose before picture', reset:'Remove',
+      hint:'Or drop a file on the left card. Drag on it to move the picture.' },
+    { key:'phoneZoom', type:'range', label:'Before zoom', min:100, max:250, unit:'%', def:1, persist:false, for:['versus'], id:'beforeZoom' },
+    { key:'line1', type:'text', label:{ _:'Top line', versus:'Before' }, def:'TYPE YOUR', maxlength:24,
+      pair:{ key:'line1Color', aria:'Top line colour' } },
+    { key:'line1Color', type:'color', def:'#ffffff', paired:true },
+    { key:'line2', type:'text', label:{ _:'Bottom line', versus:'After' }, def:'HEADLINE HERE', maxlength:24 },
+    { id:'palette', type:'custom', build:buildPaletteSlot, join:true },
+
+    // Launch's own label above its headline
+    { key:'badge', type:'text', group:'Project tag', for:['launch'], label:'Text', def:'', maxlength:32,
+      placeholder:'JUSTDB', hint:'An outlined label above the headline. Leave it empty for none.' },
+    { key:'pillSize', type:'range', group:'Project tag', for:['launch'], label:'Size', min:70, max:160, unit:'%', def:1 },
+
+    { key:'kick1', type:'text', group:'Kicker', for:['launch', 'versus'], label:'First line', def:'YOUR CHANNEL', maxlength:32, placeholder:'YOUR CHANNEL' },
+    { key:'kick2', type:'text', group:'Kicker', for:['launch', 'versus'], label:'Accent line', def:'EPISODE 01', maxlength:24, placeholder:'EPISODE 01',
+      hint:'Two short lines in a corner bracket. Leave both empty to show the logo instead.' },
+
+    { key:'headFont', type:'font', group:'Text', label:'Headline font', def:'archivo-black', list:function(){ return HEAD_FONTS; },
+      change:function(){ ensureFont(headFace()); } },
+    { key:'headScale', type:'range', group:'Text', label:'Headline size', min:60, max:140, unit:'%', def:1,
+      hint:'The headline still shrinks to fit its space; this sets how big it starts.' },
+    { key:'monoFont', type:'font', group:'Text', for:['launch', 'versus'], label:'Kicker and labels font', def:'jetbrains',
+      list:function(){ return MONO_FONTS; }, change:function(){ ensureFont(monoFace()); } },
+    { id:'fontUpload', type:'custom', group:'Text', build:buildFontUpload },
+
+    { key:'winTitle', type:'text', group:'Window', for:['showcase', 'launch'], label:'Title', def:'', maxlength:40, placeholder:'index.html' },
+    { key:'sticker', type:'text', group:'Window', for:['launch'], label:'Sticker', def:'', maxlength:28,
+      placeholder:'IT BROKE. I LEFT IT IN.', hint:'A label in the title bar. It takes the title’s place.',
+      pair:{ key:'stickerColor', aria:'Sticker colour' } },
+    { key:'stickerColor', type:'color', def:'#ff5b3a', paired:true },
+    { key:'winStyle', type:'choice', group:'Window', for:['showcase'], label:'Style', def:'dark',
+      options:[['dark','Dark'], ['light','Light'], ['plain','No frame']] },
+    { key:'winTurn', type:'range', group:'Window', for:['showcase'], label:'Turn', min:0, max:35, unit:'°', def:17, row:'win' },
+    { key:'winTilt', type:'range', group:'Window', for:['showcase', 'launch'], label:'Tilt', min:-12, max:12, unit:'°', def:-4, row:'win' },
+
+    { key:'phone', type:'toggle', group:'Phone', for:['showcase'], label:'Show a phone beside the window', def:true },
+    { key:'second', type:'image', slot:'second', persist:false, group:'Phone', for:['showcase'], when:hasPhone,
+      label:'Phone picture', button:'Choose phone picture', reset:'Remove picture', id:'phonePic',
+      hint:'Or drop a file on the phone. Drag on it to move the picture.' },
+    { key:'phoneZoom', type:'range', group:'Phone', for:['showcase'], when:hasPhone, label:'Zoom', min:100, max:250, unit:'%', def:1, persist:false },
+    { key:'cap1', type:'text', group:'Phone', for:['showcase'], when:hasPhone, label:'Text on screen', def:'', maxlength:18, placeholder:'First line', row:'caps' },
+    { key:'cap2', type:'text', group:'Phone', for:['showcase'], when:hasPhone, label:'Accent line', def:'', maxlength:18, placeholder:'Second line', row:'caps',
+      pair:{ key:'capColor', aria:'Accent line colour' } },
+    { key:'capColor', type:'color', def:'#ffd23f', paired:true },
+    { key:'handle', type:'text', group:'Phone', for:['showcase'], when:hasPhone, label:'Handle', def:'', maxlength:30, placeholder:'@yourname' },
+    { key:'dots', type:'toggle', group:'Phone', for:['showcase'], when:hasPhone, label:'Like and share buttons', def:true },
+    { key:'phoneSide', type:'choice', group:'Phone', for:['showcase'], when:hasPhone, label:'Side', def:'right', options:[['left','Left'], ['right','Right']] },
+    { key:'phoneSize', type:'range', group:'Phone', for:['showcase'], when:hasPhone, label:'Size', min:70, max:130, unit:'%', def:1, row:'phoneFit' },
+    { key:'phoneTilt', type:'range', group:'Phone', for:['showcase'], when:hasPhone, label:'Tilt', min:-15, max:15, unit:'°', def:6, row:'phoneFit' },
+
+    { key:'glow', type:'choice', group:'Backdrop', for:['showcase'], label:'Glow', def:'image',
+      options:[['image','Picture'], ['palette','Colours'], ['none','None']] },
+    { key:'glowAmt', type:'range', group:'Backdrop', for:['showcase'], label:'Strength', min:0, max:100, unit:'%', def:0.6 },
+    { key:'backdrop', type:'image', slot:'backdrop', persist:false, group:'Backdrop', for:['showcase'], label:'Picture',
+      button:'Choose backdrop picture', reset:'Use the window picture' },
+
+    { key:'tone', type:'choice', group:'Background', for:['showcase', 'launch', 'versus'], label:'Base colour', def:'neutral',
+      options:[['neutral','Neutral'], ['palette','From colours'], ['custom','Custom']],
+      hint:'The dark behind everything. From colours takes a deep shade of the palette.' },
+    { key:'toneColor', type:'color', group:'Background', for:['showcase', 'launch', 'versus'], when:function(){ return state.tone === 'custom'; },
+      label:'Colour', def:'#18171d' },
+    { key:'dotGrid', type:'toggle', group:'Background', for:['launch'], label:'Dot grid', def:true },
+
+    { key:'splitAngle', type:'range', group:'Split', for:['versus'], label:'Angle', min:0, max:20, unit:'°', def:6 },
+    { key:'beforeFade', type:'range', group:'Split', for:['versus'], label:'Before word strength', min:15, max:100, unit:'%', def:0.55 },
+    { key:'beforeCard', type:'choice', group:'Split', for:['versus'], label:'Before card', def:'dark',
+      options:[['dark','Dark'], ['light','Light'], ['match','Like after']] },
+    { key:'arrow', type:'toggle', group:'Split', for:['versus'], label:'Arrow between the pictures', def:true },
+
+    { id:'logoSlot', type:'custom', group:'Logo', build:buildLogoSlot },
+    { key:'logo', type:'toggle', group:'Logo', label:'Show it on the thumbnail', def:true, persist:false },
+    { key:'logoSize', type:'range', group:'Logo', label:'Size', min:50, max:160, unit:'%', def:1 },
+
+    { key:'play', type:'toggle', group:'toggles', for:['bleed'], label:'Play badge', def:true, persist:false,
+      enabled:function(){ return !!current().play; } }
+  ];
+  function hasPhone(){ return state.phone; }
+
+  // Defaults first, then whatever was saved - but only where the saved value
+  // is the same kind of thing, so a stale or hand-edited entry cannot break
+  // the page.
+  CONTROLS.forEach(function(ctl){
+    if (ctl.key && ctl.def !== undefined && !(ctl.key in state)) state[ctl.key] = ctl.def;
+  });
+  function remembered(){
+    var seen = {};
+    return CONTROLS.filter(function(ctl){
+      if (!ctl.key || ctl.def === undefined || ctl.persist === false || seen[ctl.key]) return false;
+      return (seen[ctl.key] = true);
+    });
+  }
+
   try {
     var saved = JSON.parse(localStorage.getItem('tf-state') || 'null');
     if (saved) {
-      state.line1 = saved.line1 || state.line1;
-      state.line2 = saved.line2 || state.line2;
       if (saved.preset) state.preset = saved.preset;
       if (saved.customW) state.customW = saved.customW;
       if (saved.customH) state.customH = saved.customH;
-      if (saved.line1Color) state.line1Color = saved.line1Color;
       if (saved.palette) state.palette = saved.palette;
       if (saved.customStops && saved.customStops.length === 3) state.customStops = saved.customStops;
       if (saved.logoSrc) state.logoSrc = saved.logoSrc;
       if (saved.derived) state.derived = saved.derived;
-      STR_KEYS.forEach(function(key){
-        if (typeof saved[key] === 'string') state[key] = saved[key];
-      });
-      NUM_KEYS.forEach(function(key){
-        if (typeof saved[key] === 'number' && isFinite(saved[key])) state[key] = saved[key];
-      });
-      if (typeof saved.phone === 'boolean') state.phone = saved.phone;
-      if (typeof saved.dots === 'boolean') state.dots = saved.dots;
       if (typeof saved.feed === 'boolean') state.feed = saved.feed;
-      if (state.layout !== 'bleed') state.zoom = 1;
+      remembered().forEach(function(ctl){
+        var v = saved[ctl.key];
+        if (typeof v === typeof ctl.def && (typeof v !== 'number' || isFinite(v))) state[ctl.key] = v;
+      });
       // Before the badge was free text it was a series name and an episode.
       if (typeof saved.badge !== 'string' && (saved.series || saved.episode)) {
         state.badge = [saved.series, saved.episode && /^\d+$/.test(saved.episode) ? 'EP ' + saved.episode : saved.episode]
@@ -221,6 +321,8 @@
       }
     }
   } catch(e){}
+  // A window or card wants the whole screenshot; only a full picture crops.
+  if (state.layout !== 'bleed') state.zoom = 1;
 
   // Active preset, with the custom size folded in.
   function current(){
@@ -650,7 +752,7 @@
     var stamp = STAMPS[p.id], stampX = stamp ? W*(1-stamp.w) : W, stampY = stamp ? H*(1-stamp.h) : H;
     var portrait = (W/H) < 1.2;
     var show = state.layout === 'showcase';
-    c.fillStyle = '#0b0e14'; c.fillRect(0,0,W,H);
+    c.fillStyle = show ? baseTone('#0b0e14') : '#0b0e14'; c.fillRect(0,0,W,H);
 
     if (show) {
       drawBackdrop(c, W, H, k);
@@ -674,12 +776,12 @@
     // the full width under the cards otherwise, and lets them grow bigger.
     var badge = state.play && p.play && !show;
     var r = 75*k;
-    var maxW = right - left, startPx = 88*k;
+    var maxW = right - left, startPx = 88*k*state.headScale;
     var cardsX = left + (right - left)*0.46;
     if (show) {
       // Tall covers are width-starved: every pixel of headline height is taken
       // from the cards, so the words come down a size there.
-      startPx = (W/H) < 0.85 ? 100*k : portrait ? 130*k : 150*k;
+      startPx = ((W/H) < 0.85 ? 100*k : portrait ? 130*k : 150*k) * state.headScale;
       if (!portrait) maxW = cardsX - left - 0.02*W;
     }
     if (badge && !portrait) maxW -= (2*r + 0.02*W);
@@ -710,7 +812,7 @@
     }
 
     // the logo, top left
-    var lh = 88*k;
+    var lh = 88*k*state.logoSize;
     var hasRow = !!(state.logo && ready.logo);
     if (hasRow) {
       c.shadowColor='rgba(0,0,0,.6)'; c.shadowBlur=20*k; c.shadowOffsetY=8*k;
@@ -805,13 +907,26 @@
     };
   }
 
+  // The dark a template is built on. Neutral is the template's own; From
+  // colours is a deep shade of the palette's first stop, so a pink palette
+  // sits on plum and a yellow one on olive; Custom is whatever was picked.
+  function baseTone(neutral){
+    if (state.tone === 'custom') return state.toneColor;
+    if (state.tone !== 'palette') return neutral;
+    var n = parseInt(activeStops()[0].slice(1), 16);
+    var hsl = rgbToHsl(n>>16&255, n>>8&255, n&255);
+    return hslToHex(hsl[0], Math.min(hsl[1], 0.45), 0.1);
+  }
+
   // The one solid colour a template leans on: the palette's last stop, the
   // bright end of every stock gradient.
   function accent(){ return activeStops()[2]; }
-  // Near-black or white, whichever reads on the given colour.
-  function inkOn(hex){
+  // Near-black or white, whichever reads on the given colour. The cut-off
+  // defaults high for big fills; small bold labels on a mid tone (the coral
+  // sticker) read better dark, so they pass a lower one.
+  function inkOn(hex, cut){
     var n = parseInt(hex.slice(1), 16);
-    return (0.299*(n>>16&255) + 0.587*(n>>8&255) + 0.114*(n&255)) > 150 ? '#16151a' : '#ffffff';
+    return (0.299*(n>>16&255) + 0.587*(n>>8&255) + 0.114*(n&255)) > (cut || 150) ? '#16151a' : '#ffffff';
   }
   function monoFont(px){
     var f = monoFace();
@@ -831,7 +946,7 @@
     var a = state.kick1.trim().toUpperCase(), b = state.kick2.trim().toUpperCase();
     if (!a && !b) {
       if (!(state.logo && ready.logo)) return 0;
-      var lh = 88*k;
+      var lh = 88*k*state.logoSize;
       c.drawImage(logo, x, y, logo.width * lh / logo.height, lh);
       return lh;
     }
@@ -959,8 +1074,8 @@
       c.font = monoFont(fpx);
       var sw = c.measureText(label).width + fpx*0.1*label.length + sh*0.9;
       var sx = ix + iw - bar*0.25 - sw, sy = iy + (bar - sh)/2;
-      roundRect(c, sx, sy, sw, sh, sh*0.14); c.fillStyle = '#ff5b3a'; c.fill();
-      c.fillStyle = '#16151a'; c.textBaseline = 'middle';
+      roundRect(c, sx, sy, sw, sh, sh*0.14); c.fillStyle = state.stickerColor; c.fill();
+      c.fillStyle = inkOn(state.stickerColor, 110); c.textBaseline = 'middle';
       spaced(c, label, sx + sh*0.45, sy + sh*0.55, fpx*0.1);
       c.textBaseline = 'alphabetic';
     } else if (state.winTitle) {
@@ -973,20 +1088,22 @@
 
   function drawLaunch(c, p, opts){
     var g = box(p), W = g.W, H = g.H, k = g.k;
-    c.fillStyle = '#0f0e12'; c.fillRect(0, 0, W, H);
+    c.fillStyle = baseTone('#0f0e12'); c.fillRect(0, 0, W, H);
     // The dot grid, all in one path: at podcast size it is a couple of
     // thousand dots, and one fill keeps that cheap.
-    var step = 32*k, dr = Math.max(0.8, 1.6*k);
-    c.beginPath();
-    for (var y = step/2; y < H; y += step) for (var x = step/2; x < W; x += step) { c.moveTo(x + dr, y); c.arc(x, y, dr, 0, Math.PI*2); }
-    c.fillStyle = 'rgba(255,255,255,.07)'; c.fill();
+    if (state.dotGrid) {
+      var step = 32*k, dr = Math.max(0.8, 1.6*k);
+      c.beginPath();
+      for (var y = step/2; y < H; y += step) for (var x = step/2; x < W; x += step) { c.moveTo(x + dr, y); c.arc(x, y, dr, 0, Math.PI*2); }
+      c.fillStyle = 'rgba(255,255,255,.07)'; c.fill();
+    }
 
     var kh = drawKicker(c, g.left, g.top, k);
     var textTop = g.top + (kh ? kh + 0.06*H : 0);
     var colR = g.wide ? g.left + (g.right - g.left)*0.46 : g.right;
     var maxW = colR - g.left;
     var l1 = state.line1.toUpperCase(), l2 = state.line2.toUpperCase();
-    var start = (g.wide ? 150 : 130)*k;
+    var start = (g.wide ? 150 : 130)*k*state.headScale;
     var px1 = l1 ? fitWith(c, l1, maxW, start, 24*k, function(px){ return px*1.1; }) : 0;
     var px2 = l2 ? fitWith(c, l2, maxW, start, 24*k, none) : 0;
     var tagH = pillText() ? 56*k*state.pillSize : 0;
@@ -1029,16 +1146,19 @@
   // gets the heavier card with a hard offset shadow.
   function drawVersus(c, p, opts){
     var g = box(p), W = g.W, H = g.H, k = g.k, st = activeStops(), ink = inkOn(st[2]);
-    c.fillStyle = '#18171d'; c.fillRect(0, 0, W, H);
+    c.fillStyle = baseTone('#18171d'); c.fillRect(0, 0, W, H);
     // In a tall frame the split sits halfway through the room that is
     // actually usable - below the kicker, above the platform's own bottom
     // strip - so both halves get the same space, not the same pixels.
-    var kickRoom = (state.kick1.trim() || state.kick2.trim()) ? 100*k : (state.logo && ready.logo ? 88*k : 0);
-    var mid = (g.top + (kickRoom ? kickRoom + 0.03*H : 0) + g.bottom) / 2, tilt = 0.02*H;
+    var kickRoom = (state.kick1.trim() || state.kick2.trim()) ? 100*k : (state.logo && ready.logo ? 88*k*state.logoSize : 0);
+    // The split's lean, as an angle: half of its rise either side of the
+    // middle - across the height in a wide frame, across the width in a tall.
+    var lean = Math.tan(state.splitAngle * Math.PI/180);
+    var mid = (g.top + (kickRoom ? kickRoom + 0.03*H : 0) + g.bottom) / 2, tilt = lean*W/2, slant = lean*H/2;
     var fill = c.createLinearGradient(0, 0, W, H);
     fill.addColorStop(0, st[1]); fill.addColorStop(1, st[2]);
     c.beginPath();
-    if (g.wide) { c.moveTo(W*0.53, 0); c.lineTo(W, 0); c.lineTo(W, H); c.lineTo(W*0.47, H); }
+    if (g.wide) { c.moveTo(W/2 + slant, 0); c.lineTo(W, 0); c.lineTo(W, H); c.lineTo(W/2 - slant, H); }
     else { c.moveTo(0, mid + tilt); c.lineTo(W, mid - tilt); c.lineTo(W, H); c.lineTo(0, H); }
     c.closePath(); c.fillStyle = fill; c.fill();
 
@@ -1057,7 +1177,7 @@
     }
     // One size for both words, so neither side shouts over the other; never
     // more than a fifth of a half's height.
-    var start = Math.min(130*k, (A.y1 - A.y0)*0.2, (B.y1 - B.y0)*0.2);
+    var start = Math.min(130*k*state.headScale, (A.y1 - A.y0)*0.2, (B.y1 - B.y0)*0.2);
     var px = Math.min(
       l1 ? fitWith(c, l1, A.x1 - A.x0, start, 20*k, none) : start,
       l2 ? fitWith(c, l2, B.x1 - B.x0, start, 20*k, none) : start);
@@ -1074,7 +1194,7 @@
     // words
     c.textBaseline = 'alphabetic';
     if (l1) {
-      c.save(); c.globalAlpha = 0.55;
+      c.save(); c.globalAlpha = state.beforeFade;
       tightFont(c, px); c.fillStyle = state.line1Color;
       c.fillText(l1, A.x0, A.y0 + px*0.74);
       looseFont(c);
@@ -1086,30 +1206,14 @@
       looseFont(c);
     }
 
-    // before card: quiet, dark, soft edge
     var rad = 16*k;
     if (cw > 0) {
-      roundRect(c, ra.x, ra.y, ra.w, ra.h, rad); c.fillStyle = '#1d1c22'; c.fill();
-      c.save(); roundRect(c, ra.x, ra.y, ra.w, ra.h, rad); c.clip();
-      if (phoneImg) shown.phone = cover(c, phoneImg, ra.x, ra.y, ra.w, ra.h, state.phoneZoom, state.phonePanX*ra.w, state.phonePanY*ra.w);
-      else {
-        gridFill(c, ra.x, ra.y, ra.w, ra.h, 'rgba(255,255,255,.06)', ra.w/15);
-        if (opts.preview) placeholderLabel(c, ra.x, ra.y, ra.w, ra.h, 'Drop the before picture here', 'rgba(255,255,255,.4)');
-      }
-      c.restore();
-      roundRect(c, ra.x, ra.y, ra.w, ra.h, rad);
-      c.lineWidth = Math.max(1.5, 3*k); c.strokeStyle = '#4a4652'; c.stroke();
+      // The before card is quiet by default - dark, soft edge - and can go
+      // light, or match the after card when the two should read as equals.
+      drawCard(c, ra, state.beforeCard, phoneImg, state.phoneZoom, state.phonePanX*ra.w, state.phonePanY*ra.w, k, rad,
+               opts.preview ? 'Drop the before picture here' : '', 'phone');
       if (opts.preview) phoneHit = { x:ra.x, y:ra.y, w:ra.w, h:ra.h };
-
-      // after card: bright, ink edge, hard shadow
-      var off = 12*k, edge = Math.max(2, 5*k);
-      roundRect(c, rb.x + off, rb.y + off, rb.w, rb.h, rad); c.fillStyle = '#16151a'; c.fill();
-      roundRect(c, rb.x, rb.y, rb.w, rb.h, rad); c.fillStyle = '#ffffff'; c.fill();
-      c.save(); roundRect(c, rb.x + edge, rb.y + edge, rb.w - 2*edge, rb.h - 2*edge, rad - edge); c.clip();
-      shown.win = cover(c, frame, rb.x + edge, rb.y + edge, rb.w - 2*edge, rb.h - 2*edge, state.zoom, state.panX*W, state.panY*H);
-      c.restore();
-      roundRect(c, rb.x, rb.y, rb.w, rb.h, rad);
-      c.lineWidth = edge; c.strokeStyle = '#16151a'; c.stroke();
+      drawCard(c, rb, 'match', frame, state.zoom, state.panX*W, state.panY*H, k, rad, '', 'win');
 
       // The arrow sits on the split, in a dark disc so it reads on either
       // side: between the cards in a wide frame; in a tall one at the split's
@@ -1122,14 +1226,39 @@
         dr = 46*k;
         cx = g.right - dr; cy = mid + tilt - 2*tilt*(cx / W);
       }
-      c.save();
-      c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = dr*0.5; c.shadowOffsetY = dr*0.12;
-      c.beginPath(); c.arc(cx, cy, dr, 0, Math.PI*2); c.fillStyle = '#16151a'; c.fill();
-      noShadow(c);
-      c.translate(cx, cy); if (!g.wide) c.rotate(Math.PI/2);
-      drawArrow(c, -dr*0.46, 0, dr*1.15, st[2]);
-      c.restore();
+      if (state.arrow) {
+        c.save();
+        c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = dr*0.5; c.shadowOffsetY = dr*0.12;
+        c.beginPath(); c.arc(cx, cy, dr, 0, Math.PI*2); c.fillStyle = '#16151a'; c.fill();
+        noShadow(c);
+        c.translate(cx, cy); if (!g.wide) c.rotate(Math.PI/2);
+        drawArrow(c, -dr*0.46, 0, dr*1.15, st[2]);
+        c.restore();
+      }
     }
+  }
+
+  // A picture card in one of three styles. 'dark': dark fill, soft grey
+  // edge. 'light': white fill, thin ink edge. 'match': white, a heavy ink
+  // edge and a hard offset shadow - the after card's look. With no picture
+  // it shows a fine grid, and in the preview a hint to drop one.
+  function drawCard(c, r, style, img, zoom, dx, dy, k, rad, hint, which){
+    var dark = style === 'dark', bold = style === 'match';
+    var edge = bold ? Math.max(2, 5*k) : 0;
+    if (bold) { roundRect(c, r.x + 12*k, r.y + 12*k, r.w, r.h, rad); c.fillStyle = '#16151a'; c.fill(); }
+    roundRect(c, r.x, r.y, r.w, r.h, rad); c.fillStyle = dark ? '#1d1c22' : '#ffffff'; c.fill();
+    c.save();
+    roundRect(c, r.x + edge, r.y + edge, r.w - 2*edge, r.h - 2*edge, rad - edge); c.clip();
+    if (img) shown[which] = cover(c, img, r.x + edge, r.y + edge, r.w - 2*edge, r.h - 2*edge, zoom, dx, dy);
+    else {
+      gridFill(c, r.x, r.y, r.w, r.h, dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.07)', r.w/15);
+      if (hint) placeholderLabel(c, r.x, r.y, r.w, r.h, hint, dark ? 'rgba(255,255,255,.4)' : 'rgba(0,0,0,.4)');
+    }
+    c.restore();
+    roundRect(c, r.x, r.y, r.w, r.h, rad);
+    if (bold) { c.lineWidth = edge; c.strokeStyle = '#16151a'; }
+    else { c.lineWidth = Math.max(1.5, 3*k); c.strokeStyle = dark ? '#4a4652' : '#16151a'; }
+    c.stroke();
   }
 
   var TEMPLATES = [
@@ -1387,20 +1516,258 @@
     sizesEl.appendChild(sec);
   });
 
-  // ---- controls ---------------------------------------------------------
+  // ---- the panel, built from CONTROLS -----------------------------------
+  var fieldsEl = document.getElementById('fields'), togglesEl = document.getElementById('toggles');
+  var built = [];   // { ctl, el, input(s), label } for every control on the page
+  function labelFor(ctl, t){
+    if (!ctl.label || typeof ctl.label === 'string') return ctl.label || '';
+    return ctl.label[t] || ctl.label._;
+  }
+  function el(tag, cls, text){
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text) e.textContent = text;
+    return e;
+  }
+  function hintEl(text){ return el('p', 'hint', text); }
+
+  // Range values on screen are whole numbers; state keeps fractions for '%'.
+  function toSlider(ctl, v){ return ctl.unit === '%' ? Math.round(v / (ctl.scale || 1) * 100) : v; }
+  function fromSlider(ctl, v){ return ctl.unit === '%' ? v / 100 * (ctl.scale || 1) : +v; }
+  function sayRange(ctl, input){
+    input.setAttribute('aria-valuetext', input.value + (ctl.unit === '%' ? '%' : ' degrees'));
+  }
+
+  // One change path for every control: set the value, run the control's own
+  // extra step, bring every copy of the control up to date, save, redraw.
+  function setControl(key, value){
+    state[key] = value;
+    CONTROLS.forEach(function(ctl){ if (ctl.key === key && ctl.change) ctl.change(value); });
+    syncControls();
+    persist(); draw();
+  }
+
+  function buildControl(ctl){
+    var id = ctl.id || ctl.key, wrap, input, label;
+    switch (ctl.type) {
+      case 'text':
+        wrap = el('div', 'field');
+        label = el('label'); label.htmlFor = id; wrap.appendChild(label);
+        input = el('input'); input.type = 'text'; input.id = id; input.autocomplete = 'off';
+        if (ctl.maxlength) input.maxLength = ctl.maxlength;
+        if (ctl.placeholder) input.placeholder = ctl.placeholder;
+        input.addEventListener('input', function(){ setControl(ctl.key, input.value); });
+        if (ctl.pair) {
+          var line = el('div', 'inline'), sw = el('input');
+          sw.type = 'color'; sw.id = ctl.pair.key; sw.setAttribute('aria-label', ctl.pair.aria);
+          sw.addEventListener('input', function(){ setControl(ctl.pair.key, sw.value); });
+          line.appendChild(input); line.appendChild(sw); wrap.appendChild(line);
+          built.push({ ctl:controlByKey(ctl.pair.key), el:null, input:sw });
+        } else wrap.appendChild(input);
+        break;
+      case 'color':
+        wrap = el('div', 'field');
+        label = el('label'); label.htmlFor = id; wrap.appendChild(label);
+        input = el('input'); input.type = 'color'; input.id = id;
+        input.addEventListener('input', function(){ setControl(ctl.key, input.value); });
+        wrap.appendChild(input);
+        break;
+      case 'range':
+        wrap = el('div', 'field');
+        label = el('label'); label.htmlFor = id; wrap.appendChild(label);
+        input = el('input'); input.type = 'range'; input.id = id; input.min = ctl.min; input.max = ctl.max;
+        input.addEventListener('input', function(){ sayRange(ctl, input); setControl(ctl.key, fromSlider(ctl, input.value)); });
+        wrap.appendChild(input);
+        break;
+      case 'choice':
+        wrap = el('fieldset', 'field seg');
+        label = el('legend', 'legend'); wrap.appendChild(label);
+        var segs = el('div', 'segs');
+        input = ctl.options.map(function(o){
+          var lab = el('label'), r = el('input');
+          r.type = 'radio'; r.name = id; r.value = o[0];
+          r.addEventListener('change', function(){ if (r.checked) setControl(ctl.key, o[0]); });
+          lab.appendChild(r); lab.appendChild(document.createTextNode(' ' + o[1]));
+          segs.appendChild(lab);
+          return r;
+        });
+        wrap.appendChild(segs);
+        break;
+      case 'toggle':
+        wrap = el('label', 'tog');
+        input = el('input'); input.type = 'checkbox'; input.id = id;
+        input.addEventListener('change', function(){ setControl(ctl.key, input.checked); });
+        label = el('span');
+        wrap.appendChild(input); wrap.appendChild(label);
+        break;
+      case 'font':
+        wrap = el('div', 'field');
+        label = el('label'); label.htmlFor = id; wrap.appendChild(label);
+        input = el('select'); input.id = id;
+        input.addEventListener('change', function(){ setControl(ctl.key, input.value); });
+        wrap.appendChild(input);
+        break;
+      case 'image':
+        wrap = el('div', 'field');
+        label = el('span', 'legend'); label.id = id + 'Label'; wrap.appendChild(label);
+        var ids = ctl.ids || { pick:id + 'Pick', file:id + 'File' };
+        var btns = el('div', ctl.big ? '' : 'logobtns');
+        var pick = el('button', ctl.big ? 'btn' : 'btn btn-sm', ctl.button);
+        pick.id = ids.pick; pick.setAttribute('aria-describedby', label.id);
+        var file = el('input'); file.type = 'file'; file.accept = 'image/*'; file.hidden = true; file.id = ids.file;
+        pick.addEventListener('click', function(){ file.click(); });
+        file.addEventListener('change', function(){ if (file.files[0]) SLOTS[ctl.slot].load(file.files[0]); file.value = ''; });
+        btns.appendChild(pick);
+        if (ctl.reset) {
+          var reset = el('button', 'btn btn-sm', ctl.reset);
+          reset.addEventListener('click', function(){ SLOTS[ctl.slot].clear(); });
+          btns.appendChild(reset);
+          input = reset;   // synced: shown only while the slot holds a picture
+        }
+        wrap.appendChild(btns); wrap.appendChild(file);
+        break;
+      case 'custom':
+        wrap = ctl.build(ctl);
+        label = wrap.querySelector('[data-label]');
+        break;
+    }
+    if (ctl.hint && ctl.type !== 'toggle') wrap.appendChild(hintEl(ctl.hint));
+    built.push({ ctl:ctl, el:wrap, input:input, label:label });
+    return wrap;
+  }
+  function controlByKey(key){
+    for (var i = 0; i < CONTROLS.length; i++) if (CONTROLS[i].key === key) return CONTROLS[i];
+  }
+
+  // Lay the list out: top-level fields, then one folding panel per group in
+  // the order the groups first appear, with rows for controls that share one.
+  (function layOut(){
+    var groups = {}, order = [], lastField = null, rows = {};
+    CONTROLS.forEach(function(ctl){
+      if (ctl.paired) return;   // drawn inside its text field
+      var parent;
+      if (!ctl.group) parent = fieldsEl;
+      else if (ctl.group === 'toggles') parent = togglesEl;
+      else {
+        if (!groups[ctl.group]) {
+          var d = el('details', 'group'); d.setAttribute('name', 'panel');
+          d.appendChild(el('summary', null, ctl.group));
+          groups[ctl.group] = d; order.push(d);
+        }
+        parent = groups[ctl.group];
+      }
+      var w = buildControl(ctl);
+      if (ctl.join && lastField) { lastField.appendChild(w); return; }
+      if (ctl.row) {
+        var rk = (ctl.group || '') + '/' + ctl.row;
+        if (!rows[rk]) { rows[rk] = el('div', 'row'); parent.appendChild(rows[rk]); }
+        rows[rk].appendChild(w);
+      } else if (parent === togglesEl) {
+        parent.insertBefore(w, parent.firstChild);
+      } else parent.appendChild(w);
+      lastField = w;
+    });
+    order.forEach(function(d){ fieldsEl.appendChild(d); });
+  })();
+
+  // Brings every control on the page into line with state and the template:
+  // visibility, labels that change per template, values, enabled state.
+  function syncControls(){
+    var t = templateById(state.layout).id;
+    var groupSeen = {};
+    built.forEach(function(b){
+      var ctl = b.ctl;
+      if (b.el) {
+        var show = (!ctl.for || ctl.for.indexOf(t) >= 0) && (!ctl.when || ctl.when());
+        b.el.hidden = !show;
+        if (b.el.parentNode && b.el.parentNode.classList.contains('row')) {
+          // a row shows while any of its fields does
+          var row = b.el.parentNode;
+          row.hidden = !Array.prototype.some.call(row.children, function(c){ return !c.hidden; });
+        }
+        var g = b.el.closest('details');
+        if (g) groupSeen[g.querySelector('summary').textContent] = groupSeen[g.querySelector('summary').textContent] || { d:g, any:false };
+        if (g && show) groupSeen[g.querySelector('summary').textContent].any = true;
+        if (b.label && ctl.type !== 'custom') b.label.textContent = labelFor(ctl, t);
+      }
+      if (!ctl.key || b.input == null) return;
+      var v = state[ctl.key];
+      switch (ctl.type) {
+        case 'text': case 'color':
+          if (b.input.value !== v && document.activeElement !== b.input) b.input.value = v;
+          break;
+        case 'range':
+          if (document.activeElement !== b.input) b.input.value = toSlider(ctl, v);
+          sayRange(ctl, b.input);
+          break;
+        case 'choice':
+          b.input.forEach(function(r){ r.checked = (r.value === v); });
+          break;
+        case 'toggle':
+          b.input.checked = !!v;
+          var on = !ctl.enabled || ctl.enabled();
+          b.input.disabled = !on; b.el.classList.toggle('off', !on);
+          break;
+        case 'font':
+          var list = ctl.list();
+          if (b.input.options.length !== list.length) {
+            b.input.textContent = '';
+            list.forEach(function(f){ var o = el('option', null, f.name); o.value = f.id; b.input.appendChild(o); });
+          }
+          b.input.value = fontById(list, v).id;
+          break;
+        case 'image':
+          b.input.hidden = !SLOTS[ctl.slot].has();
+          break;
+      }
+    });
+    // a panel with nothing for this template steps aside
+    Object.keys(groupSeen).forEach(function(k){ groupSeen[k].d.hidden = !groupSeen[k].any; });
+  }
+
+  // ---- custom widgets the schema places ---------------------------------
+  function buildTemplatePicker(){
+    var f = el('fieldset', 'field seg');
+    var lg = el('legend', 'legend', 'Template'); f.appendChild(lg);
+    var box = el('div', 'tpls'); box.id = 'tpls'; f.appendChild(box);
+    var hint = hintEl(''); hint.id = 'layoutHint'; f.appendChild(hint);
+    return f;
+  }
+  function buildPaletteSlot(){
+    var w = el('div');
+    var pals = el('div', 'palettes'); pals.id = 'palettes';
+    pals.setAttribute('role', 'radiogroup'); pals.setAttribute('aria-label', 'Bottom line colour');
+    var stops = el('div', 'stops'); stops.id = 'stops'; stops.hidden = true;
+    w.appendChild(pals); w.appendChild(stops);
+    return w;
+  }
+  function buildFontUpload(){
+    var w = el('div', 'field');
+    var btns = el('div', 'logobtns');
+    var b = el('button', 'btn btn-sm', 'Use your own font file'); b.id = 'fontPick';
+    var f = el('input'); f.type = 'file'; f.id = 'fontFile'; f.hidden = true; f.accept = '.ttf,.otf,.woff,.woff2,font/*';
+    btns.appendChild(b); w.appendChild(btns); w.appendChild(f);
+    w.appendChild(hintEl('Stock fonts load from Google Fonts when you pick them. Your own file stays in this tab and is gone when you close it.'));
+    return w;
+  }
+  function buildLogoSlot(){
+    var row = el('div', 'logorow');
+    var prev = el('span', 'logopreview'), img = el('img'); img.id = 'logoThumb'; img.alt = 'The logo on your thumbnail';
+    prev.appendChild(img);
+    var btns = el('div', 'logobtns');
+    var pick = el('button', 'btn btn-sm', 'Replace'); pick.id = 'logoPick';
+    var reset = el('button', 'btn btn-sm', 'Use default'); reset.id = 'logoReset'; reset.hidden = true;
+    var file = el('input'); file.type = 'file'; file.id = 'logoFile'; file.accept = 'image/*'; file.hidden = true;
+    btns.appendChild(pick); btns.appendChild(reset);
+    row.appendChild(prev); row.appendChild(btns); row.appendChild(file);
+    return row;
+  }
+
   function bind(id, fn){ document.getElementById(id).addEventListener('input', fn); }
-  var line1El = document.getElementById('line1'), line2El = document.getElementById('line2');
-  line1El.value = state.line1; line2El.value = state.line2;
 
   // ---- brand: the logo and the headline colours -------------------------
   // The tool ships with the KreativeKorna mark and gradient. Both are the
   // starting point, not a fixture: anyone can put their own in their place.
-  var line1ColorEl = document.getElementById('line1Color');
-  line1ColorEl.value = state.line1Color;
-  line1ColorEl.addEventListener('input', function(e){
-    state.line1Color = e.target.value; persist(); draw();
-  });
-
   var palettesEl = document.getElementById('palettes');
   var stopsEl = document.getElementById('stops'), stopInputs = [];
   PALETTES.forEach(function(pal){
@@ -1495,15 +1862,11 @@
     setStatus('Default logo restored.', 'ok');
   });
 
-  var playTog = document.getElementById('playTog'), playEl = document.getElementById('showPlay');
+
   function syncPresetUI(){
     var p = presetById(state.preset);
     customRow.hidden = (p.id !== 'custom');
-    // The badge sits where the other templates put their cards, so it is
-    // full-picture only.
-    var canPlay = p.play && state.layout === 'bleed';
-    playEl.disabled = !canPlay;
-    playTog.classList.toggle('off', !canPlay);
+    syncControls();   // the play badge follows the size
   }
   function clampCustom(el, fallback){
     var n = parseInt(el.value, 10);
@@ -1513,12 +1876,9 @@
   bind('cw', function(){ state.customW = clampCustom(cwEl, state.customW); persist(); draw(); });
   bind('ch', function(){ state.customH = clampCustom(chEl, state.customH); persist(); draw(); });
 
-  bind('line1', function(e){ state.line1 = e.target.value; persist(); draw(); });
-  bind('line2', function(e){ state.line2 = e.target.value; persist(); draw(); });
-
-  // ---- layout, badge and the showcase cards -----------------------------
-  // The picker: one live preview per template, drawn with your own content
-  // at the size you picked, so choosing is comparing rather than imagining.
+  // ---- the template picker ----------------------------------------------
+  // One live preview per template, drawn with your own content at the size
+  // you picked, so choosing is comparing rather than imagining.
   var tplsEl = document.getElementById('tpls'), tplThumbs = [];
   TEMPLATES.forEach(function(t){
     var lab = document.createElement('label'); lab.className = 'tpl';
@@ -1549,49 +1909,27 @@
     state.layout = keep;
   }
 
+
   var layoutEls = document.querySelectorAll('input[name="layout"]');
-  var phoneBits = document.getElementById('phoneBits');
-  var forEls = document.querySelectorAll('[data-for]');
   function syncLayout(){
     var t = templateById(state.layout);
     for (var i = 0; i < layoutEls.length; i++) layoutEls[i].checked = (layoutEls[i].value === t.id);
-    // Each control says which templates it belongs to; the rest step aside.
-    for (var f = 0; f < forEls.length; f++) forEls[f].hidden = forEls[f].dataset.for.split(' ').indexOf(t.id) < 0;
-    phoneBits.hidden = !state.phone;
     document.getElementById('layoutHint').textContent = t.hint;
-    document.getElementById('imgLabel').textContent = t.labels.img;
-    document.querySelector('label[for="line1"]').textContent = t.labels.l1;
-    document.querySelector('label[for="line2"]').textContent = t.labels.l2;
-    syncPresetUI();
+    syncControls();
   }
   for (var li = 0; li < layoutEls.length; li++) {
     layoutEls[li].addEventListener('change', function(e){
       if (!e.target.checked) return;
-      state.layout = e.target.value; state.panX = 0; state.panY = 0;
+      state.panX = 0; state.panY = 0;
       // A full picture wants a little zoom to crop; a window or card wants the
       // whole screenshot, edge to edge.
-      state.zoom = state.layout === 'bleed' ? 1.25 : 1;
-      zoomEl.value = Math.round(state.zoom*100); sayPercent(zoomEl);
-      syncLayout(); persist(); draw();
+      state.zoom = e.target.value === 'bleed' ? 1.25 : 1;
+      setControl('layout', e.target.value);
+      syncLayout();
     });
   }
-  // ---- font pickers -----------------------------------------------------
-  var headSel = document.getElementById('headFont'), monoSel = document.getElementById('monoFont');
-  function fillFonts(sel, list, key){
-    sel.textContent = '';
-    list.forEach(function(f){
-      var o = document.createElement('option'); o.value = f.id; o.textContent = f.name;
-      sel.appendChild(o);
-    });
-    sel.value = fontById(list, state[key]).id;
-  }
-  function syncFonts(){ fillFonts(headSel, HEAD_FONTS, 'headFont'); fillFonts(monoSel, MONO_FONTS, 'monoFont'); }
-  headSel.addEventListener('change', function(){
-    state.headFont = headSel.value; ensureFont(headFace()); persist(); draw();
-  });
-  monoSel.addEventListener('change', function(){
-    state.monoFont = monoSel.value; ensureFont(monoFace()); persist(); draw();
-  });
+
+  // ---- fonts ------------------------------------------------------------
   // Your own font file: read in the browser, added for this tab only, and
   // offered in both lists. It never leaves the page, like the pictures.
   var fontFile = document.getElementById('fontFile'), ownFonts = 0;
@@ -1609,109 +1947,55 @@
         var id = 'own-' + ownFonts;
         HEAD_FONTS.push({ id:id, name:label, family:family, weight:400, track:-0.02 });
         MONO_FONTS.push({ id:id, name:label, family:family, weight:400 });
-        state.headFont = id; syncFonts(); draw();
+        setControl('headFont', id);
         setStatus(label.replace(' (yours)', '') + ' is now the headline font. It lasts until you close the tab.', 'ok');
       });
     }).catch(function(){ setStatus('That file could not be read as a font.', 'err'); });
   });
-  syncFonts();
   ensureFont(headFace()); ensureFont(monoFace());
 
-  ['badge','winTitle','cap1','cap2','capColor','handle','kick1','kick2','sticker'].forEach(function(id){
-    var el = document.getElementById(id);
-    el.value = state[id];
-    el.addEventListener('input', function(){ state[id] = el.value; persist(); draw(); });
-  });
-  // Every segmented choice and every slider in the grouped panels maps
-  // straight onto one state key: the radio group's name, or the slider's
-  // data-key. Sliders marked % store a fraction; the rest store degrees.
-  function syncRadios(key){
-    var radios = document.querySelectorAll('input[name="' + key + '"]');
-    for (var i = 0; i < radios.length; i++) radios[i].checked = (radios[i].value === state[key]);
-  }
-  ['winStyle','phoneSide','glow'].forEach(function(key){
-    syncRadios(key);
-    var radios = document.querySelectorAll('input[name="' + key + '"]');
-    for (var i = 0; i < radios.length; i++) {
-      radios[i].addEventListener('change', function(e){
-        if (!e.target.checked) return;
-        state[key] = e.target.value; persist(); draw();
-      });
-    }
-  });
-  var sliders = document.querySelectorAll('input[type=range][data-key]');
-  for (var si = 0; si < sliders.length; si++) (function(el){
-    var key = el.dataset.key, pct = el.dataset.unit === '%';
-    function say(){ el.setAttribute('aria-valuetext', el.value + (pct ? '%' : ' degrees')); }
-    el.value = Math.round(pct ? state[key]*100 : state[key]); say();
-    el.addEventListener('input', function(){
-      state[key] = pct ? el.value/100 : +el.value; say(); persist(); draw();
-    });
-  })(sliders[si]);
-
-  var showPhoneEl = document.getElementById('showPhone'), showDotsEl = document.getElementById('showDots');
-  showPhoneEl.checked = state.phone; showDotsEl.checked = state.dots;
-  showPhoneEl.addEventListener('change', function(){ state.phone = showPhoneEl.checked; syncLayout(); persist(); draw(); });
-  showDotsEl.addEventListener('change', function(){ state.dots = showDotsEl.checked; persist(); draw(); });
-
-  // The phone's picture is its own image, kept for this session only, like the
-  // main one. Without it the phone shows the main image.
-  var phoneFile = document.getElementById('phoneFile'), phoneResetBtn = document.getElementById('phoneReset');
-  document.getElementById('phonePick').addEventListener('click', function(){ phoneFile.click(); });
-  phoneFile.addEventListener('change', function(){ if (phoneFile.files[0]) loadPhone(phoneFile.files[0]); phoneFile.value = ''; });
+  // ---- picture slots ----------------------------------------------------
+  // Three pictures a template can use: the main one, a second one (the
+  // phone's, or the before card's), and the backdrop's glow. Image controls
+  // in the schema name a slot; the slot knows how to fill and empty it.
+  var SLOTS = {
+    main:     { load:function(b){ loadBlob(b); },     clear:function(){},   has:function(){ return true; } },
+    second:   { load:function(b){ loadPhone(b); },    clear:clearSecond,    has:function(){ return !!phoneImg; } },
+    backdrop: { load:function(b){ loadBackdrop(b); }, clear:clearBackdrop,  has:function(){ return !!bgImg; } }
+  };
   function clearSecond(){
-    phoneImg = null; phoneResetBtn.hidden = true; beforeResetBtn.hidden = true; draw();
+    phoneImg = null; syncControls(); draw();
     setStatus('Picture removed.', 'ok');
   }
-  phoneResetBtn.addEventListener('click', clearSecond);
-  // Before -> After keeps its before picture in the same slot as the phone's:
-  // the second picture, whichever template is showing it.
-  var beforeResetBtn = document.getElementById('beforeReset');
-  document.getElementById('beforePick').addEventListener('click', function(){ phoneFile.click(); });
-  beforeResetBtn.addEventListener('click', clearSecond);
   function loadPhone(blob){
     var img = new Image();
     img.onload = function(){
-      phoneImg = img; phoneResetBtn.hidden = false; beforeResetBtn.hidden = false;
-      state.phonePanX = 0; state.phonePanY = 0; draw();
+      phoneImg = img; state.phonePanX = 0; state.phonePanY = 0;
+      syncControls(); draw();
       setStatus(state.layout === 'versus' ? 'Before picture loaded. Drag it on the left card to reframe it.'
                                           : 'Phone picture loaded. Drag it on the phone to reframe it.', 'ok');
     };
     img.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
     img.src = URL.createObjectURL(blob);
   }
-
   // The backdrop's picture only lights the glow, so a photo that would be
   // wrong in the window can still set the mood behind it.
-  var bgFile = document.getElementById('bgFile'), bgResetBtn = document.getElementById('bgReset');
-  document.getElementById('bgPick').addEventListener('click', function(){ bgFile.click(); });
-  bgFile.addEventListener('change', function(){
-    var f = bgFile.files[0];
-    bgFile.value = '';
-    if (!f) return;
+  function loadBackdrop(f){
     var img = new Image();
     img.onload = function(){
-      bgImg = img; bgResetBtn.hidden = false;
-      if (state.glow !== 'image') { state.glow = 'image'; syncRadios('glow'); persist(); }
-      draw();
+      bgImg = img;
+      if (state.glow !== 'image') setControl('glow', 'image'); else { syncControls(); draw(); }
       setStatus('Backdrop picture loaded.', 'ok');
     };
     img.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
     img.src = URL.createObjectURL(f);
-  });
-  bgResetBtn.addEventListener('click', function(){
-    bgImg = null; bgResetBtn.hidden = true; draw();
+  }
+  function clearBackdrop(){
+    bgImg = null; syncControls(); draw();
     setStatus('The backdrop glows from the window picture again.', 'ok');
-  });
-  // Without this both sliders announce a bare number; they are percentages.
-  var zoomEl = document.getElementById('zoom'), vigEl = document.getElementById('vig');
-  function sayPercent(el){ el.setAttribute('aria-valuetext', el.value + '%'); }
-  zoomEl.value = Math.round(state.zoom*100);
-  sayPercent(zoomEl); sayPercent(vigEl);
-  bind('zoom', function(e){ state.zoom = e.target.value/100; sayPercent(e.target); draw(); });
-  bind('vig', function(e){ state.vig = (e.target.value/100)*0.7; sayPercent(e.target); draw(); });
-  document.getElementById('showLogo').addEventListener('change', function(e){ state.logo = e.target.checked; draw(); });
-  playEl.addEventListener('change', function(e){ state.play = e.target.checked; draw(); });
+  }
+
+  // ---- view options (not part of the thumbnail) -------------------------
   var safeNote = document.getElementById('safeNote');
   var showFeedEl = document.getElementById('showFeed');
   showFeedEl.checked = state.feed; feedEl.hidden = !state.feed;
@@ -1723,28 +2007,24 @@
   document.getElementById('showSafe').addEventListener('change', function(e){
     state.safe = e.target.checked; safeNote.hidden = !state.safe; draw();
   });
-  function pick(keys){
-    var o = {};
-    keys.forEach(function(key){ o[key] = state[key]; });
-    return o;
-  }
+
+  // Everything the schema marks as remembered, plus the few settings that
+  // live outside it: the size, the palette, the logo and the feed strip.
   function persist(){
-    try{ localStorage.setItem('tf-state', JSON.stringify(Object.assign({
-      line1:state.line1, line2:state.line2, preset:state.preset,
-      customW:state.customW, customH:state.customH,
-      line1Color:state.line1Color, palette:state.palette,
-      customStops:state.customStops, logoSrc:state.logoSrc, derived:state.derived,
-      phone:state.phone, dots:state.dots, feed:state.feed
-    }, pick(STR_KEYS.concat(NUM_KEYS))))); }catch(e){
+    var out = {
+      preset:state.preset, customW:state.customW, customH:state.customH,
+      palette:state.palette, customStops:state.customStops, logoSrc:state.logoSrc,
+      derived:state.derived, feed:state.feed
+    };
+    remembered().forEach(function(ctl){ out[ctl.key] = state[ctl.key]; });
+    try { localStorage.setItem('tf-state', JSON.stringify(out)); } catch(e) {
       // A big custom logo can blow the storage quota. Losing the saved copy is
       // survivable; the logo stays put for this session either way.
     }
   }
 
   // ---- image loading ----------------------------------------------------
-  var fileEl = document.getElementById('file');
-  document.getElementById('pick').addEventListener('click', function(){ fileEl.click(); });
-  fileEl.addEventListener('change', function(){ if (fileEl.files[0]) loadBlob(fileEl.files[0]); });
+  // The main picture's button and file input come from the schema (slot 'main').
   function loadBlob(blob){
     var url = URL.createObjectURL(blob);
     var img = new Image();

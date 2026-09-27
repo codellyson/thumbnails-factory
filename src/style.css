@@ -242,8 +242,8 @@
   .row .field.narrow{ flex:1; min-width:70px; }
   .row[hidden]{ display:none; }
   .field[hidden]{ display:none; }
-  /* controls that belong to other templates; beats the panels' own display */
-  [data-for][hidden]{ display:none !important; }
+  /* controls a template does not use; beats each control's own display */
+  .fields [hidden], .toggles [hidden]{ display:none !important; }
 
   /* template picker: a live preview of each, your content in its arrangement */
   .tpls{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }

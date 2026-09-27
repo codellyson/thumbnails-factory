@@ -66,10 +66,37 @@ card comes out the same on any machine.
 
 The **Template** picker at the top of the controls shows a live preview of each
 template, drawn with your own headline and pictures at the size you picked. All
-templates draw from the same content, so switching keeps what you typed; each
-control declares which templates it belongs to (`data-for` in `src/page.html`) and
-steps aside for the rest. Adding a template is one entry in `TEMPLATES` in
-`src/app.js` with a name, a hint, its field labels and a draw function.
+templates draw from the same content, so switching keeps what you typed. Adding a
+template is one entry in `TEMPLATES` in `src/app.js`: a name, a hint and a draw
+function that reads `state`.
+
+## Controls: defined once
+
+Every setting is one entry in `CONTROLS` in `src/app.js`: its key, type, label,
+default, the panel it sits in, and the templates it belongs to. From that list the
+page builds the whole panel (`src/page.html` holds only an empty `#fields`), sets
+the defaults, decides what is remembered between visits, wires the change handler,
+and shows each control only for the templates that use it. A saved value is only
+restored when it is the same kind as the default, so a stale entry cannot break the
+page. Adding a control is adding an entry; a template then reads `state[key]`.
+
+Types: `text` (optionally with a paired colour), `color`, `range` (`%` stores a
+fraction), `choice`, `toggle`, `font`, `image` (names a picture slot: main, second
+or backdrop) and `custom` for the few widgets that are their own thing - the
+template picker, the palette swatches, the logo and the font upload.
+
+| Panel | Controls | Templates |
+| --- | --- | --- |
+| (top) | template, picture and zoom, shading, before picture and zoom, the two headline lines with colours and palette | per control |
+| Project tag | text, size | Launch |
+| Kicker | two lines | Launch, Before → After |
+| Text | headline font, headline size, kicker font, your own font file | all |
+| Window | title, sticker and its colour, style, turn, tilt | Showcase, Launch |
+| Phone | show, picture, zoom, on-screen text and accent colour, handle, buttons, side, size, tilt | Showcase |
+| Backdrop | glow source, strength, picture | Showcase |
+| Background | base colour (neutral, from the palette, or custom), dot grid | Showcase, Launch, Before → After |
+| Split | angle, before word strength, before card style, arrow | Before → After |
+| Logo | the logo, show, size | all |
 
 Colours follow the headline palette: the gradient runs where a template uses one,
 and the palette's last stop is the template's solid accent. **Signal yellow** is a
@@ -123,15 +150,8 @@ Launch takes a **project tag**: a short outlined label above its headline, such 
 `JUSTDB`. Leave it empty for none. The other templates carry only the logo in
 that corner.
 
-Each piece has its own panel. Only one panel is open at a time, and on a wide
-screen the preview stays in view while you scroll the controls:
-
-| Panel | Controls |
-| --- | --- |
-| Project tag (Launch) | text, size |
-| Window | title, style (dark, light, no frame), turn in depth, tilt |
-| Phone | picture, zoom, two lines of on-screen text with an accent colour, handle, like and share buttons, side, size, tilt |
-| Backdrop | glow from a picture (its own, or the window's), from the headline colours, or none, and its strength |
+Only one panel is open at a time, and on a wide screen the preview stays in view
+while you scroll the controls.
 
 **Show at feed size** puts the thumbnail beside the editor at the size people
 actually meet it: 168 px wide in YouTube's suggested list, 124 px in a TikTok or

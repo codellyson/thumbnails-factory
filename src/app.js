@@ -199,7 +199,8 @@
   // Groups appear in the order they are first mentioned.
   var ALL = ['bleed', 'showcase', 'launch', 'versus'];
   var CONTROLS = [
-    { key:'layout', type:'custom', label:'Template', def:'bleed', build:buildTemplatePicker },
+    { key:'layout', type:'custom', label:'Template', def:'bleed', build:buildTemplatePicker,
+      change:function(){ ensureFont(headFace()); } },
     { key:'main', type:'image', slot:'main', big:true, persist:false,
       label:{ _:'Image', showcase:'Window picture', launch:'Window picture', versus:'After picture' },
       button:'Choose an image', ids:{ pick:'pick', file:'file' } },
@@ -209,10 +210,10 @@
       button:'Choose before picture', reset:'Remove',
       hint:'Or drop a file on the left card. Drag on it to move the picture.' },
     { key:'phoneZoom', type:'range', label:'Before zoom', min:100, max:250, unit:'%', def:1, persist:false, for:['versus'], id:'beforeZoom' },
-    { key:'line1', type:'text', label:{ _:'Top line', versus:'Before' }, def:'TYPE YOUR', maxlength:24,
+    { key:'line1', type:'text', label:{ _:'Top line', versus:'Headline' }, def:'TYPE YOUR', maxlength:24,
       pair:{ key:'line1Color', aria:'Top line colour' } },
     { key:'line1Color', type:'color', def:'#ffffff', paired:true },
-    { key:'line2', type:'text', label:{ _:'Bottom line', versus:'After' }, def:'HEADLINE HERE', maxlength:24 },
+    { key:'line2', type:'text', label:{ _:'Bottom line', versus:'Accent words' }, def:'HEADLINE HERE', maxlength:24 },
     { id:'palette', type:'custom', build:buildPaletteSlot, join:true },
 
     // Launch's own label above its headline
@@ -220,11 +221,11 @@
       placeholder:'JUSTDB', hint:'An outlined label above the headline. Leave it empty for none.' },
     { key:'pillSize', type:'range', group:'Project tag', for:['launch'], label:'Size', min:70, max:160, unit:'%', def:1 },
 
-    { key:'kick1', type:'text', group:'Kicker', for:['launch', 'versus'], label:'First line', def:'YOUR CHANNEL', maxlength:32, placeholder:'YOUR CHANNEL' },
-    { key:'kick2', type:'text', group:'Kicker', for:['launch', 'versus'], label:'Accent line', def:'EPISODE 01', maxlength:24, placeholder:'EPISODE 01',
+    { key:'kick1', type:'text', group:'Kicker', for:['launch'], label:'First line', def:'YOUR CHANNEL', maxlength:32, placeholder:'YOUR CHANNEL' },
+    { key:'kick2', type:'text', group:'Kicker', for:['launch'], label:'Accent line', def:'EPISODE 01', maxlength:24, placeholder:'EPISODE 01',
       hint:'Two short lines in a corner bracket. Leave both empty to show the logo instead.' },
 
-    { key:'headFont', type:'font', group:'Text', label:'Headline font', def:'archivo-black', list:function(){ return HEAD_FONTS; },
+    { key:'headFont', type:'font', group:'Text', label:'Headline font', def:'auto', list:function(){ return HEAD_FONTS; },
       change:function(){ ensureFont(headFace()); } },
     { key:'headScale', type:'range', group:'Text', label:'Headline size', min:60, max:140, unit:'%', def:1,
       hint:'The headline still shrinks to fit its space; this sets how big it starts.' },
@@ -272,11 +273,17 @@
       label:'Colour', def:'#18171d' },
     { key:'dotGrid', type:'toggle', group:'Background', for:['launch'], label:'Dot grid', def:true },
 
-    { key:'splitAngle', type:'range', group:'Split', for:['versus'], label:'Angle', min:0, max:20, unit:'°', def:6 },
-    { key:'beforeFade', type:'range', group:'Split', for:['versus'], label:'Before word strength', min:15, max:100, unit:'%', def:0.55 },
-    { key:'beforeCard', type:'choice', group:'Split', for:['versus'], label:'Before card', def:'dark',
-      options:[['dark','Dark'], ['light','Light'], ['match','Like after']] },
-    { key:'arrow', type:'toggle', group:'Split', for:['versus'], label:'Arrow between the pictures', def:true },
+    { key:'beforeLabel', type:'text', group:'Pictures', for:['versus'], label:'Before label', def:'BEFORE', maxlength:16, row:'labels' },
+    { key:'afterLabel', type:'text', group:'Pictures', for:['versus'], label:'After label', def:'AFTER', maxlength:16, row:'labels' },
+    { key:'vsShape', type:'choice', group:'Pictures', for:['versus'], label:'Shape', def:'circle',
+      options:[['circle','Circle'], ['card','Card']] },
+    { key:'vsDivider', type:'choice', group:'Pictures', for:['versus'], label:'Between them', def:'slash',
+      options:[['slash','Slash'], ['split','Split field']] },
+    { key:'splitAngle', type:'range', group:'Pictures', for:['versus'], label:'Lean', min:0, max:20, unit:'°', def:8 },
+    { key:'arrow', type:'toggle', group:'Pictures', for:['versus'], label:'Curved arrow from one to the other', def:true },
+    { key:'backdrop', type:'image', slot:'backdrop', persist:false, group:'Background', for:['versus'], label:'Background picture',
+      button:'Choose background picture', reset:'Remove', id:'vsBackdrop',
+      hint:'Replaces the textured field, darkened so the pictures stay in front.' },
 
     { id:'logoSlot', type:'custom', group:'Logo', build:buildLogoSlot },
     { key:'logo', type:'toggle', group:'Logo', label:'Show it on the thumbnail', def:true, persist:false },
@@ -378,6 +385,7 @@
   // newer templates apply, since a condensed face needs far less than a wide
   // one. A font file of your own can join either list for the session.
   var HEAD_FONTS = [
+    { id:'auto', name:'The template\u2019s own' },   // each template names the face it was designed with
     { id:'archivo-black', name:'Archivo Black', family:'Archivo Black', weight:400, track:-0.045, css:'Archivo+Black' },
     { id:'anton',         name:'Anton',         family:'Anton',         weight:400, track:-0.01,  css:'Anton' },
     { id:'bebas',         name:'Bebas Neue',    family:'Bebas Neue',    weight:400, track:0,      css:'Bebas+Neue' },
@@ -402,7 +410,10 @@
     for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
     return list[0];
   }
-  var headFace = function(){ return fontById(HEAD_FONTS, state.headFont); };
+  var headFace = function(){
+    var id = state.headFont === 'auto' ? (templateById(state.layout).font || 'archivo-black') : state.headFont;
+    return fontById(HEAD_FONTS.slice(1), id);
+  };
   var monoFace = function(){ return fontById(MONO_FONTS, state.monoFont); };
 
   // Fetches a stock face the first time it is picked, then redraws once the
@@ -1148,126 +1159,355 @@
     if (r.w > 0) drawLaunchWindow(c, r.x, r.y, r.w, r.h, state.launchTilt, state.panX*W, state.panY*H);
   }
 
-  // Before -> After: a diagonal split, dark on one side and the palette on
-  // the other. The top line is the dim "before" word over the before
-  // picture; the bottom line follows an arrow over the after picture, which
-  // gets the heavier card with a hard offset shadow.
-  function drawVersus(c, p, opts){
-    var g = box(p), W = g.W, H = g.H, k = g.k, st = activeStops(), ink = inkOn(st[2]);
-    c.fillStyle = baseTone('#18171d'); c.fillRect(0, 0, W, H);
-    // In a tall frame the split sits halfway through the room that is
-    // actually usable - below the kicker, above the platform's own bottom
-    // strip - so both halves get the same space, not the same pixels.
-    var kickRoom = (state.kick1.trim() || state.kick2.trim()) ? 100*k : (state.logo && ready.logo ? 88*k*state.logoSize : 0);
-    // The split's lean, as an angle: half of its rise either side of the
-    // middle - across the height in a wide frame, across the width in a tall.
-    var lean = Math.tan(state.splitAngle * Math.PI/180);
-    var mid = (g.top + (kickRoom ? kickRoom + 0.03*H : 0) + g.bottom) / 2, tilt = lean*W/2, slant = lean*H/2;
-    var fill = c.createLinearGradient(0, 0, W, H);
-    fill.addColorStop(0, st[1]); fill.addColorStop(1, st[2]);
-    c.beginPath();
-    if (g.wide) { c.moveTo(W/2 + slant, 0); c.lineTo(W, 0); c.lineTo(W, H); c.lineTo(W/2 - slant, H); }
-    else { c.moveTo(0, mid + tilt); c.lineTo(W, mid - tilt); c.lineTo(W, H); c.lineTo(0, H); }
-    c.closePath(); c.fillStyle = fill; c.fill();
-
-    var kh = drawKicker(c, g.left, g.top, k);
-    var l1 = state.line1.toUpperCase(), l2 = state.line2.toUpperCase();
-    var gap = 0.03*W;
-    // the two halves: where each word and its card may go
-    var A, B;
-    if (g.wide) {
-      var y0 = g.top + (kh ? kh + 0.07*H : 0);
-      A = { x0:g.left, x1:W*0.455 - gap*0.5, y0:y0, y1:g.bottom };
-      B = { x0:W*0.545 + gap*0.5, x1:g.right, y0:y0, y1:g.bottom };
-    } else {
-      A = { x0:g.left, x1:g.right, y0:g.top + (kh ? kh + 0.03*H : 0), y1:mid - tilt - 0.02*H };
-      B = { x0:g.left, x1:g.right, y0:mid + tilt + 0.025*H, y1:g.bottom };
-    }
-    // One size for both words, so neither side shouts over the other; never
-    // more than a fifth of a half's height.
-    var start = Math.min(130*k*state.headScale, (A.y1 - A.y0)*0.2, (B.y1 - B.y0)*0.2);
-    var px = Math.min(
-      l1 ? fitWith(c, l1, A.x1 - A.x0, start, 20*k, none) : start,
-      l2 ? fitWith(c, l2, B.x1 - B.x0, start, 20*k, none) : start);
-
-    var aspect = shotAspect(frame);
-    var cardTop = function(R){ return R.y0 + px*0.74 + (g.wide ? 0.05 : 0.025)*H; };
-    var ra = fitBox(g, A.x0, cardTop(A), A.x1, A.y1, aspect, 0.96);
-    var rb = fitBox(g, B.x0, cardTop(B), B.x1, B.y1 - 12*k, aspect, 0.96);
-    // equal cards, so the comparison is fair
-    var cw = Math.min(ra.w, rb.w), ch = cw / aspect;
-    ra = { x:A.x0, y:cardTop(A), w:cw, h:ch };
-    rb = { x:B.x0, y:cardTop(B), w:cw, h:ch };   // on the after word's edge, as the before card is on its own
-
-    // words
-    c.textBaseline = 'alphabetic';
-    if (l1) {
-      c.save(); c.globalAlpha = state.beforeFade;
-      tightFont(c, px); c.fillStyle = state.line1Color;
-      c.fillText(l1, A.x0, A.y0 + px*0.74);
-      looseFont(c);
-      c.restore();
-    }
-    if (l2) {
-      tightFont(c, px); c.fillStyle = ink;
-      c.fillText(l2, B.x0, B.y0 + px*0.74);
-      looseFont(c);
-    }
-
-    var rad = 16*k;
-    if (cw > 0) {
-      // The before card is quiet by default - dark, soft edge - and can go
-      // light, or match the after card when the two should read as equals.
-      drawCard(c, ra, state.beforeCard, phoneImg, state.phoneZoom, state.phonePanX*ra.w, state.phonePanY*ra.w, k, rad,
-               opts.preview ? 'Drop the before picture here' : '', 'phone');
-      if (opts.preview) phoneHit = { x:ra.x, y:ra.y, w:ra.w, h:ra.h };
-      drawCard(c, rb, 'match', frame, state.zoom, state.panX*W, state.panY*H, k, rad, '', 'win');
-
-      // The arrow sits on the split, in a dark disc so it reads on either
-      // side: between the cards in a wide frame; in a tall one at the split's
-      // right end, pointing down, clear of the after word under it.
-      var cx, cy, dr;
-      if (g.wide) {
-        cx = (ra.x + ra.w + rb.x) / 2; cy = ra.y + ch/2;
-        dr = Math.max(14*k, Math.min(46*k, (rb.x - (ra.x + ra.w)) * 0.62));
-      } else {
-        dr = 46*k;
-        cx = g.right - dr; cy = mid + tilt - 2*tilt*(cx / W);
-      }
-      if (state.arrow) {
-        c.save();
-        c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = dr*0.5; c.shadowOffsetY = dr*0.12;
-        c.beginPath(); c.arc(cx, cy, dr, 0, Math.PI*2); c.fillStyle = '#16151a'; c.fill();
-        noShadow(c);
-        c.translate(cx, cy); if (!g.wide) c.rotate(Math.PI/2);
-        // started a touch left of centre: the head carries the weight
-        drawArrow(c, -dr*0.5, 0, dr*1.15, st[2]);
-        c.restore();
-      }
-    }
+  // Before -> After, built to docs/quality-bar.md. Two big pictures -
+  // circles by default - on a textured field in the palette's colours, a
+  // bright slash between them, a curved dashed arrow from one to the other,
+  // small BEFORE / AFTER labels, and one heavy headline across the bottom
+  // with the second line as its accent. Tall frames stack the pictures and
+  // give the headline two lines.
+  function deepShade(hex, l){
+    var n = parseInt(hex.slice(1), 16), hsl = rgbToHsl(n>>16&255, n>>8&255, n&255);
+    return hslToHex(hsl[0], Math.min(1, hsl[1]*1.1), l);
   }
 
-  // A picture card in one of three styles. 'dark': dark fill, soft grey
-  // edge. 'light': white fill, thin ink edge. 'match': white, a heavy ink
-  // edge and a hard offset shadow - the after card's look. With no picture
-  // it shows a fine grid, and in the preview a hint to drop one.
-  function drawCard(c, r, style, img, zoom, dx, dy, k, rad, hint, which){
-    var dark = style === 'dark', bold = style === 'match';
-    var edge = bold ? Math.max(2, 5*k) : 0;
-    if (bold) { roundRect(c, r.x + 12*k, r.y + 12*k, r.w, r.h, rad); c.fillStyle = '#16151a'; c.fill(); }
-    roundRect(c, r.x, r.y, r.w, r.h, rad); c.fillStyle = dark ? '#1d1c22' : '#ffffff'; c.fill();
+  // The field: the palette's first colour deepened, lit from the top, with a
+  // few soft marbled streaks for texture and a darker floor for the words.
+  function drawField(c, W, H, k, st){
+    if (bgImg && state.layout === 'versus') {
+      cover(c, bgImg, 0, 0, W, H);
+      c.fillStyle = 'rgba(0,0,0,.45)'; c.fillRect(0, 0, W, H);
+    } else {
+      var base = baseTone(deepShade(st[0], 0.2));
+      c.fillStyle = base; c.fillRect(0, 0, W, H);
+      var R = Math.max(W, H);
+      var lit = c.createRadialGradient(W*0.5, -H*0.1, 0, W*0.5, -H*0.1, R*0.9);
+      lit.addColorStop(0, deepShade(st[0], 0.42)); lit.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = lit; c.fillRect(0, 0, W, H);
+      // marbling: long soft curves, drawn wide and faint
+      c.save();
+      c.lineCap = 'round';
+      var streaks = [[0.05, 0.3, 0.4, 0.05, 0.7, 0.45, 1.05, 0.15], [-0.05, 0.75, 0.3, 0.45, 0.65, 0.9, 1.05, 0.6],
+                     [0.1, 1.05, 0.35, 0.7, 0.6, 1.0, 0.95, 0.8], [0.3, -0.05, 0.45, 0.4, 0.55, 0.2, 0.75, 0.55]];
+      streaks.forEach(function(s, i){
+        c.beginPath();
+        c.moveTo(s[0]*W, s[1]*H); c.bezierCurveTo(s[2]*W, s[3]*H, s[4]*W, s[5]*H, s[6]*W, s[7]*H);
+        c.strokeStyle = 'rgba(255,255,255,' + (i % 2 ? 0.05 : 0.08) + ')';
+        c.lineWidth = (18 + i*10) * k; c.stroke();
+        c.strokeStyle = 'rgba(255,255,255,.12)'; c.lineWidth = 2*k; c.stroke();
+      });
+      c.restore();
+    }
+    var floor = c.createLinearGradient(0, H*0.55, 0, H);
+    floor.addColorStop(0, 'rgba(0,0,0,0)'); floor.addColorStop(1, 'rgba(0,0,0,.72)');
+    c.fillStyle = floor; c.fillRect(0, 0, W, H);
+  }
+
+  // Stand-ins that look like pictures, so the template reads as finished
+  // before anything is dropped: a flat, cool, washed-out before and a lit,
+  // saturated after in the palette's colours.
+  function paintStandIn(c, x, y, w, h, after, st){
+    var g = c.createLinearGradient(x, y, x + w, y + h);
+    if (after) { g.addColorStop(0, st[0]); g.addColorStop(0.55, st[1]); g.addColorStop(1, st[2]); }
+    else { g.addColorStop(0, '#6e7278'); g.addColorStop(1, '#3d4046'); }
+    c.fillStyle = g; c.fillRect(x, y, w, h);
+    var glow = c.createRadialGradient(x + w*0.35, y + h*0.3, 0, x + w*0.35, y + h*0.3, w*0.7);
+    glow.addColorStop(0, after ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.12)'); glow.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = glow; c.fillRect(x, y, w, h);
+    // a soft figure, so the shape reads as a photo of something
+    c.fillStyle = after ? 'rgba(0,0,0,.28)' : 'rgba(0,0,0,.35)';
+    c.beginPath(); c.ellipse(x + w*0.5, y + h*0.98, w*0.34, h*0.42, 0, 0, Math.PI*2); c.fill();
+    c.beginPath(); c.arc(x + w*0.5, y + h*0.38, w*0.14, 0, Math.PI*2); c.fill();
+  }
+
+  // One picture, as a circle or a card, ringed in white and lifted off the
+  // field. Returns its bounding box.
+  function drawPicture(c, cx, cy, d, img, after, which, opts, k, st){
+    var circle = state.vsShape !== 'card';
+    var w = circle ? d : d*1.18, h = circle ? d : d*0.86, x = cx - w/2, y = cy - h/2, r = circle ? d/2 : d*0.07;
+    var ring = Math.max(2, d*0.016);
+    function shape(pad){
+      if (circle) { c.beginPath(); c.arc(cx, cy, d/2 - pad, 0, Math.PI*2); }
+      else roundRect(c, x + pad, y + pad, w - 2*pad, h - 2*pad, Math.max(0, r - pad));
+    }
     c.save();
-    roundRect(c, r.x + edge, r.y + edge, r.w - 2*edge, r.h - 2*edge, rad - edge); c.clip();
-    if (img) shown[which] = cover(c, img, r.x + edge, r.y + edge, r.w - 2*edge, r.h - 2*edge, zoom, dx, dy);
+    c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = d*0.12; c.shadowOffsetY = d*0.04;
+    shape(0); c.fillStyle = '#ffffff'; c.fill();
+    c.restore();
+    c.save(); shape(ring); c.clip();
+    if (img) shown[which] = cover(c, img, x + ring, y + ring, w - 2*ring, h - 2*ring,
+                                  which === 'win' ? state.zoom : state.phoneZoom,
+                                  which === 'win' ? state.panX*c.canvas.width : state.phonePanX*w,
+                                  which === 'win' ? state.panY*c.canvas.height : state.phonePanY*w);
     else {
-      gridFill(c, r.x, r.y, r.w, r.h, dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.07)', r.w/15);
-      if (hint) placeholderLabel(c, r.x, r.y, r.w, r.h, hint, dark ? 'rgba(255,255,255,.4)' : 'rgba(0,0,0,.4)');
+      paintStandIn(c, x, y, w, h, after, st);
+      if (opts.preview) placeholderLabel(c, x, y, w, h, after ? 'Drop the after picture' : 'Drop the before picture', 'rgba(255,255,255,.75)');
     }
     c.restore();
-    roundRect(c, r.x, r.y, r.w, r.h, rad);
-    if (bold) { c.lineWidth = edge; c.strokeStyle = '#16151a'; }
-    else { c.lineWidth = Math.max(1.5, 3*k); c.strokeStyle = dark ? '#4a4652' : '#16151a'; }
-    c.stroke();
+    return { x:x, y:y, w:w, h:h };
+  }
+
+  // A small label centred on a picture's top edge: dark for before, the
+  // accent for after, set straight so it reads at feed size.
+  function drawLabel(c, text, cx, edgeY, h, after, st, fromLeft){
+    text = text.trim().toUpperCase(); if (!text) return;
+    tightFont(c, h*0.56);
+    var w = c.measureText(text).width + h*0.9, x = fromLeft ? cx : cx - w/2, y = fromLeft ? edgeY : edgeY - h*0.55;
+    c.save();
+    c.shadowColor = 'rgba(0,0,0,.4)'; c.shadowBlur = h*0.4; c.shadowOffsetY = h*0.1;
+    roundRect(c, x, y, w, h, h*0.22); c.fillStyle = after ? st[2] : '#16151a'; c.fill();
+    c.restore();
+    c.fillStyle = after ? inkOn(st[2]) : '#ffffff'; c.textBaseline = 'middle';
+    c.fillText(text, x + h*0.45, y + h*0.55);
+    c.textBaseline = 'alphabetic'; looseFont(c);
+  }
+
+  // The dashed, curved arrow from one picture to the next.
+  function drawCurvedArrow(c, x0, y0, x1, y1, bend, k){
+    var mx = (x0 + x1)/2 + bend.x, my = (y0 + y1)/2 + bend.y;
+    c.save();
+    c.strokeStyle = '#ffffff'; c.lineWidth = Math.max(2, 4*k); c.lineCap = 'round';
+    c.setLineDash([10*k, 9*k]);
+    c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(mx, my, x1, y1); c.stroke();
+    c.setLineDash([]);
+    // the head points along the curve's last stretch
+    var a = Math.atan2(y1 - my, x1 - mx), hl = 18*k;
+    c.fillStyle = '#ffffff';
+    c.beginPath();
+    c.moveTo(x1 + Math.cos(a)*hl*0.3, y1 + Math.sin(a)*hl*0.3);
+    c.lineTo(x1 - Math.cos(a - 0.5)*hl, y1 - Math.sin(a - 0.5)*hl);
+    c.lineTo(x1 - Math.cos(a + 0.5)*hl, y1 - Math.sin(a + 0.5)*hl);
+    c.closePath(); c.fill();
+    c.restore();
+  }
+
+  // The headline: a heavy line, slanted like a sports headline, with the
+  // second line as the accent. Returns the capital height it drew at.
+  function slantedLine(c, parts, cx, base, px){
+    tightFont(c, px);
+    var widths = parts.map(function(p){ return c.measureText(p.t).width; });
+    var space = c.measureText(' ').width, total = widths.reduce(function(a, b){ return a + b; }, 0) + space*(parts.length - 1);
+    var x = cx - total/2;
+    c.save();
+    c.translate(0, base); c.transform(1, 0, -0.18, 1, 0, 0); c.translate(0, -base);
+    c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = px*0.18; c.shadowOffsetY = px*0.04;
+    parts.forEach(function(p, i){
+      c.fillStyle = p.color; c.fillText(p.t, x, base);
+      x += widths[i] + space;
+    });
+    c.restore(); looseFont(c);
+    return total;
+  }
+  // Tries breaking each part of the headline into 1-3 balanced lines and
+  // keeps the arrangement that sets the words biggest while the block still
+  // fits the height it is given.
+  function bestBreak(c, main, accent, maxW, startPx, minPx, maxH){
+    function chunks(words, n){
+      if (!words.length) return [];
+      n = Math.min(n, words.length);
+      var out = [], per = Math.ceil(words.length / n);
+      for (var i = 0; i < words.length; i += per) out.push(words.slice(i, i + per).join(' '));
+      return out;
+    }
+    var w1 = main.toUpperCase().trim().split(/\s+/).filter(Boolean), w2 = accent.toUpperCase().trim().split(/\s+/).filter(Boolean);
+    var best = { px:0, lines:[] };
+    for (var a = 1; a <= 3; a++) for (var b = 1; b <= 2; b++) {
+      var lines = chunks(w1, a).map(function(t){ return { t:t, accent:false }; })
+        .concat(chunks(w2, b).map(function(t){ return { t:t, accent:true }; }));
+      if (!lines.length) continue;
+      var px = Math.min.apply(null, lines.map(function(l){ return fitWith(c, l.t, maxW, startPx, minPx, function(q){ return q*0.2; }); }));
+      var cap = capOf(c, px), h = cap + (lines.length - 1)*cap*1.28;
+      if (h > maxH) px *= maxH / h;
+      if (px > best.px + 0.5) best = { px:px, lines:lines };
+    }
+    return best;
+  }
+  function capOf(c, px){ tightFont(c, px); var m = c.measureText('H'); looseFont(c); return m.actualBoundingBoxAscent || px*0.72; }
+
+  // Tall and square frames can't hold two big circles, so there the
+  // pictures go full bleed: before on top (or left), after below (or
+  // right), cut by the slash, with the headline over a darkened floor. This
+  // is how tall before/after covers are actually made.
+  function drawVersusHalves(c, g, opts, st, report){
+    var W = g.W, H = g.H, k = g.k, tall = (W/H) < 0.85;
+    var lean = Math.tan(state.splitAngle * Math.PI/180);
+    // the split runs through the middle of the room above the words
+    var A, B, line;
+    if (tall) {
+      var mid = H*0.46, t = lean*W/2;
+      A = [[0,0],[W,0],[W,mid - t],[0,mid + t]];
+      B = [[0,mid + t],[W,mid - t],[W,H],[0,H]];
+      line = [[0, mid + t], [W, mid - t]];
+    } else {
+      var s2 = lean*H/2;
+      A = [[0,0],[W/2 + s2,0],[W/2 - s2,H],[0,H]];
+      B = [[W/2 + s2,0],[W,0],[W,H],[W/2 - s2,H]];
+      line = [[W/2 + s2, 0], [W/2 - s2, H]];
+    }
+    function fillHalf(poly, img, after, which){
+      var xs = poly.map(function(q){ return q[0]; }), ys = poly.map(function(q){ return q[1]; });
+      var x0 = Math.min.apply(null, xs), y0 = Math.min.apply(null, ys), bw = Math.max.apply(null, xs) - x0, bh = Math.max.apply(null, ys) - y0;
+      c.save();
+      c.beginPath(); poly.forEach(function(q, i){ i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]); }); c.closePath(); c.clip();
+      if (img) shown[which] = cover(c, img, x0, y0, bw, bh, which === 'win' ? state.zoom : state.phoneZoom,
+                                    which === 'win' ? state.panX*W : state.phonePanX*bw, which === 'win' ? state.panY*H : state.phonePanY*bw);
+      else {
+        paintStandIn(c, x0, y0, bw, bh, after, st);
+        if (opts.preview) placeholderLabel(c, x0, y0, bw, bh*0.8, after ? 'Drop the after picture' : 'Drop the before picture', 'rgba(255,255,255,.75)');
+      }
+      c.restore();
+      return { x:x0, y:y0, w:bw, h:bh };
+    }
+    var ra = fillHalf(A, phoneImg, false, 'phone');
+    fillHalf(B, frame === paintedFrame ? null : frame, true, 'win');
+    if (opts.preview) phoneHit = ra;
+    report.pictures = 1;
+
+    // the slash along the cut
+    var sw = Math.max(3, 0.022*Math.min(W, H));
+    c.save();
+    c.beginPath(); c.moveTo(line[0][0], line[0][1]); c.lineTo(line[1][0], line[1][1]);
+    c.lineWidth = sw; c.strokeStyle = '#ffffff'; c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = sw*2; c.stroke();
+    c.restore();
+
+    // a darker floor under the words
+    var floor = c.createLinearGradient(0, H*0.5, 0, H);
+    floor.addColorStop(0, 'rgba(0,0,0,0)'); floor.addColorStop(1, 'rgba(0,0,0,.8)');
+    c.fillStyle = floor; c.fillRect(0, 0, W, H);
+
+    // The words, centred on the safe area, broken over as many lines as makes
+    // them biggest - a narrow frame wants short lines - within a third of
+    // the height. The accent words keep their own line(s).
+    var maxW = (g.right - g.left)*0.96, start = (tall ? 0.12 : 0.14)*H*state.headScale;
+    // the block stays below the after label, which sits just under the cut
+    var labelRoom = Math.max(12*k, (tall ? 0.035 : 0.06)*H) + 0.05*H;
+    var room = tall ? g.bottom - (H*0.46 + lean*W/2 + labelRoom) : H*0.4;
+    var set = bestBreak(c, state.line1, state.line2, maxW, start, 12*k, Math.min(H*(tall ? 0.34 : 0.4), room));
+    var px = set.px, cap = px ? capOf(c, px) : 0, lead = cap*1.28, b = g.bottom;
+    if (g.stamp && (g.left + g.right)/2 + maxW/2 > g.stampX) b = Math.min(b, g.stampY - 0.02*H);
+    for (var i = set.lines.length - 1; i >= 0; i--) {
+      slantedLine(c, [{ t:set.lines[i].t, color:set.lines[i].accent ? st[2] : state.line1Color }], (g.left + g.right)/2, b, px);
+      b -= lead;
+    }
+    report.headCap = cap / H;
+
+    // logo, then each label at the top of its half
+    var lh = 64*k*state.logoSize, labelH = Math.max(12*k, (tall ? 0.035 : 0.06)*H), y1 = g.top;
+    if (state.logo && ready.logo) { c.drawImage(logo, g.left, g.top, logo.width * lh / logo.height, lh); y1 = g.top + lh + 0.02*H; }
+    drawLabel(c, state.beforeLabel, g.left, y1, labelH, false, st, true);
+    if (tall) drawLabel(c, state.afterLabel, g.left, H*0.46 + lean*W/2 + 0.025*H, labelH, true, st, true);
+    else drawLabel(c, state.afterLabel, W/2 + lean*H/2 + 0.03*W, g.top, labelH, true, st, true);
+  }
+
+  function drawVersus(c, p, opts){
+    var g = box(p), W = g.W, H = g.H, k = g.k, st = activeStops();
+    var report = opts.report || {};
+    drawField(c, W, H, k, st);
+    if (!g.wide) return drawVersusHalves(c, g, opts, st, report);
+
+    var l1 = state.line1.toUpperCase().trim(), l2 = state.line2.toUpperCase().trim();
+    var accent = st[2], ink = state.line1Color;
+
+    // the headline first: it claims the bottom, the pictures get the rest
+    var headTop, cap = 0;
+    if (g.wide) {
+      var parts = [];
+      if (l1) parts.push({ t:l1, color:ink });
+      if (l2) parts.push({ t:l2, color:accent });
+      var text = parts.map(function(q){ return q.t; }).join(' ');
+      var maxW = (g.right - g.left) * 0.98;
+      // starts where the capitals come to about 0.12 of the height (Anton's
+      // capitals are 0.86 of its size) - the bar's aim - so a short headline
+      // doesn't crowd out the pictures
+      var px = text ? fitWith(c, text, maxW, 0.14*H*state.headScale, 14*k, function(q){ return q*0.2; }) : 0;
+      cap = text ? capOf(c, px) : 0;
+      var base = g.bottom;
+      // out of the timestamp corner: a centred line that reaches it rises
+      if (g.stamp && (W/2 + maxW/2) > g.stampX) base = Math.min(base, g.stampY - 0.02*H);
+      headTop = base - cap;
+      if (text) slantedLine(c, parts, (g.left + g.right)/2, base, px);
+    } else {
+      var lines = [l1, l2].filter(Boolean), pxs = lines.map(function(t){
+        return fitWith(c, t, (g.right - g.left)*0.96, 0.12*H*state.headScale, 12*k, function(q){ return q*0.2; });
+      });
+      var pxT = pxs.length ? Math.min.apply(null, pxs) : 0;
+      cap = pxT ? capOf(c, pxT) : 0;
+      var lead = cap * 1.28, b = g.bottom;
+      headTop = b - cap - (lines.length - 1)*lead;
+      for (var li = lines.length - 1; li >= 0; li--) {
+        slantedLine(c, [{ t:lines[li], color: (li === lines.length - 1 && l2) ? accent : ink }], (g.left + g.right)/2, b, pxT);
+        b -= lead;
+      }
+    }
+    report.headCap = cap / H;
+
+    // the logo, small, top left, when on
+    var top = g.top;
+    if (state.logo && ready.logo) {
+      var lh = 64*k*state.logoSize;
+      c.drawImage(logo, g.left, g.top, logo.width * lh / logo.height, lh);
+    }
+
+    // the pictures: as big as the room above the headline allows
+    var zoneTop = top, zoneBot = headTop - 0.035*H, zoneH = zoneBot - zoneTop;
+    var lean = Math.tan(state.splitAngle * Math.PI/180);
+    var d, c1, c2, labelH = Math.max(12*k, 0.06*H);
+    if (g.wide) {
+      var half = (g.right - g.left) / 2, gapX = 0.05*W;
+      d = Math.max(0, Math.min(zoneH, half - gapX));
+      c1 = { x:W/2 - gapX/2 - d/2 - (state.vsShape === 'card' ? d*0.09 : 0), y:zoneTop + zoneH/2 };
+      c2 = { x:W/2 + gapX/2 + d/2 + (state.vsShape === 'card' ? d*0.09 : 0), y:zoneTop + zoneH/2 };
+    } else {
+      var gapY = 0.03*H;
+      d = Math.max(0, Math.min((zoneH - gapY)/2, (g.right - g.left) * 0.78));
+      var cxT = (g.left + g.right)/2;
+      c1 = { x:cxT, y:zoneTop + zoneH/2 - gapY/2 - d/2 };
+      c2 = { x:cxT, y:zoneTop + zoneH/2 + gapY/2 + d/2 };
+    }
+
+    // the divider, behind the pictures: a bright slash, or a split field
+    if (state.vsDivider === 'split') {
+      var fill = c.createLinearGradient(0, 0, W, H);
+      fill.addColorStop(0, st[1]); fill.addColorStop(1, st[2]);
+      c.save(); c.globalAlpha = 0.85; c.beginPath();
+      if (g.wide) { var sl = lean*H/2; c.moveTo(W/2 + sl, 0); c.lineTo(W, 0); c.lineTo(W, H); c.lineTo(W/2 - sl, H); }
+      else { var my = (c1.y + c2.y)/2, tl = lean*W/2; c.moveTo(0, my + tl); c.lineTo(W, my - tl); c.lineTo(W, H); c.lineTo(0, H); }
+      c.closePath(); c.fillStyle = fill; c.fill(); c.restore();
+    } else {
+      var sw = Math.max(3, 0.014*Math.min(W, H) * 1.6);
+      c.save();
+      var sg;
+      if (g.wide) {
+        var sx = lean*H/2;
+        sg = c.createLinearGradient(0, 0, 0, H);
+        sg.addColorStop(0, 'rgba(255,255,255,.95)'); sg.addColorStop(0.75, 'rgba(255,255,255,.55)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+        c.beginPath(); c.moveTo(W/2 + sx - sw/2, 0); c.lineTo(W/2 + sx + sw/2, 0); c.lineTo(W/2 - sx + sw/2, H); c.lineTo(W/2 - sx - sw/2, H);
+      } else {
+        var yy = (c1.y + c2.y)/2, ty = lean*W/2;
+        sg = c.createLinearGradient(0, 0, W, 0);
+        sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(0.2, 'rgba(255,255,255,.8)'); sg.addColorStop(0.8, 'rgba(255,255,255,.8)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+        c.beginPath(); c.moveTo(0, yy + ty - sw/2); c.lineTo(W, yy - ty - sw/2); c.lineTo(W, yy - ty + sw/2); c.lineTo(0, yy + ty + sw/2);
+      }
+      c.closePath(); c.shadowColor = 'rgba(255,255,255,.35)'; c.shadowBlur = sw*2; c.fillStyle = sg; c.fill();
+      c.restore();
+    }
+
+    var b1 = null, b2 = null;
+    if (d > 0) {
+      b1 = drawPicture(c, c1.x, c1.y, d, phoneImg, false, 'phone', opts, k, st);
+      b2 = drawPicture(c, c2.x, c2.y, d, frame === paintedFrame ? null : frame, true, 'win', opts, k, st);
+      if (opts.preview) phoneHit = { x:b1.x, y:b1.y, w:b1.w, h:b1.h };
+      report.pictures = (state.vsShape === 'card' ? 2*b1.w*b1.h : 2*Math.PI*d*d/4) / (W*H);
+
+      if (state.arrow) {
+        if (g.wide) {
+          drawCurvedArrow(c, b1.x + b1.w*0.86, b1.y + b1.h*0.9, b2.x + b2.w*0.08, b2.y + b2.h*0.8, { x:0, y:d*0.28 }, k);
+        } else {
+          drawCurvedArrow(c, b1.x + b1.w*0.95, b1.y + b1.h*0.72, b2.x + b2.w*0.95, b2.y + b2.h*0.28, { x:d*0.3, y:0 }, k);
+        }
+      }
+      drawLabel(c, state.beforeLabel, c1.x, b1.y, labelH, false, st);
+      drawLabel(c, state.afterLabel,  c2.x, b2.y, labelH, true, st);
+    }
   }
 
   var TEMPLATES = [
@@ -1280,8 +1520,8 @@
     { id:'launch', name:'Launch', hint:'A big two-line headline with an arrow, and the screenshot in a framed window.',
       labels:{ img:'Window picture', l1:'Top line', l2:'Bottom line' },
       draw:drawLaunch },
-    { id:'versus', name:'Before → After', hint:'Two pictures side by side on a split, the second one lifted.',
-      labels:{ img:'After picture', l1:'Before', l2:'After' },
+    { id:'versus', name:'Before → After', hint:'Two big pictures, a slash and an arrow between them, and one loud headline across the bottom.',
+      labels:{ img:'After picture' }, font:'anton',
       draw:drawVersus }
   ];
   function templateById(id){
@@ -1312,6 +1552,34 @@
   }
 
   // ---- renderer ---------------------------------------------------------
+  // ---- the quality bar, measured (docs/quality-bar.md) ------------------
+  // On a local server only: renders the current template at the current
+  // size, off screen, and returns rules 1-3 of the bar with pass or fail.
+  function measure(p){
+    var oc = document.createElement('canvas'); oc.width = p.w; oc.height = p.h;
+    var c = oc.getContext('2d', { willReadFrequently:true }), rep = {};
+    render(c, p, { guides:false, report:rep });
+    var tall = (p.w / p.h) < 1.2, dead = 0, cw = p.w/4, ch = p.h/4;
+    for (var gy = 0; gy < 4; gy++) for (var gx = 0; gx < 4; gx++) {
+      var d = c.getImageData(Math.round(gx*cw), Math.round(gy*ch), Math.round(cw), Math.round(ch)).data;
+      var n = 0, sum = 0, sq = 0;
+      for (var i = 0; i < d.length; i += 16) { var l = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]; sum += l; sq += l*l; n++; }
+      var mean = sum/n; if (Math.sqrt(Math.max(0, sq/n - mean*mean)) < 6) dead++;
+    }
+    var head = rep.headCap, pics = rep.pictures;
+    return {
+      size:p.id, headline: head == null ? 'n/a' : +head.toFixed(3), headlinePass: head == null ? null : head >= (tall ? 0.06 : 0.09),
+      pictures: pics == null ? 'n/a' : +pics.toFixed(3), picturesPass: pics == null ? null : pics >= 0.33,
+      deadCells:dead, deadPass: dead <= 2
+    };
+  }
+  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+    window.TF = {
+      quality:function(){ return measure(current()); },
+      qualityAll:function(){ return PRESETS.filter(function(p){ return p.id !== 'custom'; }).map(measure); }
+    };
+  }
+
   function render(c, p, opts){
     opts = opts || {};
     if (opts.preview) phoneHit = null;
@@ -1966,6 +2234,8 @@
     }).catch(function(){ setStatus('That file could not be read as a font.', 'err'); });
   });
   ensureFont(headFace()); ensureFont(monoFace());
+  // each template's own face, so the picker's previews draw in it too
+  TEMPLATES.forEach(function(t){ if (t.font) ensureFont(fontById(HEAD_FONTS, t.font)); });
 
   // ---- picture slots ----------------------------------------------------
   // Three pictures a template can use: the main one, a second one (the

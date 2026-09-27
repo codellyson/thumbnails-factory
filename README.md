@@ -89,13 +89,13 @@ template picker, the palette swatches, the logo and the font upload.
 | --- | --- | --- |
 | (top) | template, picture and zoom, shading, before picture and zoom, the two headline lines with colours and palette | per control |
 | Project tag | text, size | Launch |
-| Kicker | two lines | Launch, Before → After |
+| Kicker | two lines | Launch |
 | Text | headline font, headline size, kicker font, your own font file | all |
 | Window | title, sticker and its colour, style, turn, tilt | Showcase, Launch |
 | Phone | show, picture, zoom, on-screen text and accent colour, handle, buttons, side, size, tilt | Showcase |
 | Backdrop | glow source, strength, picture | Showcase |
 | Background | base colour (neutral, from the palette, or custom), dot grid | Showcase, Launch, Before → After |
-| Split | angle, before word strength, before card style, arrow | Before → After |
+| Pictures | before and after labels, shape, divider (slash or split field), lean, arrow | Before → After |
 | Logo | the logo, show, size | all |
 
 Colours follow the headline palette: the gradient runs where a template uses one,
@@ -108,12 +108,15 @@ headline over it.
 **Launch** sets a big two-line headline, with an arrow after the first line, beside
 the screenshot in a window framed in the accent. It adds an outlined project tag, a sticker in the window's title bar, and a dot-grid backdrop.
 
-**Before → After** splits the frame on a diagonal: the dim "before" word over the
-before picture on the dark side, and the "after" word over the after picture, in a
-card with a hard offset shadow, on the palette side. An arrow in a dark disc sits
-on the split between them. Tall and square
-sizes split top and bottom, with the split centred on the room left after the
-kicker and the platform's bottom strip.
+**Before → After** is built to the quality bar in `docs/quality-bar.md`. Wide sizes
+set two big pictures - circles or cards - on a textured field in the palette's
+colours, with a bright slash between them, a curved dashed arrow from one to the
+other, small BEFORE / AFTER labels, and one heavy slanted headline across the
+bottom whose second line is the accent. Tall and square sizes go full bleed:
+before on top (or left), after below (or right), cut by the slash, with the
+headline broken over as many lines as sets it biggest. Until pictures are dropped
+in, painted stand-ins keep it looking finished. It sets its headline in Anton
+unless another face is picked; each template can name its own face.
 
 Fonts are a choice, not a fixture. The **Fonts** panel picks the headline face
 (Archivo Black by default, or Anton, Bebas Neue, Inter, Montserrat, Poppins,

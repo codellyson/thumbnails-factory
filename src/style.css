@@ -276,9 +276,6 @@
   .segs label:has(input:focus-visible){ outline:2px solid var(--ink); outline-offset:1px; }
 
   /* folding panels */
-  .showcase{ display:flex; flex-direction:column; gap:16px; }
-  .showcase[hidden], .phonebits[hidden]{ display:none; }
-  .phonebits{ display:flex; flex-direction:column; gap:12px; margin-top:4px; }
   .group{ border-top:1px solid var(--line-strong); padding-top:12px; }
   /* a panel's first control hangs closer to its title (10) than controls sit to each other (16) */
   .gbody{ display:flex; flex-direction:column; gap:16px; padding-top:10px; }

@@ -87,23 +87,27 @@ template picker, the palette swatches, the logo and the font upload.
 
 | Panel | Controls | Templates |
 | --- | --- | --- |
-| (top) | template, picture and zoom, shading, before picture and zoom, the two headline lines with colours and palette | per control |
+| (top) | template, picture and zoom, before picture and zoom, the two headline lines with colours and palette | per control |
 | Project tag | text, size | Launch |
 | Kicker | two lines | Launch |
 | Text | headline font, headline size, kicker font, your own font file | all |
-| Window | title, sticker and its colour, style, turn, tilt | Showcase, Launch |
-| Phone | show, picture, zoom, on-screen text and accent colour, handle, buttons, side, size, tilt | Showcase |
-| Backdrop | glow source, strength, picture | Showcase |
-| Background | base colour (neutral, from the palette, or custom), dot grid | Showcase, Launch, Before → After |
-| Pictures | before and after labels, shape, divider (slash or split field), lean, arrow | Before → After |
+| Strip | show, top, middle and bottom pictures | Collage |
+| Window | title, sticker and its colour, tilt | Launch |
+| Background | base colour (neutral, from the palette, or custom), dot grid, paper colour, brush bands, background picture | per control |
+| Pictures | before and after labels, shape, divider (slash or split field), lean, arrow | Before → After (lean also Collage) |
 | Logo | the logo, show, size | all |
 
 Colours follow the headline palette: the gradient runs where a template uses one,
 and the palette's last stop is the template's solid accent. **Signal yellow** is a
 solid palette for the flat yellow look.
 
-**Full picture** fills the frame with the image, darkens the bottom, and sets the
-headline over it.
+**Collage** is built to the quality bar. Wide sizes lean three columns together: a
+paper panel with brush bands top and bottom and a stacked headline - broken over as
+many lines as sets it biggest, the accent words in a deep shade of the palette,
+a brushed underline - then a strip of three pictures, then one big photo to the
+edge. Tall sizes stack the same three bands top to bottom: paper, strip, photo.
+Drop a file straight onto any panel. The headline keeps its colour only where it
+reads on the paper; otherwise it sets in near-black.
 
 **Launch** sets a big two-line headline, with an arrow after the first line, beside
 the screenshot in a window framed in the accent. It adds an outlined project tag, a sticker in the window's title bar, and a dot-grid backdrop.
@@ -118,8 +122,9 @@ headline broken over as many lines as sets it biggest. Until pictures are droppe
 in, painted stand-ins keep it looking finished. It sets its headline in Anton
 unless another face is picked; each template can name its own face.
 
-Fonts are a choice, not a fixture. The **Fonts** panel picks the headline face
-(Archivo Black by default, or Anton, Bebas Neue, Inter, Montserrat, Poppins,
+Fonts are a choice, not a fixture. The **Text** panel picks the headline face
+(by default each template's own - Anton for Collage and Before → After, Archivo
+Black for Launch - or Archivo Black, Anton, Bebas Neue, Inter, Montserrat, Poppins,
 Bricolage Grotesque, Space Grotesk, Oswald, DM Serif Display, Playfair Display) and
 the monospace face for the kicker and labels (JetBrains Mono by default). Each stock
 face loads from Google Fonts only when picked, and carries its own tracking so a
@@ -127,31 +132,16 @@ condensed face is not squeezed further. **Use your own font file** adds a
 .ttf/.otf/.woff to both lists for the open tab; it is read in the browser and never
 sent anywhere.
 
-Launch and Before → After share a **kicker**: a corner bracket in the accent with
-two short monospace lines (JetBrains Mono), such as a series and an episode. Leave
-both lines empty to show the logo there instead.
-
-**Showcase** is for build and tutorial videos. The image goes into a desktop
-window (title bar, three lights, an optional title), turned away in perspective,
-on a dark backdrop lit by a blurred copy of the same image. Beside it sits an optional phone playing a Short:
-its own picture, with a two-line caption
-(the second line highlighted), a handle and the action buttons, each optional.
-The window takes the picture's own shape (held between 1.2:1 and 2.2:1), so a
-screenshot shows whole instead of cut mid-line. The window, the phone and the
-backdrop each take their own picture: the phone shows an empty tinted screen until
-it gets one, and the backdrop glow falls back to the window's picture. Drop a file on the phone to set its picture,
-and drag on either screen to reframe just that one. The headline takes the left half in
-landscape and runs under the cards in tall and square sizes; the window and phone
-switch between side-by-side and stacked, whichever comes out bigger in the room
-left over. The play badge is full-picture only.
+Launch has a **kicker**: a corner bracket in the accent with two short monospace
+lines (JetBrains Mono), such as a series and an episode. Leave both lines empty to
+show the logo there instead.
 
 On a YouTube thumbnail the bottom-right corner belongs to the video's length.
-The showcase pieces and the play badge are kept out of it, and **Show safe areas**
+Every template keeps its words out of it, and **Show safe areas**
 draws a stand-in timestamp there.
 
 Launch takes a **project tag**: a short outlined label above its headline, such as
-`JUSTDB`. Leave it empty for none. The other templates carry only the logo in
-that corner.
+`JUSTDB`. Leave it empty for none.
 
 Only one panel is open at a time, and on a wide screen the preview stays in view
 while you scroll the controls.
@@ -257,16 +247,16 @@ piece of this data nobody else publishes.
 
 ## The starting image
 
-There is no photo baked into this file. The backdrop you see on first load is
-drawn at run time by `makeDefaultFrame()` — a gradient with a few soft blobs —
-so the file stays small and ships nobody's screenshot. Drop in your own image
-and it is replaced.
+There is no photo baked into this file. Until pictures are dropped in, the
+templates paint stand-ins at run time - soft gradients with a figure's shape -
+so the file stays small, ships nobody's photo, and every template still looks
+finished on first load.
 
 ## Safe areas
 
 Each preset carries a safe-area rectangle — the region left clear of the
 platform's own interface, such as TikTok's action rail, a Story's caption
-band, or YouTube's duration badge. The headline, logo, and play badge are
+band, or YouTube's duration badge. Headlines, labels and the logo are
 anchored to that rectangle rather than to the canvas edge, so a layout that
 works on a 16:9 thumbnail also works on a 9:16 cover.
 
@@ -283,8 +273,8 @@ Presets live in the `PRESETS` array at the top of the script:
 ```
 
 `safe` values are fractions of the canvas (`t`/`b` of the height, `l`/`r` of
-the width). `play` decides whether the red play badge is offered for that
-platform, and `short` is the label under its tile in the size chart. The tile
+the width). `play` marks platforms whose thumbnails are video thumbnails (no
+current template draws a play badge), and `short` is the label under its tile in the size chart. The tile
 files itself under Wide, Tall or Square from its own aspect ratio. Every other
 measurement (type size, logo size, badge radius, shadow blur) is derived from
 the target dimensions, so nothing else needs changing.
@@ -296,6 +286,6 @@ the target dimensions, so nothing else needs changing.
 - Choose an image, drag one onto the canvas, or paste a screenshot with ⌘V
 - Drag the canvas to reposition the frame; the offset is stored as a fraction,
   so it survives a switch between presets
-- Zoom and Vignette sliders adjust the crop and the darkening behind the text
+- Zoom adjusts the crop of the main picture
 - Headline text, colours, your logo, the selected platform, and any custom size
   persist in `localStorage`

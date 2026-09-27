@@ -197,23 +197,21 @@
   //   change    extra work after the value is set (the redraw is automatic)
   //
   // Groups appear in the order they are first mentioned.
-  var ALL = ['bleed', 'showcase', 'launch', 'versus'];
   var CONTROLS = [
-    { key:'layout', type:'custom', label:'Template', def:'bleed', build:buildTemplatePicker,
+    { key:'layout', type:'custom', label:'Template', def:'collage', build:buildTemplatePicker,
       change:function(){ ensureFont(headFace()); } },
     { key:'main', type:'image', slot:'main', big:true, persist:false,
-      label:{ _:'Image', showcase:'Window picture', launch:'Window picture', versus:'After picture' },
+      label:{ _:'Picture', launch:'Window picture', versus:'After picture', collage:'Main photo' },
       button:'Choose an image', ids:{ pick:'pick', file:'file' } },
-    { key:'zoom', type:'range', label:'Zoom', min:100, max:250, unit:'%', def:1.25, persist:false, row:'frame' },
-    { key:'vig', type:'range', label:'Shading', min:0, max:100, unit:'%', scale:0.7, def:0.7, persist:false, row:'frame', for:['bleed'] },
+    { key:'zoom', type:'range', label:'Zoom', min:100, max:250, unit:'%', def:1, persist:false },
     { key:'second', type:'image', slot:'second', persist:false, for:['versus'], label:'Before picture',
       button:'Choose before picture', reset:'Remove',
-      hint:'Or drop a file on the left card. Drag on it to move the picture.' },
+      hint:'Or drop a file on the before picture. Drag on it to move the picture.' },
     { key:'phoneZoom', type:'range', label:'Before zoom', min:100, max:250, unit:'%', def:1, persist:false, for:['versus'], id:'beforeZoom' },
-    { key:'line1', type:'text', label:{ _:'Top line', versus:'Headline' }, def:'TYPE YOUR', maxlength:24,
-      pair:{ key:'line1Color', aria:'Top line colour' } },
+    { key:'line1', type:'text', label:{ _:'Top line', versus:'Headline', collage:'Headline' }, def:'TYPE YOUR', maxlength:32,
+      pair:{ key:'line1Color', aria:'Headline colour' } },
     { key:'line1Color', type:'color', def:'#ffffff', paired:true },
-    { key:'line2', type:'text', label:{ _:'Bottom line', versus:'Accent words' }, def:'HEADLINE HERE', maxlength:24 },
+    { key:'line2', type:'text', label:{ _:'Bottom line', versus:'Accent words', collage:'Accent words' }, def:'HEADLINE HERE', maxlength:24 },
     { id:'palette', type:'custom', build:buildPaletteSlot, join:true },
 
     // Launch's own label above its headline
@@ -225,53 +223,39 @@
     { key:'kick2', type:'text', group:'Kicker', for:['launch'], label:'Accent line', def:'EPISODE 01', maxlength:24, placeholder:'EPISODE 01',
       hint:'Two short lines in a corner bracket. Leave both empty to show the logo instead.' },
 
+    // Collage: the strip of three pictures between the words and the photo
+    { key:'strip', type:'toggle', group:'Strip', for:['collage'], label:'Strip of three pictures', def:true },
+    { key:'second', type:'image', slot:'second', persist:false, group:'Strip', for:['collage'], when:hasStrip,
+      label:'Top picture', button:'Choose', reset:'Remove', id:'strip1' },
+    { key:'third', type:'image', slot:'third', persist:false, group:'Strip', for:['collage'], when:hasStrip,
+      label:'Middle picture', button:'Choose', reset:'Remove', id:'strip2' },
+    { key:'fourth', type:'image', slot:'fourth', persist:false, group:'Strip', for:['collage'], when:hasStrip,
+      label:'Bottom picture', button:'Choose', reset:'Remove', id:'strip3',
+      hint:'Or drop a file straight onto a panel of the strip.' },
+
     { key:'headFont', type:'font', group:'Text', label:'Headline font', def:'auto', list:function(){ return HEAD_FONTS; },
       change:function(){ ensureFont(headFace()); } },
     { key:'headScale', type:'range', group:'Text', label:'Headline size', min:60, max:140, unit:'%', def:1,
       hint:'The headline still shrinks to fit its space; this sets how big it starts.' },
-    { key:'monoFont', type:'font', group:'Text', for:['launch', 'versus'], label:'Kicker and labels font', def:'jetbrains',
+    { key:'monoFont', type:'font', group:'Text', for:['launch'], label:'Kicker and labels font', def:'jetbrains',
       list:function(){ return MONO_FONTS; }, change:function(){ ensureFont(monoFace()); } },
     { id:'fontUpload', type:'custom', group:'Text', build:buildFontUpload },
 
-    { key:'winTitle', type:'text', group:'Window', for:['showcase', 'launch'], label:'Title', def:'', maxlength:40, placeholder:'index.html' },
+    { key:'winTitle', type:'text', group:'Window', for:['launch'], label:'Title', def:'', maxlength:40, placeholder:'index.html' },
     { key:'sticker', type:'text', group:'Window', for:['launch'], label:'Sticker', def:'', maxlength:28,
       placeholder:'IT BROKE. I LEFT IT IN.', hint:'A label in the title bar. It takes the title’s place.',
       pair:{ key:'stickerColor', aria:'Sticker colour' } },
     { key:'stickerColor', type:'color', def:'#ff5b3a', paired:true },
-    { key:'winStyle', type:'choice', group:'Window', for:['showcase'], label:'Style', def:'dark',
-      options:[['dark','Dark'], ['light','Light'], ['plain','No frame']] },
-    { key:'winTurn', type:'range', group:'Window', for:['showcase'], label:'Turn', min:0, max:35, unit:'°', def:17, row:'win' },
-    { key:'winTilt', type:'range', group:'Window', for:['showcase'], label:'Tilt', min:-12, max:12, unit:'°', def:-4, row:'win' },
-    // Launch's window leans less than Showcase's by design, so it keeps its own.
     { key:'launchTilt', type:'range', group:'Window', for:['launch'], label:'Tilt', min:-12, max:12, unit:'°', def:-2 },
 
-    { key:'phone', type:'toggle', group:'Phone', for:['showcase'], label:'Show a phone beside the window', def:true },
-    { key:'second', type:'image', slot:'second', persist:false, group:'Phone', for:['showcase'], when:hasPhone,
-      label:'Phone picture', button:'Choose phone picture', reset:'Remove picture', id:'phonePic',
-      hint:'Or drop a file on the phone. Drag on it to move the picture.' },
-    { key:'phoneZoom', type:'range', group:'Phone', for:['showcase'], when:hasPhone, label:'Zoom', min:100, max:250, unit:'%', def:1, persist:false },
-    { key:'cap1', type:'text', group:'Phone', for:['showcase'], when:hasPhone, label:'Text on screen', def:'', maxlength:18, placeholder:'First line', row:'caps' },
-    { key:'cap2', type:'text', group:'Phone', for:['showcase'], when:hasPhone, label:'Accent line', def:'', maxlength:18, placeholder:'Second line', row:'caps',
-      pair:{ key:'capColor', aria:'Accent line colour' } },
-    { key:'capColor', type:'color', def:'#ffd23f', paired:true },
-    { key:'handle', type:'text', group:'Phone', for:['showcase'], when:hasPhone, label:'Handle', def:'', maxlength:30, placeholder:'@yourname' },
-    { key:'dots', type:'toggle', group:'Phone', for:['showcase'], when:hasPhone, label:'Like and share buttons', def:true },
-    { key:'phoneSide', type:'choice', group:'Phone', for:['showcase'], when:hasPhone, label:'Side', def:'right', options:[['left','Left'], ['right','Right']] },
-    { key:'phoneSize', type:'range', group:'Phone', for:['showcase'], when:hasPhone, label:'Size', min:70, max:130, unit:'%', def:1, row:'phoneFit' },
-    { key:'phoneTilt', type:'range', group:'Phone', for:['showcase'], when:hasPhone, label:'Tilt', min:-15, max:15, unit:'°', def:6, row:'phoneFit' },
-
-    { key:'glow', type:'choice', group:'Backdrop', for:['showcase'], label:'Glow', def:'image',
-      options:[['image','Picture'], ['palette','Colours'], ['none','None']] },
-    { key:'glowAmt', type:'range', group:'Backdrop', for:['showcase'], label:'Strength', min:0, max:100, unit:'%', def:0.6 },
-    { key:'backdrop', type:'image', slot:'backdrop', persist:false, group:'Backdrop', for:['showcase'], label:'Picture',
-      button:'Choose backdrop picture', reset:'Use the window picture' },
-
-    { key:'tone', type:'choice', group:'Background', for:['showcase', 'launch', 'versus'], label:'Base colour', def:'neutral',
+    { key:'tone', type:'choice', group:'Background', for:['launch', 'versus'], label:'Base colour', def:'neutral',
       options:[['neutral','Neutral'], ['palette','From colours'], ['custom','Custom']],
       hint:'The dark behind everything. From colours takes a deep shade of the palette.' },
-    { key:'toneColor', type:'color', group:'Background', for:['showcase', 'launch', 'versus'], when:function(){ return state.tone === 'custom'; },
+    { key:'toneColor', type:'color', group:'Background', for:['launch', 'versus'], when:function(){ return state.tone === 'custom'; },
       label:'Colour', def:'#18171d' },
     { key:'dotGrid', type:'toggle', group:'Background', for:['launch'], label:'Dot grid', def:true },
+    { key:'paper', type:'color', group:'Background', for:['collage'], label:'Paper', def:'#f6f3ec' },
+    { key:'brush', type:'toggle', group:'Background', for:['collage'], label:'Brush bands and underline', def:true },
 
     { key:'beforeLabel', type:'text', group:'Pictures', for:['versus'], label:'Before label', def:'BEFORE', maxlength:16, row:'labels' },
     { key:'afterLabel', type:'text', group:'Pictures', for:['versus'], label:'After label', def:'AFTER', maxlength:16, row:'labels' },
@@ -279,7 +263,7 @@
       options:[['circle','Circle'], ['card','Card']] },
     { key:'vsDivider', type:'choice', group:'Pictures', for:['versus'], label:'Between them', def:'slash',
       options:[['slash','Slash'], ['split','Split field']] },
-    { key:'splitAngle', type:'range', group:'Pictures', for:['versus'], label:'Lean', min:0, max:20, unit:'°', def:8 },
+    { key:'splitAngle', type:'range', group:'Pictures', for:['versus', 'collage'], label:'Lean', min:0, max:20, unit:'°', def:8 },
     { key:'arrow', type:'toggle', group:'Pictures', for:['versus'], label:'Curved arrow from one to the other', def:true },
     { key:'backdrop', type:'image', slot:'backdrop', persist:false, group:'Background', for:['versus'], label:'Background picture',
       button:'Choose background picture', reset:'Remove', id:'vsBackdrop',
@@ -287,12 +271,9 @@
 
     { id:'logoSlot', type:'custom', group:'Logo', build:buildLogoSlot },
     { key:'logo', type:'toggle', group:'Logo', label:'Show it on the thumbnail', def:true, persist:false },
-    { key:'logoSize', type:'range', group:'Logo', label:'Size', min:50, max:160, unit:'%', def:1 },
-
-    { key:'play', type:'toggle', group:'toggles', for:['bleed'], label:'Play badge', def:true, persist:false,
-      enabled:function(){ return !!current().play; } }
+    { key:'logoSize', type:'range', group:'Logo', label:'Size', min:50, max:160, unit:'%', def:1 }
   ];
-  function hasPhone(){ return state.phone; }
+  function hasStrip(){ return state.strip; }
 
   // Defaults first, then whatever was saved - but only where the saved value
   // is the same kind of thing, so a stale or hand-edited entry cannot break
@@ -331,7 +312,6 @@
     }
   } catch(e){}
   // A window or card wants the whole screenshot; only a full picture crops.
-  if (state.layout !== 'bleed') state.zoom = 1;
 
   // Active preset, with the custom size folded in.
   function current(){
@@ -366,7 +346,9 @@
   var DEFAULT_LOGO = LOGO_SRC;
   // frame fills the window (or the whole frame in Full picture); the phone and
   // the backdrop glow have their own pictures and fall back to it.
-  var logo = new Image(), frame = makeDefaultFrame(), phoneImg = null, bgImg = null;
+  // phoneImg is the second picture (Before -> After's before, the Collage
+  // strip's top panel); img3 and img4 are the strip's other two.
+  var logo = new Image(), frame = makeDefaultFrame(), phoneImg = null, bgImg = null, img3 = null, img4 = null;
   var paintedFrame = frame;   // the stand-in until a picture is dropped
   var ready = { logo:false, frame:true, font:false };
   logo.onload = function(){ ready.logo = true; updateLogoThumb(); refreshDerived('logo', logo); draw(); };
@@ -448,7 +430,7 @@
     return px;
   }
 
-  // ---- showcase pieces --------------------------------------------------
+  // ---- drawing helpers --------------------------------------------------
   // Drawn in canvas rather than shipped as mockup images, so the file stays
   // small and every piece scales with the output size.
   var UI_FONT = '-apple-system, "Segoe UI", Helvetica, Arial, sans-serif';
@@ -481,272 +463,21 @@
   // The backdrop glow: the image shrunk to a few dozen pixels, then stretched
   // back up, is a blur every browser can draw. Browsers with canvas filters
   // get a smoother one on top of that.
-  var glow = null, glowOf = null;
-  function glowFor(img){
-    if (glowOf === img) return glow;
-    var gw = 48, gh = Math.max(1, Math.round(gw * img.height / img.width));
-    glow = document.createElement('canvas'); glow.width = gw; glow.height = gh;
-    glow.getContext('2d').drawImage(img, 0, 0, gw, gh);
-    glowOf = img;
-    return glow;
-  }
-  // Glow comes from the image, from the headline colours, or not at all. The
-  // image can be the wrong colour for the words; the palette never is.
-  function drawBackdrop(c, W, H, k){
-    if (state.glow === 'image') {
-      c.save();
-      c.globalAlpha = state.glowAmt;
-      if (typeof c.filter === 'string') c.filter = 'blur(' + Math.round(24*k) + 'px)';
-      c.imageSmoothingQuality = 'high';
-      cover(c, glowFor(bgImg || frame), -0.05*W, -0.05*H, 1.1*W, 1.1*H);
-      c.restore();
-    } else if (state.glow === 'palette') {
-      var st = activeStops(), R = Math.max(W, H);
-      [[0.78, 0.08, 0.55, st[0]], [0.98, 0.62, 0.45, st[2]], [0.45, 0.0, 0.35, st[1]]].forEach(function(b){
-        var rg = c.createRadialGradient(W*b[0], H*b[1], 0, W*b[0], H*b[1], R*b[2]);
-        rg.addColorStop(0, b[3]); rg.addColorStop(1, 'rgba(0,0,0,0)');
-        c.save(); c.globalAlpha = state.glowAmt*0.7; c.fillStyle = rg; c.fillRect(0, 0, W, H); c.restore();
-      });
-    }
-    // Darkest where the headline sits, so the glow reads as light behind the
-    // cards rather than a photo behind the words.
-    var g = c.createLinearGradient(0, 0, W, 0);
-    g.addColorStop(0, 'rgba(8,9,13,.92)'); g.addColorStop(0.55, 'rgba(8,9,13,.72)');
-    g.addColorStop(1, 'rgba(8,9,13,.5)');
-    c.fillStyle = g; c.fillRect(0, 0, W, H);
-    var g2 = c.createLinearGradient(0, H, 0, 0);
-    g2.addColorStop(0, 'rgba(8,9,13,.8)'); g2.addColorStop(0.6, 'rgba(8,9,13,.2)');
-    g2.addColorStop(1, 'rgba(8,9,13,0)');
-    c.fillStyle = g2; c.fillRect(0, 0, W, H);
-  }
-
-  // A desktop window: title bar, three lights, the image below. The face is
-  // painted flat on its own canvas first, then laid onto the thumbnail turned
-  // away in depth (see drawTurned).
-  var faceCv = document.createElement('canvas');
-  function paintWindowFace(w, h, panX, panY){
-    var fw = Math.max(1, Math.ceil(w)), fh = Math.max(1, Math.ceil(h));
-    if (faceCv.width !== fw || faceCv.height !== fh) { faceCv.width = fw; faceCv.height = fh; }
-    var c = faceCv.getContext('2d');
-    c.clearRect(0, 0, fw, fh);
-    var light = state.winStyle === 'light', plain = state.winStyle === 'plain';
-    var r = (plain ? 0.03 : 0.022)*w, bar = plain ? 0 : BAR*w;
-    c.save();
-    roundRect(c, 0, 0, w, h, r); c.clip();
-    c.fillStyle = light ? '#f2f2f4' : '#1b1c21'; c.fillRect(0, 0, w, h);
-    shown.win = cover(c, frame, 0, bar, w, h - bar, state.zoom, panX, panY);
-    if (bar) {
-      c.fillStyle = light ? '#e6e6e9' : '#26272d'; c.fillRect(0, 0, w, bar);
-      c.fillStyle = light ? 'rgba(0,0,0,.12)' : 'rgba(0,0,0,.35)';
-      c.fillRect(0, bar - Math.max(1, bar*0.03), w, Math.max(1, bar*0.03));
-    }
-    // Light from the upper left, falling off toward the far edge: this is
-    // most of what sells the turn.
-    var lit = c.createLinearGradient(0, 0, w, h);
-    lit.addColorStop(0, 'rgba(255,255,255,.07)'); lit.addColorStop(0.4, 'rgba(255,255,255,0)');
-    lit.addColorStop(1, 'rgba(0,0,0,.28)');
-    c.fillStyle = lit; c.fillRect(0, 0, w, h);
-    c.restore();
-    var lr = bar*0.16, ly = bar/2;
-    if (bar) ['#ff5f57','#febc2e','#28c840'].forEach(function(col, i){
-      c.beginPath(); c.arc(bar*0.5 + i*lr*3.1, ly, lr, 0, Math.PI*2);
-      c.fillStyle = col; c.fill();
-    });
-    if (bar && state.winTitle) {
-      c.font = '600 ' + (bar*0.34).toFixed(1) + 'px ' + UI_FONT;
-      c.fillStyle = light ? 'rgba(0,0,0,.72)' : 'rgba(255,255,255,.82)'; c.textBaseline = 'middle';
-      c.fillText(state.winTitle, bar*0.5 + lr*9.5, ly, w - bar*2 - lr*10);
-    }
-    roundRect(c, 0.5, 0.5, w-1, h-1, r);
-    c.strokeStyle = 'rgba(255,255,255,.14)'; c.lineWidth = Math.max(1, w*0.0018); c.stroke();
-    return faceCv;
-  }
-
-  // Lays a flat face onto the canvas turned about its vertical axis, near edge
-  // on the left, the way CSS rotateY with perspective would. Canvas 2D has no
-  // projective transform, so the face goes down in thin vertical strips, each
-  // scaled by its own depth. The result is scaled back up to the box's width
-  // and centred on it, so the layout code can treat it as an ordinary box.
-  var FOCAL = 2.2;
-  function drawTurned(c, face, x, y, w, h, deg){
-    var turn = state.winTurn*Math.PI/180;
-    var f = FOCAL*w, sin = Math.sin(turn), cos = Math.cos(turn);
-    function at(u){ var z = u*sin, sc = f/(f + z); return { x:u*cos*sc, s:sc }; }
-    var L = at(-w/2), R = at(w/2);
-    var fit = w / (R.x - L.x), mid = (L.x + R.x)/2;
-    function px(u){ var q = at(u); return { x:(q.x - mid)*fit, s:q.s*fit }; }
-    // Cast from an outline pulled in off the rounded corners, so none of its
-    // square corners peek out from behind the face.
-    var ins = 0.016*w, tl = px(-w/2 + ins), tr = px(w/2 - ins), ih = h - 2*ins;
-
-    c.save();
-    c.translate(x + w/2, y + h/2); c.rotate(deg*Math.PI/180);
-    c.shadowColor = 'rgba(0,0,0,.75)'; c.shadowBlur = 0.1*w; c.shadowOffsetY = 0.035*w;
-    c.beginPath();
-    c.moveTo(tl.x, -ih*tl.s/2); c.lineTo(tr.x, -ih*tr.s/2);
-    c.lineTo(tr.x, ih*tr.s/2); c.lineTo(tl.x, ih*tl.s/2); c.closePath();
-    c.fillStyle = '#15161a'; c.fill();
-    noShadow(c);
-    c.imageSmoothingQuality = 'high';
-    var n = Math.max(24, Math.min(480, Math.ceil(w/2))), sw = face.width/n;
-    for (var i = 0; i < n; i++) {
-      var a = px(-w/2 + i*w/n), b = px(-w/2 + (i+1)*w/n);
-      var dh = h * (a.s + b.s)/2;
-      // Half a pixel of overlap hides the seams between strips.
-      c.drawImage(face, i*sw, 0, sw, face.height, a.x, -dh/2, b.x - a.x + 0.5, dh);
-    }
-    c.restore();
-  }
-  function drawWindow(c, x, y, w, h, deg, panX, panY){
-    drawTurned(c, paintWindowFace(w, h, panX, panY), x, y, w, h, deg);
-  }
-
-  // A phone playing a Short: frame, island, the picture, and optionally the
-  // burned-in caption, the handle and the action rail.
-  function drawPhone(c, x, y, w, h, deg, preview){
-    var img = phoneImg;
-    var r = 0.16*w, bez = 0.035*w, sw = w - 2*bez, sh = h - 2*bez;
-    c.save();
-    c.translate(x + w/2, y + h/2); c.rotate(deg*Math.PI/180); c.translate(-w/2, -h/2);
-    // side buttons, behind the body so only their outer edge shows
-    c.fillStyle = '#2c2d32';
-    [[-1, 0.2, 0.05], [-1, 0.29, 0.09], [-1, 0.4, 0.09], [1, 0.3, 0.13]].forEach(function(b){
-      roundRect(c, b[0] < 0 ? -w*0.012 : w - w*0.008, h*b[1], w*0.02, h*b[2], w*0.008); c.fill();
-    });
-    c.shadowColor = 'rgba(0,0,0,.75)'; c.shadowBlur = 0.2*w; c.shadowOffsetY = 0.07*w;
-    roundRect(c, 0, 0, w, h, r); c.fillStyle = '#0c0c0e'; c.fill();
-    noShadow(c);
-    // The frame catches the same upper-left light as the window.
-    var rim = c.createLinearGradient(0, 0, w, h);
-    rim.addColorStop(0, '#6a6b72'); rim.addColorStop(0.35, '#34353a'); rim.addColorStop(1, '#232428');
-    roundRect(c, w*0.006, w*0.006, w - w*0.012, h - w*0.012, r);
-    c.strokeStyle = rim; c.lineWidth = w*0.012; c.stroke();
-
-    c.save();
-    roundRect(c, bez, bez, sw, sh, r - bez); c.clip();
-    if (img) {
-      shown.phone = cover(c, img, bez, bez, sw, sh, state.phoneZoom, state.phonePanX*w, state.phonePanY*w);
-    } else {
-      // No picture of its own: a dark screen tinted with the headline colours,
-      // never the window's picture shown twice.
-      var st = activeStops(), sg = c.createLinearGradient(bez, bez, bez + sw, bez + sh);
-      sg.addColorStop(0, '#15161c'); sg.addColorStop(1, '#0b0c10');
-      c.fillStyle = sg; c.fillRect(bez, bez, sw, sh);
-      var tg = c.createRadialGradient(bez + sw*0.3, bez + sh*0.25, 0, bez + sw*0.3, bez + sh*0.25, sh*0.7);
-      tg.addColorStop(0, st[0]); tg.addColorStop(1, 'rgba(0,0,0,0)');
-      c.save(); c.globalAlpha = 0.35; c.fillStyle = tg; c.fillRect(bez, bez, sw, sh); c.restore();
-      if (preview) {
-        c.font = '600 ' + (sw*0.075).toFixed(1) + 'px ' + UI_FONT;
-        c.fillStyle = 'rgba(255,255,255,.55)'; c.textAlign = 'center'; c.textBaseline = 'middle';
-        c.fillText('Drop a picture', bez + sw/2, bez + sh*0.32);
-        c.fillText('on the phone', bez + sw/2, bez + sh*0.32 + sw*0.1);
-        c.textAlign = 'left'; c.textBaseline = 'alphabetic';
-      }
-    }
-    var shade = c.createLinearGradient(0, bez + sh, 0, bez + sh*0.55);
-    shade.addColorStop(0, 'rgba(0,0,0,.55)'); shade.addColorStop(1, 'rgba(0,0,0,0)');
-    c.fillStyle = shade; c.fillRect(bez, bez, sw, sh);
-
-    var cx = bez + sw/2;
-    var caps = [state.cap1, state.cap2].map(function(t){ return (t || '').toUpperCase(); });
-    if (caps[0] || caps[1]) {
-      var cpx = Math.min(sw*0.14, fitSize(c, caps[0].length >= caps[1].length ? caps[0] : caps[1], sw*0.78, sw*0.14, sw*0.05));
-      c.font = headlineFont(cpx); c.textAlign = 'center'; c.textBaseline = 'alphabetic';
-      c.lineJoin = 'round'; c.lineWidth = cpx*0.16; c.strokeStyle = 'rgba(0,0,0,.9)';
-      var cy = bez + sh*0.6;
-      caps.forEach(function(t, i){
-        if (!t) return;
-        var ty = cy + i*cpx*1.08;
-        c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = cpx*0.3;
-        c.strokeText(t, cx, ty); noShadow(c);
-        c.fillStyle = i ? state.capColor : '#ffffff';
-        c.fillText(t, cx, ty);
-      });
-      c.textAlign = 'left';
-    }
-    if (state.dots) {
-      var dr = sw*0.055, dx = bez + sw - dr*1.9;
-      for (var i = 0; i < 3; i++) {
-        c.beginPath(); c.arc(dx, bez + sh*(0.63 + i*0.085), dr, 0, Math.PI*2);
-        c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = dr*0.8;
-        c.fillStyle = '#ffffff'; c.fill(); noShadow(c);
-      }
-    }
-    if (state.handle) {
-      var hp = sw*0.058, handle = state.handle.charAt(0) === '@' ? state.handle : '@' + state.handle;
-      c.font = '700 ' + hp.toFixed(1) + 'px ' + UI_FONT;
-      c.fillStyle = '#ffffff'; c.textBaseline = 'alphabetic';
-      c.shadowColor = 'rgba(0,0,0,.7)'; c.shadowBlur = hp*0.4;
-      c.fillText(handle, bez + sw*0.07, bez + sh*0.94, sw*0.7);
-      noShadow(c);
-    }
-    // glass: a faint diagonal sheen across the upper part of the screen
-    var sheen = c.createLinearGradient(bez, bez, bez + sw*0.9, bez + sh*0.5);
-    sheen.addColorStop(0, 'rgba(255,255,255,.1)'); sheen.addColorStop(0.5, 'rgba(255,255,255,.03)');
-    sheen.addColorStop(0.5001, 'rgba(255,255,255,0)');
-    c.fillStyle = sheen; c.fillRect(bez, bez, sw, sh);
-    c.restore();
-
-    // island
-    roundRect(c, w/2 - sw*0.17, bez + sh*0.018, sw*0.34, sw*0.09, sw*0.045);
-    c.fillStyle = '#000'; c.fill();
-    c.restore();
-  }
-
   // Launch's project tag, the outlined label above its headline. A dot typed
   // between words gets room to breathe.
   function pillText(){
     return state.badge.trim().toUpperCase().replace(/\s*·\s*/g, '  ·  ');
   }
-  // Where the window and phone sit relative to each other, in units of the
-  // window's width: the phone overlaps the window's lower right corner.
-  // arrange() applies the phone's side and size on top of this.
-  // Tall rooms get the stacked version, with the phone hanging lower and bigger.
-  var SHOWCASE = {
-    side:  { win:{ x:0, y:0.02, w:1, h:0.74 }, phone:{ x:0.66, y:0.2, w:0.42, h:0.8 } },
-    stack: { win:{ x:0, y:0.02, w:1, h:0.72 }, phone:{ x:0.5, y:0.42, w:0.45, h:0.86 } },
-    alone: { win:{ x:0, y:0.02, w:1, h:0.74 } }
-  };
-
-  // Applies the phone's side and size to an arrangement, then measures the
-  // result, so the fitting code never has to know either setting exists.
-  // The window takes the picture's own shape, plus its title bar, so a
-  // screenshot is shown whole rather than cut mid-line. Very tall or very
-  // wide pictures are held to a sane window and cropped from there.
-  var WIN_ASPECT = { min:1.2, max:2.2 }, BAR = 0.058;
-  function windowHeight(){
-    var a = shotAspect(frame);
-    return 1/a + (state.winStyle === 'plain' ? 0 : BAR);
-  }
-  function arrange(l){
-    var win = { x:l.win.x, y:l.win.y, w:l.win.w, h:windowHeight() }, ph = null;
-    if (l.phone) {
-      var sz = state.phoneSize, p = l.phone;
-      // The phone hangs at the same fraction of the window's height whatever
-      // shape the window took, then grows or shrinks about its middle.
-      var py = l.win.y + (p.y - l.win.y) * win.h / l.win.h;
-      ph = { w:p.w*sz, h:p.h*sz, x:p.x, y:py + p.h*(1-sz)/2 };
-      if (state.phoneSide === 'left') {
-        var span = Math.max(win.x + win.w, ph.x + ph.w);
-        win.x = span - win.x - win.w;
-        ph.x = span - ph.x - ph.w;
-      }
-    }
-    var boxes = ph ? [win, ph] : [win];
-    var x0 = Math.min.apply(null, boxes.map(function(b){ return b.x; }));
-    var y0 = Math.min.apply(null, boxes.map(function(b){ return b.y; }));
-    var x1 = Math.max.apply(null, boxes.map(function(b){ return b.x + b.w; }));
-    var y1 = Math.max.apply(null, boxes.map(function(b){ return b.y + b.h; }));
-    boxes.forEach(function(b){ b.x -= x0; b.y -= y0; });
-    return { w:x1 - x0, h:y1 - y0, win:win, phone:ph };
-  }
+  // Pictures are shown in their own shape, held between 1.2:1 and 2.2:1 so a
+  // very tall or very wide one is cropped to something a frame can carry.
+  var WIN_ASPECT = { min:1.2, max:2.2 };
 
   // ---- sizes and corners -------------------------------------------------
   // Every measurement is derived from the target size, so one routine covers
   // 1280x720 and 1080x1920 alike. k is the geometric-mean scale against the
   // original 1280x720 design.
   // Corners a platform prints over. YouTube puts the video's length in the
-  // bottom right; the showcase and the play badge stay out of it. Sizes are
+  // bottom right; templates keep their words and frames out of it. Sizes are
   // fractions of the canvas, measured from that corner.
   var STAMPS = { youtube:{ w:0.14, h:0.12 } };
 
@@ -755,154 +486,6 @@
   // the edge. A drag starts from here, so pulling past the edge and back
   // does not leave a dead zone to cross first.
   var shown = { win:[0,0], phone:[0,0] };
-  // Full picture and Showcase: the tool's first two layouts, which share one
-  // routine because they share their headline and logo row.
-  function drawClassic(c, p, opts){
-    var W = p.w, H = p.h;
-    var k = Math.sqrt((W*H)/(1280*720));
-    var s = p.safe;
-    var left = W*s.l, right = W*(1-s.r), top = H*s.t, bottom = H*(1-s.b);
-    var stamp = STAMPS[p.id], stampX = stamp ? W*(1-stamp.w) : W, stampY = stamp ? H*(1-stamp.h) : H;
-    var portrait = (W/H) < 1.2;
-    var show = state.layout === 'showcase';
-    c.fillStyle = show ? baseTone('#0b0e14') : '#0b0e14'; c.fillRect(0,0,W,H);
-
-    if (show) {
-      drawBackdrop(c, W, H, k);
-    } else {
-      if (ready.frame) shown.win = cover(c, frame, 0, 0, W, H, state.zoom, state.panX*W, state.panY*H);
-
-      // vignette
-      var v = state.vig;
-      var g1 = c.createLinearGradient(0,H,0,H-H*0.55);
-      g1.addColorStop(0,'rgba(5,7,12,'+(0.94*v/0.7).toFixed(3)+')');
-      g1.addColorStop(0.55,'rgba(5,7,12,'+(0.55*v/0.7).toFixed(3)+')');
-      g1.addColorStop(1,'rgba(5,7,12,0)');
-      c.fillStyle = g1; c.fillRect(0,0,W,H);
-      var g2 = c.createRadialGradient(W/2,H*0.35,300*k,W/2,H*0.35,900*k);
-      g2.addColorStop(0,'rgba(0,0,0,0)');
-      g2.addColorStop(1,'rgba(0,0,0,'+(0.45*v/0.7).toFixed(3)+')');
-      c.fillStyle = g2; c.fillRect(0,0,W,H);
-    }
-
-    // headline metrics. Showcase gives the words the left half in landscape and
-    // the full width under the cards otherwise, and lets them grow bigger.
-    var badge = state.play && p.play && !show;
-    var r = 75*k;
-    var maxW = right - left, startPx = 88*k*state.headScale;
-    var cardsX = left + (right - left)*0.46;
-    if (show) {
-      // Tall covers are width-starved: every pixel of headline height is taken
-      // from the cards, so the words come down a size there.
-      startPx = ((W/H) < 0.85 ? 100*k : portrait ? 130*k : 150*k) * state.headScale;
-      if (!portrait) maxW = cardsX - left - 0.02*W;
-    }
-    if (badge && !portrait) maxW -= (2*r + 0.02*W);
-    var l1 = state.line1.toUpperCase(), l2 = state.line2.toUpperCase();
-    c.textBaseline = 'alphabetic';
-    var px2 = l2 ? fitSize(c, l2, maxW, startPx, 28*k) : 0;
-    var px1 = l1 ? fitSize(c, l1, maxW, startPx, 28*k) : 0;
-    var blockH = (px2 ? px2*1.06 : 0) + (px1 ? px1*1.06 : 0);
-
-    // Play badge: beside the headline in landscape. The portrait branch is not
-    // reachable today, since every preset with play:true is landscape - it is
-    // kept only so a portrait preset that opts in still lands somewhere sane.
-    if (badge) {
-      var pcx, pcy;
-      if (portrait) { pcx = right - r; pcy = bottom - blockH - r - 0.02*H; }
-      else { pcx = right - r; pcy = Math.min(bottom, stampY - 0.015*H) - 87*k; }
-      c.save();
-      c.translate(pcx, pcy); c.rotate(-6*Math.PI/180);
-      c.beginPath(); c.arc(0,0,87*k,0,Math.PI*2);
-      c.fillStyle='rgba(255,0,51,.3)'; c.fill();
-      c.shadowColor='rgba(0,0,0,.7)'; c.shadowBlur=40*k; c.shadowOffsetY=14*k;
-      c.beginPath(); c.arc(0,0,r,0,Math.PI*2);
-      c.fillStyle='#ff0033'; c.fill();
-      c.shadowColor='transparent'; c.shadowBlur=0; c.shadowOffsetY=0;
-      c.beginPath(); c.moveTo(-18*k,-32*k); c.lineTo(-18*k,32*k); c.lineTo(38*k,0); c.closePath();
-      c.fillStyle='#fff'; c.fill();
-      c.restore();
-    }
-
-    // the logo, top left
-    var lh = 88*k*state.logoSize;
-    var hasRow = !!(state.logo && ready.logo);
-    if (hasRow) {
-      c.shadowColor='rgba(0,0,0,.6)'; c.shadowBlur=20*k; c.shadowOffsetY=8*k;
-      c.drawImage(logo, left, top, logo.width * (lh/logo.height), lh);
-      noShadow(c);
-    }
-    // Measured to the top of the capitals, not the line box, so the gap
-    // above the headline is the gap you see.
-    var wordsTop = bottom - (l1 ? (px2 ? px2*1.06 : 0) + px1*0.74 : px2*0.74);
-
-    // the window and phone, fitted into whatever room the words leave
-    if (show) {
-      var rx0, rx1, ry0, ry1;
-      if (portrait) {
-        rx0 = left; rx1 = right;
-        ry0 = top + (hasRow ? lh + 0.03*H : 0);
-        ry1 = wordsTop - 0.035*H;
-      } else {
-        rx0 = cardsX; rx1 = right; ry1 = bottom;
-        ry0 = top;
-      }
-      var lay = null, u = 0;
-      (state.phone ? [SHOWCASE.side, SHOWCASE.stack] : [SHOWCASE.alone]).forEach(function(l){
-        var b = arrange(l);
-        // 0.92 leaves room for the corners the tilt swings outward.
-        var fit = 0.92 * Math.min((rx1-rx0)/b.w, (ry1-ry0)/b.h);
-        if (fit > u) { u = fit; lay = b; }
-      });
-      if (lay) {
-        // Width runs out first in tall rooms. The spare height goes above the
-        // cards, under the logo row, so they sit on the headline.
-        var ox = portrait ? rx0 + ((rx1-rx0) - lay.w*u)/2 : rx1 - lay.w*u;
-        var oy = portrait ? ry1 - lay.h*u : ry0 + ((ry1-ry0) - lay.h*u)/2;
-        // Out of the timestamp corner: lift the pieces clear of it, and if
-        // there is no room to lift them, shrink them until there is.
-        var clearY = stampY - 0.02*H;
-        if (ox + lay.w*u > stampX && oy + lay.h*u > clearY) {
-          oy = clearY - lay.h*u;
-          if (oy < ry0) {
-            u = Math.max(0, (clearY - ry0) / lay.h); oy = ry0;
-            if (!portrait) ox = rx1 - lay.w*u;
-          }
-        }
-        var wb = lay.win;
-        drawWindow(c, ox + wb.x*u, oy + wb.y*u, wb.w*u, wb.h*u, state.winTilt,
-                   state.panX*W, state.panY*H);
-        if (lay.phone) {
-          var ph = lay.phone;
-          drawPhone(c, ox + ph.x*u, oy + ph.y*u, ph.w*u, ph.h*u, state.phoneTilt, opts.preview);
-          if (opts.preview) phoneHit = { x:ox + ph.x*u, y:oy + ph.y*u, w:ph.w*u, h:ph.h*u };
-        }
-      }
-    }
-
-    // headline
-    var yBottom = bottom;
-    if (l2) {
-      c.font = headlineFont(px2);
-      var lg = c.createLinearGradient(left, 0, left + Math.min(c.measureText(l2).width, maxW), 0);
-      var st = activeStops();
-      lg.addColorStop(0, st[0]); lg.addColorStop(0.45, st[1]); lg.addColorStop(1, st[2]);
-      c.shadowColor='rgba(0,0,0,.85)'; c.shadowBlur=18*k; c.shadowOffsetY=4*k;
-      c.fillStyle = lg;
-      c.fillText(l2, left, yBottom);
-      noShadow(c);
-      yBottom -= px2*1.06;
-    }
-    if (l1) {
-      c.font = headlineFont(px1);
-      c.shadowColor='rgba(0,0,0,.9)'; c.shadowBlur=22*k; c.shadowOffsetY=5*k;
-      c.fillStyle = state.line1Color;
-      c.fillText(l1, left, yBottom);
-      noShadow(c);
-    }
-
-  }
-
   // ---- templates --------------------------------------------------------
   // A template is a whole arrangement of the thumbnail. Every template draws
   // from the same content - headline, pictures, badge, kicker, palette - so
@@ -1510,19 +1093,177 @@
     }
   }
 
+  // Collage, built to docs/quality-bar.md: a paper panel with brush bands
+  // top and bottom, a stacked headline whose accent line runs in the
+  // palette's colour, a brushed underline; then a leaning strip of three
+  // pictures; then one big photo to the edge. Tall frames stack the three
+  // bands top to bottom.
+  var dropHits = [];   // preview only: [{ slot, x, y, w, h }] for routing a drop
+
+  // A rough band with a brushed edge. The wobble is a sum of sines, so it is
+  // the same on every render and every size.
+  function brushBand(c, x0, x1, y, h, edgeDown, color, k){
+    var amp = h*0.22, step = Math.max(2, 6*k);
+    function wob(x){ return amp*(Math.sin(x/(37*k)) + 0.5*Math.sin(x/(13*k) + 1.7) + 0.3*Math.sin(x/(5*k) + 0.4)) / 1.8; }
+    c.beginPath();
+    if (edgeDown) {
+      c.moveTo(x0, y);
+      c.lineTo(x1, y);
+      for (var x = x1; x >= x0; x -= step) c.lineTo(x, y + h + wob(x));
+    } else {
+      c.moveTo(x0, y + h);
+      c.lineTo(x1, y + h);
+      for (var x2 = x1; x2 >= x0; x2 -= step) c.lineTo(x2, y + wob(x2));
+    }
+    c.closePath(); c.fillStyle = color; c.fill();
+  }
+
+  // The brushed underline: a stroke that swells in the middle and tapers to
+  // points, rising slightly to the right.
+  function brushSwoosh(c, cx, y, w, t, color){
+    // thickest just left of centre, a point at the start, a blunt tail
+    var x0 = cx - w/2, x1 = cx + w/2, rise = t*2.2, n = 32, i, u, yy, half;
+    function width(u){ return t*(Math.pow(Math.sin(Math.PI*Math.min(1, u*1.15)), 0.7)*0.95 + 0.05); }
+    function mid(u){ return y + rise*(0.5 - u) - Math.sin(Math.PI*u)*t*0.9; }
+    c.beginPath();
+    for (i = 0; i <= n; i++) { u = i/n; half = width(u)/2; yy = mid(u); c[i ? 'lineTo' : 'moveTo'](x0 + u*(x1 - x0), yy - half); }
+    for (i = n; i >= 0; i--) { u = i/n; half = width(u)/2; yy = mid(u); c.lineTo(x0 + u*(x1 - x0), yy + half); }
+    c.closePath(); c.fillStyle = color; c.fill();
+  }
+
+  // Fills a four-cornered shape with a picture (or its stand-in), clipped.
+  function fillQuad(c, quad, img, after, which, opts, st, label){
+    var xs = quad.map(function(q){ return q[0]; }), ys = quad.map(function(q){ return q[1]; });
+    var x0 = Math.min.apply(null, xs), y0 = Math.min.apply(null, ys);
+    var bw = Math.max.apply(null, xs) - x0, bh = Math.max.apply(null, ys) - y0;
+    c.save();
+    c.beginPath(); quad.forEach(function(q, i){ c[i ? 'lineTo' : 'moveTo'](q[0], q[1]); }); c.closePath(); c.clip();
+    if (img) {
+      var r = cover(c, img, x0, y0, bw, bh, which === 'win' ? state.zoom : 1,
+                    which === 'win' ? state.panX*c.canvas.width : 0, which === 'win' ? state.panY*c.canvas.height : 0);
+      if (which === 'win') shown.win = r;
+    } else {
+      paintStandIn(c, x0, y0, bw, bh, after, st);
+      if (opts.preview && label) placeholderLabel(c, x0, y0, bw, bh, label, 'rgba(255,255,255,.8)');
+    }
+    c.restore();
+    return { x:x0, y:y0, w:bw, h:bh };
+  }
+
+  // Luminance contrast between two colours, for choosing an ink that reads.
+  function contrast(a, b){
+    function lum(hex){
+      var n = parseInt(hex.slice(1), 16);
+      return [n>>16&255, n>>8&255, n&255].map(function(v){ v /= 255; return v <= 0.03928 ? v/12.92 : Math.pow((v + 0.055)/1.055, 2.4); })
+        .reduce(function(s, v, i){ return s + v*[0.2126, 0.7152, 0.0722][i]; }, 0);
+    }
+    var x = lum(a), y = lum(b);
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  }
+
+  function drawCollage(c, p, opts){
+    var g = box(p), W = g.W, H = g.H, k = g.k, st = activeStops();
+    var report = opts.report || {};
+    var paper = state.paper, lean = Math.tan(state.splitAngle * Math.PI/180);
+    // words on paper: the headline colour if it reads there, else near-black
+    var ink = contrast(state.line1Color, paper) >= 3 ? state.line1Color : '#1b1a1f';
+    // the accent must read on paper too: the palette's first colour, deepened
+    var acc = deepShade(st[0], 0.42);
+    if (opts.preview) dropHits = [];
+    c.fillStyle = paper; c.fillRect(0, 0, W, H);
+
+    var tall = (W/H) < 0.85, gap = Math.max(3, 0.011*Math.min(W, H)*1.4);
+    var slots = [
+      { img:phoneImg, slot:'second', label:'Top picture' },
+      { img:img3, slot:'third', label:'Middle picture' },
+      { img:img4, slot:'fourth', label:'Bottom picture' }
+    ];
+    var picsArea = 0, textBox;
+
+    if (!tall) {
+      var square = (W/H) < 1.2;
+      // three columns leaning together: paper, strip, photo
+      var xa = W*(square ? 0.46 : 0.4), sw = state.strip ? W*(square ? 0.15 : 0.17) : 0;
+      var sx = function(x, y){ return x + lean*(y - H/2); };
+      if (state.brush) {
+        brushBand(c, 0, sx(xa + sw, 0) + gap, 0, H*0.075, true, acc, k);
+        brushBand(c, 0, sx(xa + sw, H) + gap, H*0.925, H*0.075, false, acc, k);
+      }
+      if (state.strip) {
+        var rows = 3, rg = gap, rh = (H - rg*(rows - 1)) / rows;
+        for (var i = 0; i < rows; i++) {
+          var y0 = i*(rh + rg), y1 = y0 + rh;
+          var q = [[sx(xa + gap, y0), y0], [sx(xa + sw, y0), y0], [sx(xa + sw, y1), y1], [sx(xa + gap, y1), y1]];
+          var bx = fillQuad(c, q, slots[i].img, i === 1, 'strip', opts, st, slots[i].label);
+          if (opts.preview) dropHits.push({ slot:slots[i].slot, x:bx.x, y:bx.y, w:bx.w, h:bx.h });
+          picsArea += (sw - gap) * rh;
+        }
+      }
+      var hx = xa + sw + gap;
+      var hq = [[sx(hx, 0), 0], [W, 0], [W, H], [sx(hx, H), H]];
+      fillQuad(c, hq, frame === paintedFrame ? null : frame, true, 'win', opts, st, 'Drop the main photo');
+      picsArea += (W - hx) * H;
+      // the words sit in the paper, clear of the leaning edge at its narrowest
+      textBox = { x0:g.left, x1:Math.min(sx(xa, 0), sx(xa, H)) - 0.03*W, y0:H*0.1, y1:H*0.86 };
+    } else {
+      // tall: paper on top, the strip across, the photo below
+      var ya = H*0.5, sh = state.strip ? H*0.12 : 0;
+      var sy = function(y, x){ return y - lean*(x - W/2); };
+      if (state.brush) brushBand(c, 0, W, 0, H*0.045, true, acc, k);
+      if (state.strip) {
+        var cols = 3, cg = gap, cw = (W - cg*(cols - 1)) / cols;
+        for (var j = 0; j < cols; j++) {
+          var x0 = j*(cw + cg), x1 = x0 + cw;
+          var q2 = [[x0, sy(ya + gap, x0)], [x1, sy(ya + gap, x1)], [x1, sy(ya + sh, x1)], [x0, sy(ya + sh, x0)]];
+          var bx2 = fillQuad(c, q2, slots[j].img, j === 1, 'strip', opts, st, slots[j].label);
+          if (opts.preview) dropHits.push({ slot:slots[j].slot, x:bx2.x, y:bx2.y, w:bx2.w, h:bx2.h });
+          picsArea += cw * (sh - gap);
+        }
+      }
+      var hy = ya + sh + gap;
+      fillQuad(c, [[0, sy(hy, 0)], [W, sy(hy, W)], [W, H], [0, H]], frame === paintedFrame ? null : frame, true, 'win', opts, st, 'Drop the main photo');
+      picsArea += W * (H - hy);
+      textBox = { x0:g.left, x1:g.right, y0:Math.max(g.top, H*0.06), y1:ya - lean*W/2 - 0.03*H };
+    }
+    report.pictures = picsArea / (W*H);
+
+    // the headline, stacked as tight as sets it biggest, centred in the paper
+    var colW = textBox.x1 - textBox.x0, room = textBox.y1 - textBox.y0;
+    var swooshRoom = state.brush ? room*0.12 : 0;
+    var set = bestBreak(c, state.line1, state.line2, colW*0.98, 0.3*H*state.headScale, 12*k, room - swooshRoom);
+    var px = set.px, cap = px ? capOf(c, px) : 0, lead = cap*1.2;
+    var blockH = cap + (set.lines.length - 1)*lead, top = textBox.y0 + (room - swooshRoom - blockH)/2;
+    var cx = (textBox.x0 + textBox.x1)/2, base = top + cap;
+    c.textAlign = 'center';
+    set.lines.forEach(function(l){
+      tightFont(c, px); c.fillStyle = l.accent ? acc : ink;
+      c.fillText(l.t, cx, base);
+      base += lead;
+    });
+    looseFont(c); c.textAlign = 'left';
+    report.headCap = cap / H;
+    if (state.brush && set.lines.length) {
+      tightFont(c, px); var widest = Math.max.apply(null, set.lines.map(function(l){ return c.measureText(l.t).width; })); looseFont(c);
+      brushSwoosh(c, cx, base - lead + cap*0.62, widest*0.78, Math.max(3, cap*0.2), ink);
+    }
+
+    // the logo, small, in the photo's top corner - the paper belongs to the words
+    if (state.logo && ready.logo) {
+      var lh = 56*k*state.logoSize, lw = logo.width * lh / logo.height;
+      var ly = tall ? H*0.5 + (state.strip ? H*0.12 : 0) + 0.03*H : g.top + (state.brush ? 0 : 0);
+      c.save(); c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 16*k; c.shadowOffsetY = 4*k;
+      c.drawImage(logo, g.right - lw, ly, lw, lh);
+      c.restore();
+    }
+  }
+
   var TEMPLATES = [
-    { id:'bleed', name:'Full picture', hint:'The image fills the frame.',
-      labels:{ img:'Image', l1:'Top line', l2:'Bottom line' },
-      draw:function(c, p, o){ drawClassic(c, p, o); } },
-    { id:'showcase', name:'Showcase', hint:'The image sits in a window on a dark backdrop, with a phone beside it.',
-      labels:{ img:'Window picture', l1:'Top line', l2:'Bottom line' },
-      draw:function(c, p, o){ drawClassic(c, p, o); } },
-    { id:'launch', name:'Launch', hint:'A big two-line headline with an arrow, and the screenshot in a framed window.',
-      labels:{ img:'Window picture', l1:'Top line', l2:'Bottom line' },
-      draw:drawLaunch },
+    { id:'collage', name:'Collage', hint:'A stacked headline on paper, a leaning strip of three pictures, and one big photo to the edge.',
+      labels:{}, font:'anton', draw:drawCollage },
     { id:'versus', name:'Before → After', hint:'Two big pictures, a slash and an arrow between them, and one loud headline across the bottom.',
-      labels:{ img:'After picture' }, font:'anton',
-      draw:drawVersus }
+      labels:{}, font:'anton', draw:drawVersus },
+    { id:'launch', name:'Launch', hint:'A big two-line headline with an arrow, and the screenshot in a framed window.',
+      labels:{}, draw:drawLaunch }
   ];
   function templateById(id){
     for (var i = 0; i < TEMPLATES.length; i++) if (TEMPLATES[i].id === id) return TEMPLATES[i];
@@ -1582,7 +1323,7 @@
 
   function render(c, p, opts){
     opts = opts || {};
-    if (opts.preview) phoneHit = null;
+    if (opts.preview) { phoneHit = null; dropHits = []; }
     c.clearRect(0, 0, p.w, p.h);
     templateById(state.layout).draw(c, p, opts);
     if (opts.guides) drawGuides(c, p);
@@ -2202,9 +1943,7 @@
     layoutEls[li].addEventListener('change', function(e){
       if (!e.target.checked) return;
       state.panX = 0; state.panY = 0;
-      // A full picture wants a little zoom to crop; a window or card wants the
-      // whole screenshot, edge to edge.
-      state.zoom = e.target.value === 'bleed' ? 1.25 : 1;
+      state.zoom = 1;
       setControl('layout', e.target.value);
       syncLayout();
     });
@@ -2244,8 +1983,21 @@
   var SLOTS = {
     main:     { load:function(b){ loadBlob(b); },     clear:function(){},   has:function(){ return true; } },
     second:   { load:function(b){ loadPhone(b); },    clear:clearSecond,    has:function(){ return !!phoneImg; } },
-    backdrop: { load:function(b){ loadBackdrop(b); }, clear:clearBackdrop,  has:function(){ return !!bgImg; } }
+    backdrop: { load:function(b){ loadBackdrop(b); }, clear:clearBackdrop,  has:function(){ return !!bgImg; } },
+    third:    { load:function(b){ loadInto('img3', b); }, clear:function(){ img3 = null; syncControls(); draw(); }, has:function(){ return !!img3; } },
+    fourth:   { load:function(b){ loadInto('img4', b); }, clear:function(){ img4 = null; syncControls(); draw(); }, has:function(){ return !!img4; } }
   };
+  // The Collage strip's other two panels: plain pictures, no framing of
+  // their own to remember.
+  function loadInto(which, blob){
+    var img = new Image();
+    img.onload = function(){
+      if (which === 'img3') img3 = img; else img4 = img;
+      syncControls(); draw(); setStatus('Picture loaded.', 'ok');
+    };
+    img.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
+    img.src = URL.createObjectURL(blob);
+  }
   function clearSecond(){
     phoneImg = null; syncControls(); draw();
     setStatus('Picture removed.', 'ok');
@@ -2255,8 +2007,8 @@
     img.onload = function(){
       phoneImg = img; state.phonePanX = 0; state.phonePanY = 0;
       syncControls(); draw();
-      setStatus(state.layout === 'versus' ? 'Before picture loaded. Drag it on the left card to reframe it.'
-                                          : 'Phone picture loaded. Drag it on the phone to reframe it.', 'ok');
+      setStatus(state.layout === 'versus' ? 'Before picture loaded. Drag it on the before picture to reframe it.'
+                                          : 'Picture loaded.', 'ok');
     };
     img.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
     img.src = URL.createObjectURL(blob);
@@ -2267,7 +2019,7 @@
     var img = new Image();
     img.onload = function(){
       bgImg = img;
-      if (state.glow !== 'image') setControl('glow', 'image'); else { syncControls(); draw(); }
+      syncControls(); draw();
       setStatus('Backdrop picture loaded.', 'ok');
     };
     img.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
@@ -2334,10 +2086,22 @@
     var y = (e.clientY - rect.top) * cv.height / (rect.height || 1);
     return x >= phoneHit.x && x <= phoneHit.x + phoneHit.w && y >= phoneHit.y && y <= phoneHit.y + phoneHit.h;
   }
+  // A drop lands on whatever panel is under it: the templates list their
+  // extra pictures' boxes in dropHits; anywhere else is the main picture.
+  function dropSlot(e){
+    var rect = cv.getBoundingClientRect();
+    var x = (e.clientX - rect.left) * cv.width / (rect.width || 1);
+    var y = (e.clientY - rect.top) * cv.height / (rect.height || 1);
+    for (var i = 0; i < dropHits.length; i++) {
+      var h = dropHits[i];
+      if (x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h) return h.slot;
+    }
+    return overPhone(e) ? 'second' : 'main';
+  }
   wrap.addEventListener('drop', function(e){
     var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
     if (!f) return;
-    if (overPhone(e)) loadPhone(f); else loadBlob(f);
+    SLOTS[dropSlot(e)].load(f);
   });
   document.addEventListener('paste', function(e){
     var items = e.clipboardData && e.clipboardData.items;

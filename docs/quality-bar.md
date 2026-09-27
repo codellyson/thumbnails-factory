@@ -46,6 +46,5 @@ size. The helper is not there when the page is served from anywhere else.
 | Template | Status |
 |---|---|
 | Before → After | Rebuilt to this bar. Passes rules 1–3 at all 12 sizes with nothing dropped in, and with real photos and a short headline. A long accent word ("TRANSFORMATION") still fails rule 1 on 9:16 covers, which is the bar asking for fewer letters |
+| Collage | Built to this bar. Passes rules 1–3 at all 12 sizes, with nothing dropped in and with four photos |
 | Launch | Not yet reviewed against it |
-| Showcase | Not yet reviewed against it |
-| Full picture | Not yet reviewed against it |

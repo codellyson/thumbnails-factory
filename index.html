@@ -268,12 +268,24 @@
   .tile .size{ font-size:11px; line-height:1; color:var(--muted); }
 
   /* ---- fields ---- */
-  .fields{ display:flex; flex-direction:column; gap:16px; }
+  .fields{ display:flex; flex-direction:column; gap:14px; }
   .field{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+  /* a slider is one line: name, track, value - names share a column so the
+     tracks line up down the panel */
+  .field.slide{ display:grid; grid-template-columns:84px minmax(0,1fr) 40px; align-items:center; column-gap:10px; }
+  .field.slide > label{ font-weight:400; color:var(--muted); font-size:13px; }
+  .field.slide output{ font-size:12.5px; color:var(--muted); text-align:end; font-variant-numeric:tabular-nums; }
+  .field.slide input[type=range]{ margin:6px 0; }
+  .field.slide > .hint{ grid-column:1 / -1; margin-top:0; }
+  /* a picture: its name and buttons on one line, its zoom under them */
+  .pichead{ display:flex; align-items:center; gap:8px; min-height:32px; }
+  .pichead .legend{ flex:1; min-width:0; }
+  .pichead .logobtns{ flex:none; }
+  .field.pic{ gap:2px; }
   .field > label, .legend{ font-size:13px; font-weight:500; }
   .hint{ font-size:12.5px; margin:4px 0 0; color:var(--muted); }
   /* a picture's zoom lives in its block, just under its buttons */
-  .field > .field{ margin-top:8px; }
+  .field > .field{ margin-top:0; }
   input[type=text], input[type=number]{
     font-family:var(--ui); font-size:15px; font-variant-numeric:tabular-nums;
     background:var(--surface); color:var(--ink);
@@ -339,7 +351,7 @@
   /* folding panels */
   .group{ border-top:1px solid var(--line-strong); padding-top:12px; }
   /* a panel's first control hangs closer to its title (10) than controls sit to each other (16) */
-  .gbody{ display:flex; flex-direction:column; gap:16px; padding-top:10px; }
+  .gbody{ display:flex; flex-direction:column; gap:14px; padding-top:10px; }
   /* a panel's first control hangs closer to its title than controls sit to each other */
   .group > summary{ font-size:14px; font-weight:500; cursor:pointer;
     list-style:none; display:flex; align-items:center; gap:8px; min-height:28px; }
@@ -596,6 +608,8 @@
     body.editor .actions .btn-go{ min-height:44px; padding:10px 18px; }
     body.editor .actions .btn:not(.btn-go){ min-height:40px; padding:8px 18px; font-size:14px; }
     body.editor .status:empty{ display:none; }
+    /* with a pointer, the panel's small buttons can be compact; touch keeps 36px */
+    @media (pointer:fine){ body.editor .bench .btn-sm{ padding:5px 12px; font-size:13px; min-height:30px; } }
 
     body.editor .about{ padding:40px 20px 0; max-width:1240px; margin:0 auto; }
     body.editor footer{ margin:56px 20px 0; padding-bottom:40px; }
@@ -2757,6 +2771,9 @@
   function fromSlider(ctl, v){ return ctl.unit === '%' ? v / 100 * (ctl.scale || 1) : +v; }
   function sayRange(ctl, input){
     input.setAttribute('aria-valuetext', input.value + (ctl.unit === '%' ? '%' : ' degrees'));
+    // the number beside the slider, so a setting can be read and matched
+    var out = input.nextElementSibling;
+    if (out && out.tagName === 'OUTPUT') out.textContent = input.value + (ctl.unit === '%' ? '%' : '°');
   }
 
   // One change path for every control: set the value, run the control's own
@@ -2794,11 +2811,13 @@
         wrap.appendChild(input);
         break;
       case 'range':
-        wrap = el('div', 'field');
+        // one line: name, slider, value
+        wrap = el('div', 'field slide');
         label = el('label'); label.htmlFor = id; wrap.appendChild(label);
         input = el('input'); input.type = 'range'; input.id = id; input.min = ctl.min; input.max = ctl.max;
         input.addEventListener('input', function(){ sayRange(ctl, input); setControl(ctl.key, fromSlider(ctl, input.value)); });
         wrap.appendChild(input);
+        var out = el('output'); out.htmlFor = id; out.setAttribute('aria-hidden', 'true'); wrap.appendChild(out);
         break;
       case 'choice':
         wrap = el('fieldset', 'field seg');
@@ -2829,8 +2848,10 @@
         wrap.appendChild(input);
         break;
       case 'image':
-        wrap = el('div', 'field');
-        label = el('span', 'legend'); label.id = id + 'Label'; wrap.appendChild(label);
+        // the picture's name and its buttons share a line; its zoom joins below
+        wrap = el('div', 'field pic');
+        var head = el('div', 'pichead'); wrap.appendChild(head);
+        label = el('span', 'legend'); label.id = id + 'Label'; head.appendChild(label);
         var ids = ctl.ids || { pick:id + 'Pick', file:id + 'File' };
         var btns = el('div', ctl.big ? '' : 'logobtns');
         var pick = el('button', ctl.big ? 'btn' : 'btn btn-sm', ctl.button);
@@ -2845,7 +2866,7 @@
           btns.appendChild(reset);
           input = reset;   // synced: shown only while the slot holds a picture
         }
-        wrap.appendChild(btns); wrap.appendChild(file);
+        head.appendChild(btns); wrap.appendChild(file);
         break;
       case 'custom':
         wrap = ctl.build(ctl);
@@ -2952,8 +2973,7 @@
 
   // ---- custom widgets the schema places ---------------------------------
   function buildPictureHint(){
-    var p = hintEl('Click a picture on the preview, or drop a file on it, to replace it. Double-click it to move the photo inside its frame. Below 100% zoom the whole picture shows, with a blurred copy around it.');
-    p.style.marginTop = '-8px';
+    var p = hintEl('Click a picture on the preview to replace it; double-click to move the photo inside. Under 100% zoom shows it whole.');
     return p;
   }
   function buildTemplatePicker(){
@@ -2963,7 +2983,7 @@
     var hint = hintEl(''); hint.id = 'layoutHint'; f.appendChild(hint);
     // moving things is done on the preview; this only takes it back
     var row = el('div', 'moverow');
-    row.appendChild(hintEl('Drag anything on the preview to move it, its round handle to turn it, a corner to resize it.'));
+    row.appendChild(hintEl('On the preview: drag to move, handle to turn, corners to resize.'));
     var reset = el('button', 'btn btn-sm', 'Reset positions'); reset.id = 'movesReset'; reset.type = 'button'; reset.hidden = true;
     reset.addEventListener('click', function(){
       var p = current(), pre = state.layout + '.' + frameShape(p.w, p.h) + '.';

@@ -2009,6 +2009,9 @@
   function fromSlider(ctl, v){ return ctl.unit === '%' ? v / 100 * (ctl.scale || 1) : +v; }
   function sayRange(ctl, input){
     input.setAttribute('aria-valuetext', input.value + (ctl.unit === '%' ? '%' : ' degrees'));
+    // the number beside the slider, so a setting can be read and matched
+    var out = input.nextElementSibling;
+    if (out && out.tagName === 'OUTPUT') out.textContent = input.value + (ctl.unit === '%' ? '%' : '°');
   }
 
   // One change path for every control: set the value, run the control's own
@@ -2046,11 +2049,13 @@
         wrap.appendChild(input);
         break;
       case 'range':
-        wrap = el('div', 'field');
+        // one line: name, slider, value
+        wrap = el('div', 'field slide');
         label = el('label'); label.htmlFor = id; wrap.appendChild(label);
         input = el('input'); input.type = 'range'; input.id = id; input.min = ctl.min; input.max = ctl.max;
         input.addEventListener('input', function(){ sayRange(ctl, input); setControl(ctl.key, fromSlider(ctl, input.value)); });
         wrap.appendChild(input);
+        var out = el('output'); out.htmlFor = id; out.setAttribute('aria-hidden', 'true'); wrap.appendChild(out);
         break;
       case 'choice':
         wrap = el('fieldset', 'field seg');
@@ -2081,8 +2086,10 @@
         wrap.appendChild(input);
         break;
       case 'image':
-        wrap = el('div', 'field');
-        label = el('span', 'legend'); label.id = id + 'Label'; wrap.appendChild(label);
+        // the picture's name and its buttons share a line; its zoom joins below
+        wrap = el('div', 'field pic');
+        var head = el('div', 'pichead'); wrap.appendChild(head);
+        label = el('span', 'legend'); label.id = id + 'Label'; head.appendChild(label);
         var ids = ctl.ids || { pick:id + 'Pick', file:id + 'File' };
         var btns = el('div', ctl.big ? '' : 'logobtns');
         var pick = el('button', ctl.big ? 'btn' : 'btn btn-sm', ctl.button);
@@ -2097,7 +2104,7 @@
           btns.appendChild(reset);
           input = reset;   // synced: shown only while the slot holds a picture
         }
-        wrap.appendChild(btns); wrap.appendChild(file);
+        head.appendChild(btns); wrap.appendChild(file);
         break;
       case 'custom':
         wrap = ctl.build(ctl);
@@ -2204,8 +2211,7 @@
 
   // ---- custom widgets the schema places ---------------------------------
   function buildPictureHint(){
-    var p = hintEl('Click a picture on the preview, or drop a file on it, to replace it. Double-click it to move the photo inside its frame. Below 100% zoom the whole picture shows, with a blurred copy around it.');
-    p.style.marginTop = '-8px';
+    var p = hintEl('Click a picture on the preview to replace it; double-click to move the photo inside. Under 100% zoom shows it whole.');
     return p;
   }
   function buildTemplatePicker(){
@@ -2215,7 +2221,7 @@
     var hint = hintEl(''); hint.id = 'layoutHint'; f.appendChild(hint);
     // moving things is done on the preview; this only takes it back
     var row = el('div', 'moverow');
-    row.appendChild(hintEl('Drag anything on the preview to move it, its round handle to turn it, a corner to resize it.'));
+    row.appendChild(hintEl('On the preview: drag to move, handle to turn, corners to resize.'));
     var reset = el('button', 'btn btn-sm', 'Reset positions'); reset.id = 'movesReset'; reset.type = 'button'; reset.hidden = true;
     reset.addEventListener('click', function(){
       var p = current(), pre = state.layout + '.' + frameShape(p.w, p.h) + '.';

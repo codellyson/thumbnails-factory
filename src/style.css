@@ -485,9 +485,9 @@
   @media (min-width:901px){
     body.editor{ padding:0; }
     body.editor .shell{ max-width:none; }
-    body.editor header{ padding:8px 20px; min-height:56px; margin:0; }
+    body.editor header{ padding:0 20px; height:56px; min-height:0; margin:0; flex-wrap:nowrap; }
     body.editor .layout{
-      height:calc(100dvh - 57px);   /* the header: 56 and its rule */
+      height:calc(100dvh - 56px);   /* the header, rule included */
       grid-template-columns:184px minmax(0,1fr) 324px; gap:0; align-items:stretch;
       border-bottom:1px solid var(--line);
     }
@@ -519,10 +519,13 @@
     /* the preview takes every pixel the columns leave */
     body.editor .stage{ position:static; display:flex; flex-direction:column; min-height:0; padding:12px 16px 10px; }
     body.editor .canvas-wrap{ flex:1 1 0; min-height:0; padding:16px; border-radius:var(--r-well); }
+    /* the well is a big surface here: its glow stays a hint of the picture's
+       colour, not a blurred copy that competes with it */
+    body.editor .canvas-wrap .ambient{ opacity:.3; filter:blur(60px) saturate(1.1); }
     body.editor canvas#cv{ max-width:100%; max-height:100%; }
     body.editor .stage:has(.feed:not([hidden])) canvas{ max-height:100%; }
     body.editor .readout{ flex:none; padding-top:10px; }
-    body.editor .howto{ flex:none; margin-top:4px; max-width:none; font-size:13px; }
+    body.editor .howto{ flex:none; margin-top:2px; max-width:none; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     body.editor .howto p{ display:inline; }
     body.editor .howto p + p::before{ content:" "; }
     body.editor .feed{ flex:none; margin-top:12px; padding:12px 14px; }
@@ -530,7 +533,10 @@
 
     /* the options scroll inside their column; Download stays at its foot */
     body.editor .bench{ overflow-y:auto; overscroll-behavior:contain; border-radius:0; padding:16px 18px 0; gap:18px; }
-    body.editor .actions{ margin:auto -18px 0; padding-inline:18px; border-radius:0; }
+    body.editor .actions{ margin:auto -18px 0; padding:12px 18px 16px; gap:8px; border-radius:0; }
+    body.editor .actions .btn-go{ min-height:44px; padding:10px 18px; }
+    body.editor .actions .btn:not(.btn-go){ min-height:40px; padding:8px 18px; font-size:14px; }
+    body.editor .status:empty{ display:none; }
 
     body.editor .about{ padding:40px 20px 0; max-width:1240px; margin:0 auto; }
     body.editor footer{ margin:56px 20px 0; padding-bottom:40px; }

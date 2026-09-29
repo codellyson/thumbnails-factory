@@ -114,8 +114,13 @@ slanted headline whose key word takes its own line - sized from whatever room th
 lines above it leave, up to 2.6 times their size - in the palette's gradient, a
 thick hand-drawn arrow curling onto the first line, and one big circular photo
 over a bow-tie of two gradient triangles, with a thin arc and dot beside it. Tall
-sizes put the photo on top and the words below. The photo may run under a
-platform's buttons; the words never do.
+sizes and square ones put the photo on top and the words below. The photo may run
+under a platform's buttons; the words never do. **Photo shape** on Auto keeps a
+circle for a photo and switches to a frame in the picture's own proportions for a
+screenshot, so a wide picture shows whole instead of cropped to a round middle.
+
+In every template, **Zoom** below 100% shrinks a picture inside its shape so all of
+it shows, filling the room around it with a blurred copy of the same picture.
 
 **Launch** sets a big two-line headline, with an arrow after the first line, beside
 the screenshot in a window framed in the accent. It adds an outlined project tag, a sticker in the window's title bar, and a dot-grid backdrop.

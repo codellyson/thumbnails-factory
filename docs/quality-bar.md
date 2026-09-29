@@ -34,6 +34,10 @@ The pass line for rule 1 comes from the reference itself: its four-word headline
 measures 0.084, so a template has to beat that with the same words. A headline
 that measures under the line is the signal to cut words, not to shrink them.
 
+A rule can collide with showing a picture whole. Where a wide screenshot on a
+narrow frame cannot reach rule 2 without being cropped, the picture wins and the
+shortfall is recorded here rather than hidden.
+
 ## How it is checked
 
 On a local server (`localhost`), the page exposes `window.TF.quality()`, which
@@ -47,5 +51,5 @@ size. The helper is not there when the page is served from anywhere else.
 |---|---|
 | Before → After | Rebuilt to this bar. Passes rules 1–3 at all 12 sizes with nothing dropped in, and with real photos and a short headline. A long accent word ("TRANSFORMATION") still fails rule 1 on 9:16 covers, which is the bar asking for fewer letters |
 | Collage | Built to this bar. Passes rules 1–3 at all 12 sizes, with nothing dropped in and with four photos |
-| Talking point | Built to this bar. Passes rules 1–3 at all 12 sizes, empty and with a photo. Its reference's circle covers 0.25 of the frame, under rule 2's line; ours is sized to 0.34–0.38 to beat it |
+| Talking point | Built to this bar. Passes rules 1–3 at all 12 sizes, empty and with a photo. Its reference's circle covers 0.25 of the frame, under rule 2's line; ours is sized to 0.34–0.38 to beat it. With a whole wide screenshot on a 9:16 cover, rule 2 tops out at 0.316: a 16:9 picture shown edge to edge across a 9:16 frame cannot cover more, so there the choice is between the bar and seeing the whole picture, and the tool shows the whole picture |
 | Launch | Not yet reviewed against it |

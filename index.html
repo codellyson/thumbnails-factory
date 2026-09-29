@@ -843,7 +843,8 @@
     { key:'main', type:'image', slot:'main', big:true, persist:false,
       label:{ _:'Picture', launch:'Window picture', versus:'After picture', collage:'Main photo', talking:'Photo' },
       button:'Choose an image', ids:{ pick:'pick', file:'file' } },
-    { key:'zoom', type:'range', label:'Zoom', min:100, max:250, unit:'%', def:1, persist:false },
+    { key:'zoom', type:'range', label:'Zoom', min:40, max:250, unit:'%', def:1, persist:false,
+      hint:'Below 100% the whole picture shows, with a blurred copy filling the space around it.' },
     { key:'second', type:'image', slot:'second', persist:false, for:['versus'], label:'Before picture',
       button:'Choose before picture', reset:'Remove',
       hint:'Or drop a file on the before picture. Drag on it to move the picture.' },
@@ -898,6 +899,9 @@
     { key:'brush', type:'toggle', group:'Background', for:['collage'], label:'Brush bands and underline', def:true },
     { key:'paper2', type:'color', group:'Background', for:['talking'], label:'Paper', def:'#ecebe8' },
     { key:'arrow2', type:'toggle', group:'Background', for:['talking'], label:'Hand-drawn arrow', def:true },
+    { key:'tpShape', type:'choice', group:'Background', for:['talking'], label:'Photo shape', def:'auto',
+      options:[['auto','Auto'], ['circle','Circle'], ['frame','Frame']],
+      hint:'Auto uses a circle for a photo and a frame in the picture\u2019s own shape for a screenshot, so nothing is cropped away.' },
 
     { key:'beforeLabel', type:'text', group:'Pictures', for:['versus'], label:'Before label', def:'BEFORE', maxlength:16, row:'labels' },
     { key:'afterLabel', type:'text', group:'Pictures', for:['versus'], label:'After label', def:'AFTER', maxlength:16, row:'labels' },
@@ -1097,10 +1101,22 @@
   // Draws img to cover the box, the way CSS object-fit: cover does. The pan
   // stops where the picture's edge meets the box's, so a drag can never
   // pull in an empty strip.
+  // Below 100% zoom the picture shrinks inside its box so all of it shows;
+  // the room around it is filled with a blurred, darkened copy of the same
+  // picture, never empty bars.
   function cover(c, img, x, y, w, h, zoom, dx, dy){
     var s = Math.max(w/img.width, h/img.height) * (zoom || 1);
     var iw = img.width*s, ih = img.height*s;
-    var mx = (iw-w)/2, my = (ih-h)/2;
+    if (iw < w - 0.5 || ih < h - 0.5) {
+      var full = Math.max(w/img.width, h/img.height);
+      c.save();
+      c.beginPath(); c.rect(x, y, w, h); c.clip();
+      if (typeof c.filter === 'string') c.filter = 'blur(' + Math.round(Math.max(w, h)*0.03) + 'px) brightness(.6)';
+      c.drawImage(img, x + (w - img.width*full)/2, y + (h - img.height*full)/2, img.width*full, img.height*full);
+      c.restore();
+      if (typeof c.filter !== 'string') { c.fillStyle = 'rgba(0,0,0,.4)'; c.fillRect(x, y, w, h); }
+    }
+    var mx = Math.max(0, (iw-w)/2), my = Math.max(0, (ih-h)/2);
     dx = Math.max(-mx, Math.min(mx, dx || 0));
     dy = Math.max(-my, Math.min(my, dy || 0));
     c.drawImage(img, x + (w-iw)/2 + dx, y + (h-ih)/2 + dy, iw, ih);
@@ -2019,16 +2035,40 @@
     var tall = (W/H) < 0.85, square = !tall && (W/H) < 1.2;
     var g0 = deepShade(st[0], 0.46), g1 = deepShade(st[2], 0.5);
 
-    // the circle claims its side first; the words get the rest
-    var d, cx, cy;
+    // The photo is a circle for a photo and a frame in its own proportions
+    // for a screenshot, so a wide picture is shown whole rather than cropped
+    // to a round middle. Auto decides from the picture's shape.
+    var has = frame !== paintedFrame, pa = frame.width / frame.height;
+    var shape = state.tpShape === 'auto' ? ((!has || (pa > 0.8 && pa < 1.25)) ? 'circle' : 'frame') : state.tpShape;
+    var roundish = shape === 'circle';
+    // Square sizes stack too - photo on top, words across the full width
+    // below - since beside each other neither gets enough room.
+    if (square) { tall = true; square = false; }
+    var shapeOf = W/H;
+    // the photo claims its side first; the words get the rest
+    var d, cx, cy, hw, hh, tilt = roundish ? 0 : -3*Math.PI/180;
     // Big enough to beat the reference's share of the frame (0.25): a photo
     // may run under a platform's buttons, since only words must stay clear.
     if (!tall) {
       d = Math.min(H*0.96, W*(square ? 0.66 : 0.5));
       cx = W - Math.max(0.01*W, (W - g.right)*0.5) - d/2; cy = H/2;
     } else {
-      d = Math.min(W*0.98, H*((W/H) < 0.7 ? 0.5 : 0.6));   // 9:16, then 4:5
+      d = Math.min(W*0.98, H*(shapeOf < 0.7 ? 0.5 : shapeOf < 0.9 ? 0.6 : 0.66));   // 9:16, 4:5, square
       cx = W/2; cy = Math.max(g.top*0.6, 0.02*H) + d/2;
+    }
+    hw = hh = d/2;
+    if (!roundish) {
+      var fa = Math.max(0.6, Math.min(2.2, pa)), mw, mh;
+      // As big as the words allow: 60% of the width beside them; edge to
+      // edge above them in stacked sizes, where the photo may run under a
+      // platform's buttons and only the words must stay clear.
+      if (!tall) { mw = W*0.6; mh = H*0.86; }
+      else { mw = W; mh = H*(shapeOf < 0.7 ? 0.46 : shapeOf < 0.9 ? 0.56 : 0.5); }
+      var pw = Math.min(mw, mh*fa), ph = pw/fa;
+      hw = pw/2; hh = ph/2;
+      if (!tall) { cx = W - Math.max(0.02*W, (W - g.right)*0.6) - hw; cy = H/2; }
+      else { cx = W/2; cy = Math.max(g.top*0.6, 0.03*H) + hh; }
+      d = Math.max(pw, ph);
     }
 
     // the bow-tie behind it, pointing at the circle's centre
@@ -2046,33 +2086,48 @@
     }
     c.fill();
 
-    // the arc and its dot, just outside the ring on the open side
+    // the arc and its dot, just outside the ring on the open side (circles only)
     c.save();
+    if (roundish) {
     c.strokeStyle = ink; c.lineWidth = Math.max(1.5, 2.5*k);
     var ar = d/2 + Math.max(10*k, d*0.07), a0 = tall ? -0.35*Math.PI : -0.38*Math.PI, a1 = tall ? 0.05*Math.PI : 0.3*Math.PI;
     c.beginPath(); c.arc(cx, cy, ar, a0, a1); c.stroke();
     c.beginPath(); c.arc(cx + Math.cos(a0)*ar, cy + Math.sin(a0)*ar, Math.max(3, 5*k), 0, Math.PI*2); c.fillStyle = ink; c.fill();
-    c.restore();
-
-    // the photo
-    var ring = Math.max(2, d*0.014);
-    c.save();
-    c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = d*0.08; c.shadowOffsetY = d*0.03;
-    c.beginPath(); c.arc(cx, cy, d/2, 0, Math.PI*2); c.fillStyle = '#ffffff'; c.fill();
-    c.restore();
-    c.save(); c.beginPath(); c.arc(cx, cy, d/2 - ring, 0, Math.PI*2); c.clip();
-    if (frame !== paintedFrame) shown.win = cover(c, frame, cx - d/2, cy - d/2, d, d, state.zoom, state.panX*W, state.panY*H);
-    else {
-      paintStandIn(c, cx - d/2, cy - d/2, d, d, true, st);
-      if (opts.preview) placeholderLabel(c, cx - d/2, cy - d/2, d, d, 'Drop the photo', 'rgba(255,255,255,.8)');
     }
     c.restore();
-    report.pictures = Math.PI*d*d/4 / (W*H);
+
+    // the photo, in a white ring (circle) or a white-edged frame turned a touch
+    var ring = Math.max(2, Math.min(hw, hh)*0.028);
+    function outline(pad){
+      c.beginPath();
+      if (roundish) c.arc(cx, cy, hw - pad, 0, Math.PI*2);
+      else roundRect(c, cx - hw + pad, cy - hh + pad, 2*(hw - pad), 2*(hh - pad), Math.max(0, Math.min(hw, hh)*0.08 - pad));
+    }
+    c.save();
+    c.translate(cx, cy); c.rotate(tilt); c.translate(-cx, -cy);
+    c.save();
+    c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = d*0.08; c.shadowOffsetY = d*0.03;
+    outline(0); c.fillStyle = '#ffffff'; c.fill();
+    c.restore();
+    c.save(); outline(ring); c.clip();
+    if (has) shown.win = cover(c, frame, cx - hw, cy - hh, 2*hw, 2*hh, state.zoom, state.panX*W, state.panY*H);
+    else {
+      paintStandIn(c, cx - hw, cy - hh, 2*hw, 2*hh, true, st);
+      if (opts.preview) placeholderLabel(c, cx - hw, cy - hh, 2*hw, 2*hh, 'Drop the photo', 'rgba(255,255,255,.8)');
+    }
+    c.restore();
+    c.restore();
+    report.pictures = (roundish ? Math.PI*hw*hw : 4*hw*hh) / (W*H);
 
     // the words: main lines stacked and slanted, the accent line half again
     // as big, in the gradient
-    var tb = !tall ? { x0:g.left, x1:cx - d/2 - 0.04*W, y0:g.top, y1:g.bottom }
-                   : { x0:g.left, x1:g.right, y0:cy + d/2 + 0.04*H, y1:g.bottom };
+    // the frame's tilt drops one lower corner by about hw*sin(3 degrees)
+    var sag = roundish ? 0 : hw*Math.sin(3*Math.PI/180);
+    var tb = !tall ? { x0:g.left, x1:cx - hw - sag - 0.04*W, y0:g.top, y1:g.bottom }
+                   : { x0:g.left, x1:g.right, y0:cy + hh + sag + 0.04*H, y1:g.bottom };
+    // stacked with a frame, the logo gets its own row under the words
+    var logoRow = (tall && !roundish && state.logo && ready.logo) ? 52*k*state.logoSize + 0.02*H : 0;
+    tb.y1 -= logoRow;
     var main = state.line1.toUpperCase().trim().split(/\s+/).filter(Boolean);
     var accent = state.line2.toUpperCase().trim();
     var colW = tb.x1 - tb.x0, room = tb.y1 - tb.y0;
@@ -2095,8 +2150,19 @@
         capA = capOf(c, apx);
         if (capA > left) { apx *= left / capA; capA = capOf(c, apx); }
       }
+      // The key word leads: at least 1.25 times the lead-in. Where the
+      // height is tight, the lead-in gives way until it does.
+      if (accent && lines.length && capA < capM*1.25) {
+        var mf = 1 + (lines.length - 1)*1.2, fitCap = room / (mf + 0.35 + 1.25);
+        if (fitCap < capM) { px *= fitCap / capM; capM = capOf(c, px); mainH = capM*mf; }
+        var left2 = room - mainH - capM*0.35, want = fitWith(c, accent, colW, big*1.6, 10*k, function(q){ return q*0.2; });
+        apx = want; capA = capOf(c, apx);
+        if (capA > left2) { apx *= left2 / capA; capA = capOf(c, apx); }
+      }
       var hgt = mainH + (accent ? (lines.length ? capM*0.35 : 0) + capA : 0);
-      var score = capA*10 + capM;
+      // weigh both: a big key word over a readable lead-in beats a huge key
+      // word over words too small to read
+      var score = capA*2 + capM;
       if (!best || score > best.score) best = { px:px, apx:apx, lines:lines, capM:capM, capA:capA, h:hgt, score:score };
     }
     var y = tb.y0 + (room - best.h)/2;
@@ -2133,19 +2199,22 @@
         // down from beside the circle's top onto the end of the first line,
         // above the longer lines that follow
         var hx = firstEnd + 0.025*W, hy = firstTop + best.capM*0.45;
-        var tx = Math.min(cx - d*0.42, hx + 0.16*W), ty = Math.max(g.top*0.5, firstTop - best.capM*0.9);
+        var tx = Math.min(cx - hw*0.84, hx + 0.16*W), ty = Math.max(g.top*0.5, firstTop - best.capM*0.9);
         if (tx - hx > 0.05*W) handArrow(c, tx, ty, tx - 0.01*W, hy, hx, hy, t, ink);
       } else if (g.right - lastEnd > 0.16*W) {
         // only where the first line leaves room beside it
         var sx0 = g.right - 0.05*W, sy0 = firstTop + best.capM;
-        handArrow(c, sx0, sy0, sx0 + 0.03*W, cy + d/2 + 0.02*H, cx + d*0.25, cy + d/2 - d*0.02, t, ink);
+        handArrow(c, sx0, sy0, sx0 + 0.03*W, cy + hh + 0.02*H, cx + hw*0.5, cy + hh - hh*0.04, t, ink);
       }
     }
 
     // the logo, small, in the top corner over the photo's side
     if (state.logo && ready.logo) {
       var lh = 52*k*state.logoSize, lw = logo.width * lh / logo.height;
-      c.drawImage(logo, tall ? g.left : g.right - lw, g.top, lw, lh);
+      // stacked with a frame, the top belongs to the picture (which may carry
+      // its own logo), so ours goes under the words instead
+      if (tall && !roundish) c.drawImage(logo, g.right - lw, tb.y1 + 0.02*H, lw, lh);
+      else c.drawImage(logo, tall ? g.left : g.right - lw, g.top, lw, lh);
     }
   }
 

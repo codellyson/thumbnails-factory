@@ -1856,6 +1856,8 @@
     // ("YouTube1280x720"), so state it properly for a screen reader.
     input.setAttribute('aria-label', isCustom ? p.label
       : p.label + ', ' + p.w + ' by ' + p.h + ' pixels');
+    // shown on hover when the rail is narrowed to shapes only
+    tile.title = isCustom ? 'Custom size' : p.label + ', ' + p.w + '×' + p.h;
     var box = document.createElement('span'); box.className = 'chipbox';
     var chip = document.createElement('span'); chip.className = 'chip';
     sizeChip(chip, p);

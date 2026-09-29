@@ -171,7 +171,8 @@ Launch takes a **project tag**: a short outlined label above its headline, such 
 
 On a wide screen the tool is laid out like an editor and fits the window: sizes
 in a column on the left, the preview in the middle filling whatever room is left,
-and the options on the right. The two side columns scroll on their own, and the
+and the options on the right. Below 1280px wide the size list narrows to its
+shapes, each named small underneath. The two side columns scroll on their own, and the
 page itself doesn't have to; the page's own text sits below the editor. On a
 phone the columns stack, with the preview pinned to the top. Only one panel is
 open at a time.

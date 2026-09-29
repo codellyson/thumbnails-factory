@@ -541,6 +541,34 @@
     body.editor .about{ padding:40px 20px 0; max-width:1240px; margin:0 auto; }
     body.editor footer{ margin:56px 20px 0; padding-bottom:40px; }
   }
+  /* Between 901 and 1279 the three columns crowd the preview, so the size
+     rail narrows to a column of shapes, each with its name set small under
+     it (six wide shapes alone look alike). The group titles step aside for
+     screen readers only; the shapes already say wide, tall or square. */
+  @media (min-width:901px) and (max-width:1279px){
+    body.editor .layout{ grid-template-columns:80px minmax(0,1fr) 316px; }
+    /* still scrolls on a short window, but a scrollbar would eat the names' room */
+    body.editor .rail{ padding:10px 4px 16px; scrollbar-width:none; }
+    body.editor .rail::-webkit-scrollbar{ display:none; }
+    body.editor .sizes{ gap:8px; }
+    body.editor .sizegroup h2{
+      position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+      overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;
+    }
+    body.editor .sizegroup + .sizegroup{ padding-top:8px; }
+    body.editor .tile, body.editor .tile.custom{
+      display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 2px;
+    }
+    body.editor .tile .chipbox{ width:44px; height:26px; }
+    body.editor .tile .name, body.editor .tile.custom .name{
+      display:block; font-size:10.5px; line-height:1.15; text-align:center; max-width:100%;
+    }
+    body.editor .tile .size{ display:none; }
+    /* the custom numbers stack, each the rail's width */
+    body.editor .customgroup .row{ flex-direction:column; gap:6px; padding:6px 0 0; }
+    body.editor .customgroup .field > label{ font-size:11px; text-align:center; }
+    body.editor .customgroup input[type=number]{ padding:6px 4px; font-size:13px; text-align:center; }
+  }
   .about h1{ margin-top:0; }
 
   @media (prefers-reduced-motion:reduce){

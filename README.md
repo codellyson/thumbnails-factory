@@ -70,6 +70,16 @@ templates draw from the same content, so switching keeps what you typed. Adding 
 template is one entry in `TEMPLATES` in `src/app.js`: a name, a hint and a draw
 function that reads `state`.
 
+## Pictures: the same controls for every one
+
+Every picture a template uses is listed at the top of the panel, in the order the
+template shows it, and each gets the same controls: **Choose**, **Remove**, a
+**Zoom** from 40% to 250% inside its own block, and a drag on the preview to move
+it. Below 100% the whole picture shows, with a blurred copy filling the room
+around it. Dropping a file on a picture replaces that picture. Where a template
+offers a shape (Before → After: circle or card; Talking point: auto, circle or
+frame), **Picture shape** sits right under its pictures.
+
 ## Controls: defined once
 
 Every setting is one entry in `CONTROLS` in `src/app.js`: its key, type, label,

@@ -216,6 +216,8 @@
   .field{ display:flex; flex-direction:column; gap:6px; min-width:0; }
   .field > label, .legend{ font-size:13px; font-weight:500; }
   .hint{ font-size:12.5px; margin:4px 0 0; color:var(--muted); }
+  /* a picture's zoom lives in its block, just under its buttons */
+  .field > .field{ margin-top:8px; }
   input[type=text], input[type=number]{
     font-family:var(--ui); font-size:15px; font-variant-numeric:tabular-nums;
     background:var(--surface); color:var(--ink);

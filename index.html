@@ -272,6 +272,8 @@
   .field{ display:flex; flex-direction:column; gap:6px; min-width:0; }
   .field > label, .legend{ font-size:13px; font-weight:500; }
   .hint{ font-size:12.5px; margin:4px 0 0; color:var(--muted); }
+  /* a picture's zoom lives in its block, just under its buttons */
+  .field > .field{ margin-top:8px; }
   input[type=text], input[type=number]{
     font-family:var(--ui); font-size:15px; font-variant-numeric:tabular-nums;
     background:var(--surface); color:var(--ink);
@@ -576,7 +578,7 @@
         <div class="feedrow" id="feedRow"></div>
       </section>
       <div class="howto" id="howto">
-        <p>Drag the image to move it inside the frame, or focus it and use the arrow keys.</p>
+        <p>Drag any picture to move it inside its shape. The main one also moves with the arrow keys once the preview has focus.</p>
         <p>Paste a screenshot with &#8984;V, or drop a file anywhere on the preview.</p>
       </div>
     </div>
@@ -811,7 +813,7 @@
     panX:0, panY:0, safe:false, feed:false,
     palette:'kk', customStops:['#b9a4ff','#d9a2ff','#ffb27a'],
     logoSrc:null,  // null means the logo this tool ships with
-    phonePanX:0, phonePanY:0,   // framing of the second picture, as fractions of its box
+    phonePanX:0, phonePanY:0, pan3X:0, pan3Y:0, pan4X:0, pan4Y:0,   // framing of the extra pictures, as fractions of their box
     derived:{ frame:null, logo:null }   // colours read out of each uploaded asset
   };
 
@@ -840,15 +842,30 @@
   var CONTROLS = [
     { key:'layout', type:'custom', label:'Template', def:'collage', build:buildTemplatePicker,
       change:function(){ ensureFont(headFace()); } },
-    { key:'main', type:'image', slot:'main', big:true, persist:false,
+    // Pictures. Every picture a template uses gets the same four things, in
+    // the same place: Choose, Remove, Zoom (40-250%), and a drag on the
+    // preview to move it. The template's shape choice, where it has one,
+    // sits right under them.
+    { key:'main', type:'image', slot:'main', persist:false, button:'Choose', reset:'Remove',
       label:{ _:'Picture', launch:'Window picture', versus:'After picture', collage:'Main photo', talking:'Photo' },
-      button:'Choose an image', ids:{ pick:'pick', file:'file' } },
-    { key:'zoom', type:'range', label:'Zoom', min:40, max:250, unit:'%', def:1, persist:false,
-      hint:'Below 100% the whole picture shows, with a blurred copy filling the space around it.' },
-    { key:'second', type:'image', slot:'second', persist:false, for:['versus'], label:'Before picture',
-      button:'Choose before picture', reset:'Remove',
-      hint:'Or drop a file on the before picture. Drag on it to move the picture.' },
-    { key:'phoneZoom', type:'range', label:'Before zoom', min:100, max:250, unit:'%', def:1, persist:false, for:['versus'], id:'beforeZoom' },
+      ids:{ pick:'pick', file:'file' } },
+    { key:'zoom', type:'range', join:true, label:'Zoom', min:40, max:250, unit:'%', def:1, persist:false },
+    { key:'second', type:'image', slot:'second', persist:false, for:['versus', 'collage'], when:secondInUse,
+      label:{ _:'Picture', versus:'Before picture', collage:'Strip, top' }, button:'Choose', reset:'Remove' },
+    { key:'phoneZoom', type:'range', join:true, label:'Zoom', min:40, max:250, unit:'%', def:1, persist:false,
+      for:['versus', 'collage'], when:secondInUse },
+    { key:'third', type:'image', slot:'third', persist:false, for:['collage'], when:hasStrip,
+      label:'Strip, middle', button:'Choose', reset:'Remove' },
+    { key:'zoom3', type:'range', join:true, label:'Zoom', min:40, max:250, unit:'%', def:1, persist:false, for:['collage'], when:hasStrip },
+    { key:'fourth', type:'image', slot:'fourth', persist:false, for:['collage'], when:hasStrip,
+      label:'Strip, bottom', button:'Choose', reset:'Remove' },
+    { key:'zoom4', type:'range', join:true, label:'Zoom', min:40, max:250, unit:'%', def:1, persist:false, for:['collage'], when:hasStrip },
+    { key:'vsShape', type:'choice', for:['versus'], label:'Picture shape', def:'circle',
+      options:[['circle','Circle'], ['card','Card']] },
+    { key:'tpShape', type:'choice', for:['talking'], label:'Picture shape', def:'auto',
+      options:[['auto','Auto'], ['circle','Circle'], ['frame','Frame']],
+      hint:'Auto uses a circle for a photo and a frame in the picture\u2019s own shape for a screenshot, so none of it is cropped away.' },
+    { id:'pictureHint', type:'custom', build:buildPictureHint },
     { key:'line1', type:'text', label:{ _:'Top line', versus:'Headline', collage:'Headline', talking:'Headline' }, def:'TYPE YOUR', maxlength:32,
       pair:{ key:'line1Color', aria:'Headline colour' } },
     { key:'line1Color', type:'color', def:'#ffffff', paired:true },
@@ -866,13 +883,6 @@
 
     // Collage: the strip of three pictures between the words and the photo
     { key:'strip', type:'toggle', group:'Strip', for:['collage'], label:'Strip of three pictures', def:true },
-    { key:'second', type:'image', slot:'second', persist:false, group:'Strip', for:['collage'], when:hasStrip,
-      label:'Top picture', button:'Choose', reset:'Remove', id:'strip1' },
-    { key:'third', type:'image', slot:'third', persist:false, group:'Strip', for:['collage'], when:hasStrip,
-      label:'Middle picture', button:'Choose', reset:'Remove', id:'strip2' },
-    { key:'fourth', type:'image', slot:'fourth', persist:false, group:'Strip', for:['collage'], when:hasStrip,
-      label:'Bottom picture', button:'Choose', reset:'Remove', id:'strip3',
-      hint:'Or drop a file straight onto a panel of the strip.' },
 
     { key:'headFont', type:'font', group:'Text', label:'Headline font', def:'auto', list:function(){ return HEAD_FONTS; },
       change:function(){ ensureFont(headFace()); } },
@@ -899,22 +909,17 @@
     { key:'brush', type:'toggle', group:'Background', for:['collage'], label:'Brush bands and underline', def:true },
     { key:'paper2', type:'color', group:'Background', for:['talking'], label:'Paper', def:'#ecebe8' },
     { key:'arrow2', type:'toggle', group:'Background', for:['talking'], label:'Hand-drawn arrow', def:true },
-    { key:'tpShape', type:'choice', group:'Background', for:['talking'], label:'Photo shape', def:'auto',
-      options:[['auto','Auto'], ['circle','Circle'], ['frame','Frame']],
-      hint:'Auto uses a circle for a photo and a frame in the picture\u2019s own shape for a screenshot, so nothing is cropped away.' },
 
-    { key:'beforeLabel', type:'text', group:'Pictures', for:['versus'], label:'Before label', def:'BEFORE', maxlength:16, row:'labels' },
-    { key:'afterLabel', type:'text', group:'Pictures', for:['versus'], label:'After label', def:'AFTER', maxlength:16, row:'labels' },
-    { key:'vsShape', type:'choice', group:'Pictures', for:['versus'], label:'Shape', def:'circle',
-      options:[['circle','Circle'], ['card','Card']] },
-    { key:'vsDivider', type:'choice', group:'Pictures', for:['versus'], label:'Between them', def:'slash',
+    { key:'beforeLabel', type:'text', group:'Details', for:['versus'], label:'Before label', def:'BEFORE', maxlength:16, row:'labels' },
+    { key:'afterLabel', type:'text', group:'Details', for:['versus'], label:'After label', def:'AFTER', maxlength:16, row:'labels' },
+    { key:'vsDivider', type:'choice', group:'Details', for:['versus'], label:'Between them', def:'slash',
       options:[['slash','Slash'], ['split','Split field']] },
-    { key:'splitAngle', type:'range', group:'Pictures', for:['versus'], label:'Lean', min:0, max:20, unit:'°', def:8 },
+    { key:'splitAngle', type:'range', group:'Details', for:['versus'], label:'Lean', min:0, max:20, unit:'°', def:8 },
     // measured off the reference: its strip and photo lean about 16 degrees
     { key:'collageLean', type:'range', group:'Strip', for:['collage'], label:'Lean', min:0, max:24, unit:'°', def:16 },
     // the reference's headline is turned too: -3.7 degrees, measured off ILLEGAL
     { key:'collageTilt', type:'range', group:'Text', for:['collage'], label:'Headline tilt', min:-10, max:10, unit:'°', def:-4 },
-    { key:'arrow', type:'toggle', group:'Pictures', for:['versus'], label:'Curved arrow from one to the other', def:true },
+    { key:'arrow', type:'toggle', group:'Details', for:['versus'], label:'Curved arrow from one to the other', def:true },
     { key:'backdrop', type:'image', slot:'backdrop', persist:false, group:'Background', for:['versus'], label:'Background picture',
       button:'Choose background picture', reset:'Remove', id:'vsBackdrop',
       hint:'Replaces the textured field, darkened so the pictures stay in front.' },
@@ -924,6 +929,7 @@
     { key:'logoSize', type:'range', group:'Logo', label:'Size', min:50, max:160, unit:'%', def:1 }
   ];
   function hasStrip(){ return state.strip; }
+  function secondInUse(){ return state.layout !== 'collage' || state.strip; }
 
   // Defaults first, then whatever was saved - but only where the saved value
   // is the same kind of thing, so a stale or hand-edited entry cannot break
@@ -1144,11 +1150,19 @@
   // fractions of the canvas, measured from that corner.
   var STAMPS = { youtube:{ w:0.14, h:0.12 } };
 
-  var phoneHit = null;   // the phone's box on the preview, for routing a drop
   // The pan each picture was actually drawn at, after cover() stopped it at
   // the edge. A drag starts from here, so pulling past the edge and back
   // does not leave a dead zone to cross first.
-  var shown = { win:[0,0], phone:[0,0] };
+  var shown = { win:[0,0], phone:[0,0], third:[0,0], fourth:[0,0] };
+  // Every picture keeps its own framing: a zoom, and a pan offset. The main
+  // picture's pan is a fraction of the canvas; the others' a fraction of
+  // their own box's width, so a drag moves them as far as the pointer.
+  var FRAMING = {
+    main:   { zoom:'zoom',      x:'panX',      y:'panY',      shown:'win' },
+    second: { zoom:'phoneZoom', x:'phonePanX', y:'phonePanY', shown:'phone' },
+    third:  { zoom:'zoom3',     x:'pan3X',     y:'pan3Y',     shown:'third' },
+    fourth: { zoom:'zoom4',     x:'pan4X',     y:'pan4Y',     shown:'fourth' }
+  };
   // ---- templates --------------------------------------------------------
   // A template is a whole arrangement of the thumbnail. Every template draws
   // from the same content - headline, pictures, badge, kicker, palette - so
@@ -1622,7 +1636,7 @@
     }
     var ra = fillHalf(A, phoneImg, false, 'phone');
     fillHalf(B, frame === paintedFrame ? null : frame, true, 'win');
-    if (opts.preview) phoneHit = ra;
+    if (opts.preview) dropHits.push({ slot:'second', x:ra.x, y:ra.y, w:ra.w, h:ra.h });
     report.pictures = 1;
 
     // the slash along the cut
@@ -1758,7 +1772,7 @@
     if (d > 0) {
       b1 = drawPicture(c, c1.x, c1.y, d, phoneImg, false, 'phone', opts, k, st);
       b2 = drawPicture(c, c2.x, c2.y, d, frame === paintedFrame ? null : frame, true, 'win', opts, k, st);
-      if (opts.preview) phoneHit = { x:b1.x, y:b1.y, w:b1.w, h:b1.h };
+      if (opts.preview) dropHits.push({ slot:'second', x:b1.x, y:b1.y, w:b1.w, h:b1.h });
       report.pictures = (state.vsShape === 'card' ? 2*b1.w*b1.h : 2*Math.PI*d*d/4) / (W*H);
 
       if (state.arrow) {
@@ -1819,9 +1833,9 @@
     c.save();
     c.beginPath(); quad.forEach(function(q, i){ c[i ? 'lineTo' : 'moveTo'](q[0], q[1]); }); c.closePath(); c.clip();
     if (img) {
-      var r = cover(c, img, x0, y0, bw, bh, which === 'win' ? state.zoom : 1,
-                    which === 'win' ? state.panX*c.canvas.width : 0, which === 'win' ? state.panY*c.canvas.height : 0);
-      if (which === 'win') shown.win = r;
+      var f = FRAMING[which], main = which === 'main';
+      shown[f.shown] = cover(c, img, x0, y0, bw, bh, state[f.zoom],
+                             main ? state.panX*c.canvas.width : state[f.x]*bw, main ? state.panY*c.canvas.height : state[f.y]*bw);
     } else {
       paintStandIn(c, x0, y0, bw, bh, after, st);
       if (opts.preview && label) placeholderLabel(c, x0, y0, bw, bh, label, 'rgba(255,255,255,.8)');
@@ -1882,14 +1896,14 @@
         for (var i = 0; i < rows; i++) {
           var y0 = i*(rh + rg), y1 = y0 + rh;
           var q = [[sx(xa + gap, y0), y0], [sx(xa + sw, y0), y0], [sx(xa + sw, y1), y1], [sx(xa + gap, y1), y1]];
-          var bx = fillQuad(c, q, slots[i].img, i === 1, 'strip', opts, st, slots[i].label);
+          var bx = fillQuad(c, q, slots[i].img, i === 1, slots[i].slot, opts, st, slots[i].label);
           if (opts.preview) dropHits.push({ slot:slots[i].slot, x:bx.x, y:bx.y, w:bx.w, h:bx.h });
           picsArea += (sw - gap) * rh;
         }
       }
       var hx = xa + sw + gap;
       var hq = [[sx(hx, 0), 0], [W, 0], [W, H], [sx(hx, H), H]];
-      fillQuad(c, hq, frame === paintedFrame ? null : frame, true, 'win', opts, st, 'Drop the main photo');
+      fillQuad(c, hq, frame === paintedFrame ? null : frame, true, 'main', opts, st, 'Drop the main photo');
       picsArea += (W - hx) * H;
       // the words sit in the paper, clear of the leaning edge at its narrowest
       // The paper's right edge leans, so the room for a line depends on its
@@ -1909,13 +1923,13 @@
         for (var j = 0; j < cols; j++) {
           var x0 = j*(cw + cg), x1 = x0 + cw;
           var q2 = [[x0, sy(ya + gap, x0)], [x1, sy(ya + gap, x1)], [x1, sy(ya + sh, x1)], [x0, sy(ya + sh, x0)]];
-          var bx2 = fillQuad(c, q2, slots[j].img, j === 1, 'strip', opts, st, slots[j].label);
+          var bx2 = fillQuad(c, q2, slots[j].img, j === 1, slots[j].slot, opts, st, slots[j].label);
           if (opts.preview) dropHits.push({ slot:slots[j].slot, x:bx2.x, y:bx2.y, w:bx2.w, h:bx2.h });
           picsArea += cw * (sh - gap);
         }
       }
       var hy = ya + sh + gap;
-      fillQuad(c, [[0, sy(hy, 0)], [W, sy(hy, W)], [W, H], [0, H]], frame === paintedFrame ? null : frame, true, 'win', opts, st, 'Drop the main photo');
+      fillQuad(c, [[0, sy(hy, 0)], [W, sy(hy, W)], [W, H], [0, H]], frame === paintedFrame ? null : frame, true, 'main', opts, st, 'Drop the main photo');
       picsArea += W * (H - hy);
       textBox = { x0:g.left, x1:g.right, y0:Math.max(g.top, H*0.06), y1:ya - lean*W/2 - 0.03*H };
     }
@@ -2286,7 +2300,7 @@
 
   function render(c, p, opts){
     opts = opts || {};
-    if (opts.preview) { phoneHit = null; dropHits = []; }
+    if (opts.preview) dropHits = [];
     c.clearRect(0, 0, p.w, p.h);
     templateById(state.layout).draw(c, p, opts);
     if (opts.guides) drawGuides(c, p);
@@ -2711,6 +2725,11 @@
   }
 
   // ---- custom widgets the schema places ---------------------------------
+  function buildPictureHint(){
+    var p = hintEl('Drag a picture on the preview to move it, or drop a file on it to replace it. Below 100% zoom the whole picture shows, with a blurred copy around it.');
+    p.style.marginTop = '-8px';
+    return p;
+  }
   function buildTemplatePicker(){
     var f = el('fieldset', 'field seg');
     var lg = el('legend', 'legend', 'Template'); f.appendChild(lg);
@@ -2896,8 +2915,21 @@
 
 
   var layoutEls = document.querySelectorAll('input[name="layout"]');
+  // Pictures are listed in the order the template shows them: Before ->
+  // After puts its before picture first, everything else leads with the main.
+  function orderPictures(){
+    function field(key){
+      for (var i = 0; i < built.length; i++) if (built[i].ctl.key === key && !built[i].ctl.group && built[i].el) return built[i].el;
+    }
+    // each picture's zoom sits inside its picture's block, so it moves with it
+    var mainEl = field('main'), secEl = field('second');
+    if (!mainEl || !secEl) return;
+    if (state.layout === 'versus') fieldsEl.insertBefore(secEl, mainEl);
+    else fieldsEl.insertBefore(mainEl, secEl);
+  }
   function syncLayout(){
     var t = templateById(state.layout);
+    orderPictures();
     for (var i = 0; i < layoutEls.length; i++) layoutEls[i].checked = (layoutEls[i].value === t.id);
     document.getElementById('layoutHint').textContent = t.hint;
     syncControls();
@@ -2944,7 +2976,8 @@
   // phone's, or the before card's), and the backdrop's glow. Image controls
   // in the schema name a slot; the slot knows how to fill and empty it.
   var SLOTS = {
-    main:     { load:function(b){ loadBlob(b); },     clear:function(){},   has:function(){ return true; } },
+    main:     { load:function(b){ loadBlob(b); },     clear:function(){ frame = paintedFrame; state.panX = state.panY = 0; syncControls(); draw(); setStatus('Picture removed.', 'ok'); },
+                has:function(){ return frame !== paintedFrame; } },
     second:   { load:function(b){ loadPhone(b); },    clear:clearSecond,    has:function(){ return !!phoneImg; } },
     backdrop: { load:function(b){ loadBackdrop(b); }, clear:clearBackdrop,  has:function(){ return !!bgImg; } },
     third:    { load:function(b){ loadInto('img3', b); }, clear:function(){ img3 = null; syncControls(); draw(); }, has:function(){ return !!img3; } },
@@ -2955,7 +2988,7 @@
   function loadInto(which, blob){
     var img = new Image();
     img.onload = function(){
-      if (which === 'img3') img3 = img; else img4 = img;
+      if (which === 'img3') { img3 = img; state.pan3X = state.pan3Y = 0; } else { img4 = img; state.pan4X = state.pan4Y = 0; }
       syncControls(); draw(); setStatus('Picture loaded.', 'ok');
     };
     img.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
@@ -3037,30 +3070,21 @@
   var wrap = document.getElementById('wrap');
   ['dragenter','dragover'].forEach(function(ev){ wrap.addEventListener(ev, function(e){ e.preventDefault(); wrap.classList.add('dropping'); }); });
   ['dragleave','drop'].forEach(function(ev){ wrap.addEventListener(ev, function(e){ e.preventDefault(); wrap.classList.remove('dropping'); }); });
-  // A file dropped on the second picture - the phone, or the before card -
-  // goes there; anywhere else it becomes the main picture.
-  // phoneHit is the phone's box before its tilt; at a few degrees the
-  // corners it misses are too small to matter.
-  function overPhone(e){
-    // phoneHit is set by whichever template draws the second picture.
-    if (!phoneHit) return false;
-    var rect = cv.getBoundingClientRect();
-    var x = (e.clientX - rect.left) * cv.width / (rect.width || 1);
-    var y = (e.clientY - rect.top) * cv.height / (rect.height || 1);
-    return x >= phoneHit.x && x <= phoneHit.x + phoneHit.w && y >= phoneHit.y && y <= phoneHit.y + phoneHit.h;
-  }
-  // A drop lands on whatever panel is under it: the templates list their
-  // extra pictures' boxes in dropHits; anywhere else is the main picture.
-  function dropSlot(e){
+  // Which picture is under the pointer: the templates list their extra
+  // pictures' boxes in dropHits as they draw; anywhere else is the main one.
+  // Boxes are the shapes' bounds before any tilt; at a few degrees the
+  // corners they miss are too small to matter.
+  function hitAt(e){
     var rect = cv.getBoundingClientRect();
     var x = (e.clientX - rect.left) * cv.width / (rect.width || 1);
     var y = (e.clientY - rect.top) * cv.height / (rect.height || 1);
     for (var i = 0; i < dropHits.length; i++) {
       var h = dropHits[i];
-      if (x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h) return h.slot;
+      if (x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h) return h;
     }
-    return overPhone(e) ? 'second' : 'main';
+    return null;
   }
+  function dropSlot(e){ var h = hitAt(e); return h ? h.slot : 'main'; }
   wrap.addEventListener('drop', function(e){
     var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
     if (!f) return;
@@ -3079,32 +3103,27 @@
   // the frame rate, so drawing per event overruns the budget and the drag
   // stutters. Coalesce to one redraw per frame. The displayed size cannot
   // change mid-drag, so the rect is read once instead of on every move.
-  // A drag that starts on the phone reframes the phone's picture; anywhere
-  // else it reframes the main one. Each keeps its own position.
-  var dragging = false, onPhone = false, sx=0, sy=0, spx=0, spy=0, dragW=1, dragH=1, panRaf=0;
+  // A drag moves whichever picture it starts on, each by its own framing.
+  var dragging = false, dragSlot = 'main', sx=0, sy=0, spx=0, spy=0, dragW=1, dragH=1, panRaf=0;
   cv.addEventListener('pointerdown', function(e){
     dragging = true; cv.classList.add('dragging'); cv.setPointerCapture(e.pointerId);
-    onPhone = overPhone(e);
+    draw();   // refresh shown and dropHits: an export may have drawn at another size since
+    var hit = hitAt(e), p = current(), rect = cv.getBoundingClientRect(), f;
+    dragSlot = hit ? hit.slot : 'main'; f = FRAMING[dragSlot];
     sx = e.clientX; sy = e.clientY;
-    draw();   // refresh shown: an export may have drawn at another size since
-    var p = current();
-    if (onPhone) { spx = shown.phone[0]/phoneHit.w; spy = shown.phone[1]/phoneHit.w; }
-    else { spx = shown.win[0]/p.w; spy = shown.win[1]/p.h; }
-    var rect = cv.getBoundingClientRect();
-    dragW = rect.width || 1; dragH = rect.height || 1;
-    // Phone framing is stored against the phone's width, so a drag moves the
-    // picture exactly as far as the pointer on any size.
-    if (onPhone) { dragW = dragH = (rect.width || 1) * phoneHit.w / cv.width; }
+    if (dragSlot === 'main') {
+      spx = shown.win[0]/p.w; spy = shown.win[1]/p.h;
+      dragW = rect.width || 1; dragH = rect.height || 1;
+    } else {
+      spx = shown[f.shown][0]/hit.w; spy = shown[f.shown][1]/hit.w;
+      dragW = dragH = (rect.width || 1) * hit.w / cv.width;
+    }
   });
   cv.addEventListener('pointermove', function(e){
     if (!dragging) return;
-    if (onPhone) {
-      state.phonePanX = spx + (e.clientX - sx) / dragW;
-      state.phonePanY = spy + (e.clientY - sy) / dragH;
-    } else {
-      state.panX = spx + (e.clientX - sx) / dragW;
-      state.panY = spy + (e.clientY - sy) / dragH;
-    }
+    var f = FRAMING[dragSlot];
+    state[f.x] = spx + (e.clientX - sx) / dragW;
+    state[f.y] = spy + (e.clientY - sy) / dragH;
     if (panRaf) return;
     panRaf = requestAnimationFrame(function(){ panRaf = 0; draw(); });
   });

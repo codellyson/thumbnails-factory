@@ -1816,7 +1816,7 @@
     { name:'Tall',   test:function(a){ return a < 0.85; } },
     { name:'Square', test:function(a){ return a >= 0.85 && a <= 1.2; } }
   ];
-  var CHIP_H = 40, CHIP_MIN = 18, CHIP_MAX = 84;
+  var CHIP_H = 24, CHIP_MIN = 12, CHIP_MAX = 40;
   function sizeChip(el, p){
     var w = Math.max(CHIP_MIN, Math.min(CHIP_MAX, CHIP_H * (p.w/p.h)));
     var h = CHIP_H;

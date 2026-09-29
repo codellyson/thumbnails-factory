@@ -1,14 +1,15 @@
   <main>
-    <h1>Make a thumbnail for any platform</h1>
-    <p class="lede">Pick a size, drop in a picture, type a headline, download. Nothing
-    you open here is uploaded &mdash; it is all drawn in your own browser.</p>
-
-  <!-- A fieldset, so the twelve radios announce as one named group without ARIA. -->
-  <fieldset class="sizes" id="sizes">
-    <legend class="sr-only">Size</legend>
-  </fieldset>
-
+  <!-- The editor fills the window: sizes on the left, the preview in the
+       middle, the options on the right. Each column scrolls on its own, so
+       the page itself never has to. -->
   <div class="layout">
+    <aside class="rail" aria-label="Size">
+      <!-- A fieldset, so the twelve radios announce as one named group without ARIA. -->
+      <fieldset class="sizes" id="sizes">
+        <legend class="sr-only">Size</legend>
+      </fieldset>
+    </aside>
+
     <div class="stage">
       <h2 class="sr-only">Preview</h2>
       <div class="canvas-wrap" id="wrap">
@@ -56,6 +57,10 @@
     </div>
   </div>
 
+    <div class="about">
+      <h1>Make a thumbnail for any platform</h1>
+      <p class="lede">Pick a size, drop in a picture, type a headline, download. Nothing
+      you open here is uploaded &mdash; it is all drawn in your own browser.</p>
 
       <section class="seealso">
         <h2>What this does</h2>
@@ -75,6 +80,7 @@
         caption, so a headline centred in the frame ends up behind a share button.
         <a href="sizes/">See the safe area for every size</a>, drawn out.</p>
       </section>
+    </div>
 
     </main>
 <!--FOOTER-->

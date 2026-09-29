@@ -169,8 +169,12 @@ draws a stand-in timestamp there.
 Launch takes a **project tag**: a short outlined label above its headline, such as
 `JUSTDB`. Leave it empty for none.
 
-Only one panel is open at a time, and on a wide screen the preview stays in view
-while you scroll the controls.
+On a wide screen the tool is laid out like an editor and fits the window: sizes
+in a column on the left, the preview in the middle filling whatever room is left,
+and the options on the right. The two side columns scroll on their own, and the
+page itself doesn't have to; the page's own text sits below the editor. On a
+phone the columns stack, with the preview pinned to the top. Only one panel is
+open at a time.
 
 **Show at feed size** puts the thumbnail beside the editor at the size people
 actually meet it: 168 px wide in YouTube's suggested list, 124 px in a TikTok or

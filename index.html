@@ -509,7 +509,8 @@
   }
 
   @media (max-width:900px){
-    .layout{ grid-template-columns:minmax(0,1fr); }
+    .layout{ grid-template-columns:minmax(0,1fr); gap:16px; }
+    .sizes{ margin-bottom:0; }
     /* one scrolling row, so the preview is still on the first screen */
     .sizes{ flex-wrap:nowrap; overflow-x:auto; gap:0 18px; padding-bottom:14px; }
     .sizegroup{ flex:0 0 auto; }
@@ -530,13 +531,70 @@
     .stage:has(.feed:not([hidden])){ position:static; }
   }
 
+  /* ---- the editor: one window, three columns, nothing to scroll ----
+     Sizes on the left, the preview in the middle filling whatever room is
+     left, the options on the right. Each side column scrolls on its own; the
+     preview never moves. The page's own words wait below the fold for anyone
+     who wants them. */
+  .rail{ min-width:0; }
+  .sizes legend + .sizegroup h2{ margin-top:0; }
+  @media (min-width:901px){
+    body.editor{ padding:0; }
+    body.editor .shell{ max-width:none; }
+    body.editor header{ padding:8px 20px; min-height:56px; margin:0; }
+    body.editor .layout{
+      height:calc(100dvh - 57px);   /* the header: 56 and its rule */
+      grid-template-columns:232px minmax(0,1fr) 348px; gap:0; align-items:stretch;
+      border-bottom:1px solid var(--line);
+    }
+    body.editor .rail{ overflow-y:auto; overscroll-behavior:contain; border-inline-end:1px solid var(--line); padding:14px 12px 20px; }
+    body.editor .sizes{ flex-direction:column; flex-wrap:nowrap; gap:14px; border:0; padding:0; margin:0; }
+    body.editor .sizegroup + .sizegroup{ border-inline-start:0; padding-inline-start:0; border-top:1px solid var(--line); padding-top:12px; }
+    body.editor .sizegroup h2{ margin:0 0 6px; padding-inline:8px; }
+    body.editor .tiles{ flex-direction:column; flex-wrap:nowrap; gap:2px; max-width:none; }
+    /* a size is a row: its shape, then its name over its pixels */
+    body.editor .tile{
+      width:auto; display:grid; grid-template-columns:44px minmax(0,1fr); grid-template-rows:auto auto;
+      column-gap:10px; row-gap:1px; align-items:center; padding:7px 8px; border-radius:10px;
+      transition:background-color .14s linear;
+    }
+    body.editor .tile .chipbox{ grid-row:1 / span 2; height:28px; width:44px; align-items:center; justify-content:center; }
+    body.editor .tile .name{ font-size:13.5px; }
+    body.editor .tile .size{ font-size:11.5px; }
+    @media (hover: hover){ body.editor .tile:hover{ background:var(--cream); } }
+    body.editor .tile:has(input:checked){ background:var(--cream); }
+    body.editor .tile.custom{ grid-template-columns:44px minmax(0,1fr); }
+    body.editor .tile.custom .name{ display:block; }
+    body.editor .customgroup .row{ width:auto; padding:6px 8px 0; }
+
+    /* the preview takes every pixel the columns leave */
+    body.editor .stage{ position:static; display:flex; flex-direction:column; min-height:0; padding:16px 20px 12px; }
+    body.editor .canvas-wrap{ flex:1 1 0; min-height:0; padding:24px; border-radius:var(--r-well); }
+    body.editor canvas#cv{ max-width:100%; max-height:100%; }
+    body.editor .stage:has(.feed:not([hidden])) canvas{ max-height:100%; }
+    body.editor .readout{ flex:none; padding-top:10px; }
+    body.editor .howto{ flex:none; margin-top:4px; max-width:none; font-size:13px; }
+    body.editor .howto p{ display:inline; }
+    body.editor .howto p + p::before{ content:" "; }
+    body.editor .feed{ flex:none; margin-top:12px; padding:12px 14px; }
+    body.editor .stage:has(.feed:not([hidden])) .howto{ display:none; }
+
+    /* the options scroll inside their column; Download stays at its foot */
+    body.editor .bench{ overflow-y:auto; overscroll-behavior:contain; border-radius:0; padding:18px 20px 0; gap:18px; }
+    body.editor .actions{ margin:auto -20px 0; border-radius:0; }
+
+    body.editor .about{ padding:40px 20px 0; max-width:1240px; margin:0 auto; }
+    body.editor footer{ margin:56px 20px 0; padding-bottom:40px; }
+  }
+  .about h1{ margin-top:0; }
+
   @media (prefers-reduced-motion:reduce){
     *{ transition-duration:0ms !important; animation-duration:0ms !important; }
     .btn:active:not(:disabled){ transform:none; }
   }
 </style>
 </head>
-<body>
+<body class="editor">
 
 <div class="shell">
   <header>
@@ -550,16 +608,17 @@
     </nav>
   </header>
   <main>
-    <h1>Make a thumbnail for any platform</h1>
-    <p class="lede">Pick a size, drop in a picture, type a headline, download. Nothing
-    you open here is uploaded &mdash; it is all drawn in your own browser.</p>
-
-  <!-- A fieldset, so the twelve radios announce as one named group without ARIA. -->
-  <fieldset class="sizes" id="sizes">
-    <legend class="sr-only">Size</legend>
-  </fieldset>
-
+  <!-- The editor fills the window: sizes on the left, the preview in the
+       middle, the options on the right. Each column scrolls on its own, so
+       the page itself never has to. -->
   <div class="layout">
+    <aside class="rail" aria-label="Size">
+      <!-- A fieldset, so the twelve radios announce as one named group without ARIA. -->
+      <fieldset class="sizes" id="sizes">
+        <legend class="sr-only">Size</legend>
+      </fieldset>
+    </aside>
+
     <div class="stage">
       <h2 class="sr-only">Preview</h2>
       <div class="canvas-wrap" id="wrap">
@@ -607,6 +666,10 @@
     </div>
   </div>
 
+    <div class="about">
+      <h1>Make a thumbnail for any platform</h1>
+      <p class="lede">Pick a size, drop in a picture, type a headline, download. Nothing
+      you open here is uploaded &mdash; it is all drawn in your own browser.</p>
 
       <section class="seealso">
         <h2>What this does</h2>
@@ -626,6 +689,7 @@
         caption, so a headline centred in the frame ends up behind a share button.
         <a href="sizes/">See the safe area for every size</a>, drawn out.</p>
       </section>
+    </div>
 
     </main>
   <footer>
@@ -2458,7 +2522,7 @@
     { name:'Tall',   test:function(a){ return a < 0.85; } },
     { name:'Square', test:function(a){ return a >= 0.85 && a <= 1.2; } }
   ];
-  var CHIP_H = 40, CHIP_MIN = 18, CHIP_MAX = 84;
+  var CHIP_H = 24, CHIP_MIN = 12, CHIP_MAX = 40;
   function sizeChip(el, p){
     var w = Math.max(CHIP_MIN, Math.min(CHIP_MAX, CHIP_H * (p.w/p.h)));
     var h = CHIP_H;

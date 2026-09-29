@@ -1609,7 +1609,18 @@
   // Stand-ins that look like pictures, so the template reads as finished
   // before anything is dropped: a flat, cool, washed-out before and a lit,
   // saturated after in the palette's colours.
-  function paintStandIn(c, x, y, w, h, after, st){
+  // A stand-in follows its picture's zoom like a photo would, so resizing an
+  // empty picture from its corners visibly does something; below 100% the
+  // room around it holds a darkened copy, as the blurred copy does for photos.
+  function paintStandIn(c, x, y, w, h, after, st, zoom){
+    if (!zoom || zoom === 1) return paintStandIn0(c, x, y, w, h, after, st);
+    if (zoom < 1) { paintStandIn0(c, x, y, w, h, after, st); c.fillStyle = 'rgba(0,0,0,.4)'; c.fillRect(x, y, w, h); }
+    c.save();
+    c.translate(x + w/2, y + h/2); c.scale(zoom, zoom); c.translate(-(x + w/2), -(y + h/2));
+    paintStandIn0(c, x, y, w, h, after, st);
+    c.restore();
+  }
+  function paintStandIn0(c, x, y, w, h, after, st){
     var g = c.createLinearGradient(x, y, x + w, y + h);
     if (after) { g.addColorStop(0, st[0]); g.addColorStop(0.55, st[1]); g.addColorStop(1, st[2]); }
     else { g.addColorStop(0, '#6e7278'); g.addColorStop(1, '#3d4046'); }
@@ -1648,7 +1659,7 @@
                                   which === 'win' ? state.panX*c.canvas.width : state.phonePanX*w,
                                   which === 'win' ? state.panY*c.canvas.height : state.phonePanY*w);
     else {
-      paintStandIn(c, x, y, w, h, after, st);
+      paintStandIn(c, x, y, w, h, after, st, which === 'win' ? state.zoom : state.phoneZoom);
       if (opts.preview) placeholderLabel(c, x, y, w, h, after ? 'Drop the after picture' : 'Drop the before picture', 'rgba(255,255,255,.75)');
     }
     c.restore();
@@ -1777,7 +1788,7 @@
       if (img) shown[which] = cover(c, img, x0, y0, bw, bh, which === 'win' ? state.zoom : state.phoneZoom,
                                     which === 'win' ? state.panX*W : state.phonePanX*bw, which === 'win' ? state.panY*H : state.phonePanY*bw);
       else {
-        paintStandIn(c, x0, y0, bw, bh, after, st);
+        paintStandIn(c, x0, y0, bw, bh, after, st, which === 'win' ? state.zoom : state.phoneZoom);
         if (opts.preview) placeholderLabel(c, x0, y0, bw, bh*0.8, after ? 'Drop the after picture' : 'Drop the before picture', 'rgba(255,255,255,.75)');
       }
       c.restore();
@@ -2028,7 +2039,7 @@
       shown[f.shown] = cover(c, img, x0, y0, bw, bh, state[f.zoom],
                              main ? state.panX*c.canvas.width : state[f.x]*bw, main ? state.panY*c.canvas.height : state[f.y]*bw);
     } else {
-      paintStandIn(c, x0, y0, bw, bh, after, st);
+      paintStandIn(c, x0, y0, bw, bh, after, st, state[FRAMING[which].zoom]);
       if (opts.preview && label) placeholderLabel(c, x0, y0, bw, bh, label, 'rgba(255,255,255,.8)');
     }
     c.restore();
@@ -2327,7 +2338,7 @@
       c.save(); outline(ring); c.clip();
       if (has) shown.win = cover(c, frame, cx - hw, cy - hh, 2*hw, 2*hh, state.zoom, state.panX*W, state.panY*H);
       else {
-        paintStandIn(c, cx - hw, cy - hh, 2*hw, 2*hh, true, st);
+        paintStandIn(c, cx - hw, cy - hh, 2*hw, 2*hh, true, st, state.zoom);
         if (opts.preview) placeholderLabel(c, cx - hw, cy - hh, 2*hw, 2*hh, 'Drop the photo', 'rgba(255,255,255,.8)');
       }
       c.restore();
@@ -3598,9 +3609,15 @@
       });
       return;
     }
+    if (applyDrag(e)) redrawSoon();
+  });
+  // One step of a drag, from wherever the pointer is now. Called on every
+  // move and once more on release, so a quick flick lands where it ended
+  // rather than at the last move event the browser happened to send.
+  function applyDrag(e){
     // past a few pixels it is a drag, not a click
     if (!drag.moved && Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) > 4) drag.moved = true;
-    if (!drag.moved) return;
+    if (!drag.moved) return false;
     if (drag.mode === 'pan') {
       // a turned picture's photo moves along the picture's own axes
       var ddx = (e.clientX - drag.sx) / drag.scale, ddy = (e.clientY - drag.sy) / drag.scale, ca = Math.cos(-drag.angle), sa = Math.sin(-drag.angle);
@@ -3623,11 +3640,12 @@
     } else {
       state.moves[drag.key] = [drag.start[0] + (e.clientX - drag.sx) / drag.rw, drag.start[1] + (e.clientY - drag.sy) / drag.rh].concat(drag.start.slice(2));
     }
-    redrawSoon();
-  });
+    return true;
+  }
   ['pointerup','pointercancel'].forEach(function(evName){
-    cv.addEventListener(evName, function(){
+    cv.addEventListener(evName, function(e){
       if (!drag) return;
+      if (evName === 'pointerup') applyDrag(e);
       var d = drag; drag = null;
       cv.classList.remove('dragging');
       if (panRaf) { cancelAnimationFrame(panRaf); panRaf = 0; }

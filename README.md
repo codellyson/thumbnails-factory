@@ -76,7 +76,9 @@ Every picture a template uses is listed at the top of the panel, in the order th
 template shows it, and each gets the same controls: **Choose**, **Remove**, a
 **Zoom** from 40% to 250% inside its own block, and a drag on the preview to move
 it. Below 100% the whole picture shows, with a blurred copy filling the room
-around it. Dropping a file on a picture replaces that picture. Where a template
+around it. Clicking a picture on the preview opens the file picker for it (a
+click that moves is a drag instead), and dropping a file on a picture replaces
+that picture. Where a template
 offers a shape (Before → After: circle or card; Talking point: auto, circle or
 frame), **Picture shape** sits right under its pictures.
 

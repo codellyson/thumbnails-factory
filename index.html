@@ -578,7 +578,7 @@
         <div class="feedrow" id="feedRow"></div>
       </section>
       <div class="howto" id="howto">
-        <p>Drag any picture to move it inside its shape. The main one also moves with the arrow keys once the preview has focus.</p>
+        <p>Click a picture to choose a file for it, or drag it to move it inside its shape. With the preview focused, Enter picks the main picture and the arrow keys move it.</p>
         <p>Paste a screenshot with &#8984;V, or drop a file anywhere on the preview.</p>
       </div>
     </div>
@@ -1417,6 +1417,7 @@
       : fitBox(g, g.left, textTop, g.right, capTop - (tagH ? tagH + 0.035*H : 0) - 0.05*H, winAspect, 0.94);
     if (!g.wide) r.x = g.left;   // stacked: on the words' edge, not centred
     if (r.w > 0) drawLaunchWindow(c, r.x, r.y, r.w, r.h, state.launchTilt, state.panX*W, state.panY*H);
+    if (opts.preview && r.w > 0) dropHits.push({ slot:'main', x:r.x, y:r.y, w:r.w, h:r.h });
   }
 
   // Before -> After, built to docs/quality-bar.md. Two big pictures -
@@ -1635,8 +1636,11 @@
       return { x:x0, y:y0, w:bw, h:bh };
     }
     var ra = fillHalf(A, phoneImg, false, 'phone');
-    fillHalf(B, frame === paintedFrame ? null : frame, true, 'win');
-    if (opts.preview) dropHits.push({ slot:'second', x:ra.x, y:ra.y, w:ra.w, h:ra.h });
+    var rb = fillHalf(B, frame === paintedFrame ? null : frame, true, 'win');
+    if (opts.preview) {
+      dropHits.push({ slot:'second', x:ra.x, y:ra.y, w:ra.w, h:ra.h, poly:A });
+      dropHits.push({ slot:'main', x:rb.x, y:rb.y, w:rb.w, h:rb.h, poly:B });
+    }
     report.pictures = 1;
 
     // the slash along the cut
@@ -1784,7 +1788,10 @@
     if (d > 0) {
       b1 = drawPicture(c, c1.x, c1.y, d, phoneImg, false, 'phone', opts, k, st);
       b2 = drawPicture(c, c2.x, c2.y, d, frame === paintedFrame ? null : frame, true, 'win', opts, k, st);
-      if (opts.preview) dropHits.push({ slot:'second', x:b1.x, y:b1.y, w:b1.w, h:b1.h });
+      if (opts.preview) {
+        dropHits.push({ slot:'second', x:b1.x, y:b1.y, w:b1.w, h:b1.h });
+        dropHits.push({ slot:'main', x:b2.x, y:b2.y, w:b2.w, h:b2.h });
+      }
       report.pictures = (state.vsShape === 'card' ? 2*b1.w*b1.h : 2*Math.PI*d*d/4) / (W*H);
 
       if (state.arrow) {
@@ -1805,7 +1812,7 @@
   // palette's colour, a brushed underline; then a leaning strip of three
   // pictures; then one big photo to the edge. Tall frames stack the three
   // bands top to bottom.
-  var dropHits = [];   // preview only: [{ slot, x, y, w, h }] for routing a drop
+  var dropHits = [];   // preview only: [{ slot, x, y, w, h, poly? }] for routing a drop, drag or click
 
   // A rough band with a brushed edge. The wobble is a sum of sines, so it is
   // the same on every render and every size.
@@ -1854,7 +1861,7 @@
       if (opts.preview && label) placeholderLabel(c, x0, y0, bw, bh, label, 'rgba(255,255,255,.8)');
     }
     c.restore();
-    return { x:x0, y:y0, w:bw, h:bh };
+    return { x:x0, y:y0, w:bw, h:bh, poly:quad };
   }
 
   // Luminance contrast between two colours, for choosing an ink that reads.
@@ -1910,13 +1917,13 @@
           var y0 = i*(rh + rg), y1 = y0 + rh;
           var q = [[sx(xa + gap, y0), y0], [sx(xa + sw, y0), y0], [sx(xa + sw, y1), y1], [sx(xa + gap, y1), y1]];
           var bx = fillQuad(c, q, slots[i].img, i === 1, slots[i].slot, opts, st, slots[i].label);
-          if (opts.preview) dropHits.push({ slot:slots[i].slot, x:bx.x, y:bx.y, w:bx.w, h:bx.h });
+          if (opts.preview) dropHits.push({ slot:slots[i].slot, x:bx.x, y:bx.y, w:bx.w, h:bx.h, poly:bx.poly });
           picsArea += (sw - gap) * rh;
         }
       }
       var hx = xa + sw + gap;
       var hq = [[sx(hx, 0), 0], [W, 0], [W, H], [sx(hx, H), H]];
-      fillQuad(c, hq, frame === paintedFrame ? null : frame, true, 'main', opts, st, 'Drop the main photo');
+      var hb = fillQuad(c, hq, frame === paintedFrame ? null : frame, true, 'main', opts, st, 'Drop the main photo');
       picsArea += (W - hx) * H;
       // the words sit in the paper, clear of the leaning edge at its narrowest
       // The paper's right edge leans, so the room for a line depends on its
@@ -1937,16 +1944,17 @@
           var x0 = j*(cw + cg), x1 = x0 + cw;
           var q2 = [[x0, sy(ya + gap, x0)], [x1, sy(ya + gap, x1)], [x1, sy(ya + sh, x1)], [x0, sy(ya + sh, x0)]];
           var bx2 = fillQuad(c, q2, slots[j].img, j === 1, slots[j].slot, opts, st, slots[j].label);
-          if (opts.preview) dropHits.push({ slot:slots[j].slot, x:bx2.x, y:bx2.y, w:bx2.w, h:bx2.h });
+          if (opts.preview) dropHits.push({ slot:slots[j].slot, x:bx2.x, y:bx2.y, w:bx2.w, h:bx2.h, poly:bx2.poly });
           picsArea += cw * (sh - gap);
         }
       }
       var hy = ya + sh + gap;
-      fillQuad(c, [[0, sy(hy, 0)], [W, sy(hy, W)], [W, H], [0, H]], frame === paintedFrame ? null : frame, true, 'main', opts, st, 'Drop the main photo');
+      var hb = fillQuad(c, [[0, sy(hy, 0)], [W, sy(hy, W)], [W, H], [0, H]], frame === paintedFrame ? null : frame, true, 'main', opts, st, 'Drop the main photo');
       picsArea += W * (H - hy);
       textBox = { x0:g.left, x1:g.right, y0:Math.max(g.top, H*0.06), y1:ya - lean*W/2 - 0.03*H };
     }
     report.pictures = picsArea / (W*H);
+    if (opts.preview && hb) dropHits.push({ slot:'main', x:hb.x, y:hb.y, w:hb.w, h:hb.h, poly:hb.poly });
 
     // the headline, stacked as tight as sets it biggest, centred in the paper
     var colW = textBox.x1 - textBox.x0, room = textBox.y1 - textBox.y0;
@@ -2137,6 +2145,7 @@
     outline(0); c.fillStyle = '#ffffff'; c.fill();
     c.restore();
     c.save(); outline(ring); c.clip();
+    if (opts.preview) dropHits.push({ slot:'main', x:cx - hw, y:cy - hh, w:2*hw, h:2*hh });
     if (has) shown.win = cover(c, frame, cx - hw, cy - hh, 2*hw, 2*hh, state.zoom, state.panX*W, state.panY*H);
     else {
       paintStandIn(c, cx - hw, cy - hh, 2*hw, 2*hh, true, st);
@@ -3093,9 +3102,19 @@
     var y = (e.clientY - rect.top) * cv.height / (rect.height || 1);
     for (var i = 0; i < dropHits.length; i++) {
       var h = dropHits[i];
-      if (x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h) return h;
+      if (x < h.x || x > h.x + h.w || y < h.y || y > h.y + h.h) continue;
+      if (!h.poly || inPoly(h.poly, x, y)) return h;
     }
     return null;
+  }
+  // Even-odd point in polygon, for the slanted halves and panels.
+  function inPoly(poly, x, y){
+    var inside = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      var a = poly[i], b = poly[j];
+      if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
+    }
+    return inside;
   }
   function dropSlot(e){ var h = hitAt(e); return h ? h.slot : 'main'; }
   wrap.addEventListener('drop', function(e){
@@ -3117,13 +3136,13 @@
   // stutters. Coalesce to one redraw per frame. The displayed size cannot
   // change mid-drag, so the rect is read once instead of on every move.
   // A drag moves whichever picture it starts on, each by its own framing.
-  var dragging = false, dragSlot = 'main', sx=0, sy=0, spx=0, spy=0, dragW=1, dragH=1, panRaf=0;
+  var dragging = false, dragSlot = 'main', clickSlot = null, sx=0, sy=0, spx=0, spy=0, dragW=1, dragH=1, panRaf=0;
   cv.addEventListener('pointerdown', function(e){
     dragging = true; cv.classList.add('dragging'); cv.setPointerCapture(e.pointerId);
     draw();   // refresh shown and dropHits: an export may have drawn at another size since
     var hit = hitAt(e), p = current(), rect = cv.getBoundingClientRect(), f;
     dragSlot = hit ? hit.slot : 'main'; f = FRAMING[dragSlot];
-    sx = e.clientX; sy = e.clientY;
+    sx = e.clientX; sy = e.clientY; clickSlot = hit ? hit.slot : null;
     if (dragSlot === 'main') {
       spx = shown.win[0]/p.w; spy = shown.win[1]/p.h;
       dragW = rect.width || 1; dragH = rect.height || 1;
@@ -3134,6 +3153,8 @@
   });
   cv.addEventListener('pointermove', function(e){
     if (!dragging) return;
+    // past a few pixels it is a drag, not a click
+    if (clickSlot && Math.abs(e.clientX - sx) + Math.abs(e.clientY - sy) > 4) clickSlot = null;
     var f = FRAMING[dragSlot];
     state[f.x] = spx + (e.clientX - sx) / dragW;
     state[f.y] = spy + (e.clientY - sy) / dragH;
@@ -3158,7 +3179,21 @@
       dragging = false; cv.classList.remove('dragging');
       if (panRaf) { cancelAnimationFrame(panRaf); panRaf = 0; }
       draw();   // land on the exact final position
+      // a click that didn't move opens the picker for the picture it landed on
+      if (ev === 'pointerup' && clickSlot) pickFor(clickSlot);
+      clickSlot = null;
     });
+  });
+  // The same file input the slot's Choose button opens, so a picture
+  // chosen either way loads the same way.
+  function pickFor(slot){
+    var ctl = CONTROLS.filter(function(q){ return q.type === 'image' && q.slot === slot; })[0];
+    var input = ctl && document.getElementById((ctl.ids && ctl.ids.file) || ((ctl.id || ctl.key) + 'File'));
+    if (input) input.click();
+  }
+  // Enter on the focused preview picks the main picture.
+  cv.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); pickFor('main'); }
   });
 
   // ---- download ---------------------------------------------------------

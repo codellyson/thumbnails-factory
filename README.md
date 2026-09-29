@@ -73,14 +73,34 @@ function that reads `state`.
 ## Pictures: the same controls for every one
 
 Every picture a template uses is listed at the top of the panel, in the order the
-template shows it, and each gets the same controls: **Choose**, **Remove**, a
-**Zoom** from 40% to 250% inside its own block, and a drag on the preview to move
-it. Below 100% the whole picture shows, with a blurred copy filling the room
-around it. Clicking a picture on the preview opens the file picker for it (a
-click that moves is a drag instead), and dropping a file on a picture replaces
-that picture. Where a template
+template shows it, and each gets the same controls: **Choose**, **Remove**, and a
+**Zoom** from 40% to 250% inside its own block. Below 100% the whole picture
+shows, with a blurred copy filling the room around it. Clicking a picture on the
+preview opens the file picker for it, and dropping a file on a picture replaces
+that picture. Double-clicking a picture that holds a photo switches to adjusting
+it: drags then move the photo inside its frame, until a click lands elsewhere or
+Esc is pressed. Where a template
 offers a shape (Before → After: circle or card; Talking point: auto, circle or
 frame), **Picture shape** sits right under its pictures.
+
+## Moving things
+
+Everything a template draws on top of its background can be dragged on the
+preview: the headline, each picture, the logo, arrows, the BEFORE and AFTER
+labels, and Launch's kicker, project tag and sticker. The element is outlined
+while selected, and the arrow keys nudge it (Shift for bigger steps). A label
+moves with its picture, and so does Launch's sticker with its window, as well as
+on its own.
+
+A move is kept per template and per shape of frame, as a fraction of the frame,
+so it survives a change of size within that shape; a wide layout and a stacked
+tall one are arranged differently, so each keeps its own. **Reset positions**,
+under the template picker, appears when something has moved and puts that
+template back.
+
+The pointer finds an element by its paint, not a box around it: each element is
+drawn again, small and on its own, into a mask, and a click takes the topmost
+element with paint under it.
 
 ## Controls: defined once
 
@@ -315,8 +335,9 @@ the target dimensions, so nothing else needs changing.
 - Pick a size from the chart at the top; the tiles are drawn at true proportion,
   so the shape tells you what you are about to make
 - Choose an image, drag one onto the canvas, or paste a screenshot with ⌘V
-- Drag the canvas to reposition the frame; the offset is stored as a fraction,
-  so it survives a switch between presets
-- Zoom adjusts the crop of the main picture
+- Drag anything on the preview to move it; double-click a picture to move the
+  photo inside its frame. Positions are stored as fractions, so they survive a
+  switch between presets
+- Zoom adjusts the crop of each picture
 - Headline text, colours, your logo, the selected platform, and any custom size
   persist in `localStorage`

@@ -172,6 +172,7 @@
     palette:'kk', customStops:['#b9a4ff','#d9a2ff','#ffb27a'],
     logoSrc:null,  // null means the logo this tool ships with
     phonePanX:0, phonePanY:0, pan3X:0, pan3Y:0, pan4X:0, pan4Y:0,   // framing of the extra pictures, as fractions of their box
+    moves:{},   // where each element was dragged to: { 'layout.shape.element': [dx, dy] } as fractions of the frame
     derived:{ frame:null, logo:null }   // colours read out of each uploaded asset
   };
 
@@ -314,6 +315,7 @@
       if (saved.logoSrc) state.logoSrc = saved.logoSrc;
       if (saved.derived) state.derived = saved.derived;
       if (typeof saved.feed === 'boolean') state.feed = saved.feed;
+      if (saved.moves && typeof saved.moves === 'object') state.moves = saved.moves;
       remembered().forEach(function(ctl){
         var v = saved[ctl.key];
         if (typeof v === typeof ctl.def && (typeof v !== 'number' || isFinite(v))) state[ctl.key] = v;
@@ -573,6 +575,11 @@
   // The kicker: a corner bracket in the accent and two short monospace lines
   // inside it, say a series and an episode. With both lines empty the logo
   // takes its place. Returns the height it used.
+  // How tall the kicker stands, so the layout can make room before it draws.
+  function kickerHeight(k){
+    if (state.kick1.trim() || state.kick2.trim()) return 100*k;
+    return (state.logo && ready.logo) ? 88*k*state.logoSize : 0;
+  }
   function drawKicker(c, x, y, k){
     var a = state.kick1.trim().toUpperCase(), b = state.kick2.trim().toUpperCase();
     if (!a && !b) {
@@ -683,14 +690,31 @@
   // an arrow after the first line, and the screenshot in a window framed in
   // the accent, with an optional sticker in its title bar.
   var LAUNCH_BAR = 0.07, LAUNCH_EDGE = 0.014;
-  function drawLaunchWindow(c, x, y, w, h, deg, panX, panY){
+  // part: 'window' draws the window, 'sticker' only the sticker in its title
+  // bar - the sticker moves on its own, so it is drawn as its own element.
+  function drawLaunchWindow(c, x, y, w, h, deg, panX, panY, part){
     var A = accent(), bw = Math.max(3, w*LAUNCH_EDGE), r = w*0.035, bar = w*LAUNCH_BAR;
     c.save();
     c.translate(x + w/2, y + h/2); c.rotate(deg*Math.PI/180); c.translate(-w/2, -h/2);
+    var ix = bw, iy = bw, iw = w - 2*bw, ih = h - 2*bw;
+    var label = state.sticker.trim().toUpperCase();
+    if (part === 'sticker') {
+      if (label) {
+        var sh = bar*0.62, fpx = sh*0.5;
+        c.font = monoFont(fpx);
+        var sw = c.measureText(label).width + fpx*0.1*label.length + sh*0.9;
+        var sx = ix + iw - bar*0.25 - sw, sy = iy + (bar - sh)/2;
+        roundRect(c, sx, sy, sw, sh, sh*0.14); c.fillStyle = state.stickerColor; c.fill();
+        c.fillStyle = inkOn(state.stickerColor, 110); c.textBaseline = 'middle';
+        spaced(c, label, sx + sh*0.45, sy + sh*0.55, fpx*0.1);
+        c.textBaseline = 'alphabetic';
+      }
+      c.restore();
+      return;
+    }
     c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = w*0.06; c.shadowOffsetY = w*0.02;
     roundRect(c, 0, 0, w, h, r); c.fillStyle = A; c.fill();
     noShadow(c);
-    var ix = bw, iy = bw, iw = w - 2*bw, ih = h - 2*bw;
     c.save();
     roundRect(c, ix, iy, iw, ih, r - bw); c.clip();
     c.fillStyle = '#1c1b21'; c.fillRect(ix, iy, iw, ih);
@@ -702,17 +726,7 @@
       c.beginPath(); c.arc(ix + bar*0.5 + i*lr*3.1, iy + bar/2, lr, 0, Math.PI*2);
       c.fillStyle = col; c.fill();
     });
-    var label = state.sticker.trim().toUpperCase();
-    if (label) {
-      var sh = bar*0.62, fpx = sh*0.5;
-      c.font = monoFont(fpx);
-      var sw = c.measureText(label).width + fpx*0.1*label.length + sh*0.9;
-      var sx = ix + iw - bar*0.25 - sw, sy = iy + (bar - sh)/2;
-      roundRect(c, sx, sy, sw, sh, sh*0.14); c.fillStyle = state.stickerColor; c.fill();
-      c.fillStyle = inkOn(state.stickerColor, 110); c.textBaseline = 'middle';
-      spaced(c, label, sx + sh*0.45, sy + sh*0.55, fpx*0.1);
-      c.textBaseline = 'alphabetic';
-    } else if (state.winTitle) {
+    if (!label && state.winTitle) {
       c.font = monoFont(bar*0.3); c.fillStyle = 'rgba(255,255,255,.6)'; c.textBaseline = 'middle';
       c.fillText(state.winTitle, ix + bar*0.5 + lr*9.5, iy + bar/2);
       c.textBaseline = 'alphabetic';
@@ -732,7 +746,8 @@
       c.fillStyle = 'rgba(255,255,255,.07)'; c.fill();
     }
 
-    var kh = drawKicker(c, g.left, g.top, k);
+    var kh = kickerHeight(k);
+    if (kh) place(c, g, opts, 'kicker', function(c){ drawKicker(c, g.left, g.top, k); });
     var textTop = g.top + (kh ? kh + 0.06*H : 0);
     var colR = g.wide ? g.left + (g.right - g.left)*0.5 : g.right;
     var maxW = colR - g.left;
@@ -749,24 +764,28 @@
     // Wide: the words centre on the same band as the window - the full safe
     // height - and only drop when the kicker is in the way.
     var capTop = g.wide ? Math.max(textTop, g.top + (g.bottom - g.top - blockH)/2) : g.bottom - blockH;
-    if (tagH) { drawTag(c, g.left, capTop, tagH); capTop += tagH + 0.035*H; }
-    var base = capTop;
-    if (l1) {
-      base += px1*0.74;
-      tightFont(c, px1); c.fillStyle = state.line1Color;
-      c.fillText(l1, g.left, base);
-      var after = c.measureText(l1).width;
-      looseFont(c);
-      drawArrow(c, g.left + after + px1*0.28, base - px1*0.36, px1, state.line1Color);
+    if (tagH) {
+      var tagY = capTop;
+      place(c, g, opts, 'tag', function(c){ drawTag(c, g.left, tagY, tagH); });
+      capTop += tagH + 0.035*H;
     }
-    if (l2) {
-      base += l1 ? px2*1.02 : px2*0.74;
-      tightFont(c, px2);
-      var st = activeStops(), lg = c.createLinearGradient(g.left, 0, g.left + Math.min(c.measureText(l2).width, maxW), 0);
-      lg.addColorStop(0, st[0]); lg.addColorStop(0.45, st[1]); lg.addColorStop(1, st[2]);
-      c.fillStyle = lg; c.fillText(l2, g.left, base);
-      looseFont(c);
-    }
+    var base1 = capTop + (l1 ? px1*0.74 : 0), base2 = base1 + (l2 ? (l1 ? px2*1.02 : px2*0.74) : 0);
+    if (l1 || l2) place(c, g, opts, 'headline', function(c){
+      if (l1) {
+        tightFont(c, px1); c.fillStyle = state.line1Color;
+        c.fillText(l1, g.left, base1);
+        var after = c.measureText(l1).width;
+        looseFont(c);
+        drawArrow(c, g.left + after + px1*0.28, base1 - px1*0.36, px1, state.line1Color);
+      }
+      if (l2) {
+        tightFont(c, px2);
+        var st = activeStops(), lg = c.createLinearGradient(g.left, 0, g.left + Math.min(c.measureText(l2).width, maxW), 0);
+        lg.addColorStop(0, st[0]); lg.addColorStop(0.45, st[1]); lg.addColorStop(1, st[2]);
+        c.fillStyle = lg; c.fillText(l2, g.left, base2);
+        looseFont(c);
+      }
+    });
 
     var a = shotAspect(frame);
     var winAspect = 1 / (1/a + LAUNCH_BAR + 2*LAUNCH_EDGE);
@@ -774,8 +793,12 @@
       ? fitBox(g, g.left + (g.right - g.left)*0.54, g.top, g.right, g.bottom, winAspect, 0.94)
       : fitBox(g, g.left, textTop, g.right, capTop - (tagH ? tagH + 0.035*H : 0) - 0.05*H, winAspect, 0.94);
     if (!g.wide) r.x = g.left;   // stacked: on the words' edge, not centred
-    if (r.w > 0) drawLaunchWindow(c, r.x, r.y, r.w, r.h, state.launchTilt, state.panX*W, state.panY*H);
-    if (opts.preview && r.w > 0) dropHits.push({ slot:'main', x:r.x, y:r.y, w:r.w, h:r.h });
+    if (r.w > 0) {
+      place(c, g, opts, 'pic.main', function(c){ drawLaunchWindow(c, r.x, r.y, r.w, r.h, state.launchTilt, state.panX*W, state.panY*H, 'window'); },
+            { slot:'main', hit:r });
+      if (state.sticker.trim()) place(c, g, opts, 'sticker', function(c){ drawLaunchWindow(c, r.x, r.y, r.w, r.h, state.launchTilt, 0, 0, 'sticker'); },
+            { parent:'pic.main' });
+    }
   }
 
   // Before -> After, built to docs/quality-bar.md. Two big pictures -
@@ -840,6 +863,11 @@
 
   // One picture, as a circle or a card, ringed in white and lifted off the
   // field. Returns its bounding box.
+  // The box drawPicture fills, worked out before it draws.
+  function pictureBox(cx, cy, d){
+    var circle = state.vsShape !== 'card', w = circle ? d : d*1.18, h = circle ? d : d*0.86;
+    return { x:cx - w/2, y:cy - h/2, w:w, h:h };
+  }
   function drawPicture(c, cx, cy, d, img, after, which, opts, k, st){
     var circle = state.vsShape !== 'card';
     var w = circle ? d : d*1.18, h = circle ? d : d*0.86, x = cx - w/2, y = cy - h/2, r = circle ? d/2 : d*0.07;
@@ -979,7 +1007,7 @@
       B = [[W/2 + s2,0],[W,0],[W,H],[W/2 - s2,H]];
       line = [[W/2 + s2, 0], [W/2 - s2, H]];
     }
-    function fillHalf(poly, img, after, which){
+    function fillHalf(c, poly, img, after, which){
       var xs = poly.map(function(q){ return q[0]; }), ys = poly.map(function(q){ return q[1]; });
       var x0 = Math.min.apply(null, xs), y0 = Math.min.apply(null, ys), bw = Math.max.apply(null, xs) - x0, bh = Math.max.apply(null, ys) - y0;
       c.save();
@@ -993,12 +1021,13 @@
       c.restore();
       return { x:x0, y:y0, w:bw, h:bh };
     }
-    var ra = fillHalf(A, phoneImg, false, 'phone');
-    var rb = fillHalf(B, frame === paintedFrame ? null : frame, true, 'win');
-    if (opts.preview) {
-      dropHits.push({ slot:'second', x:ra.x, y:ra.y, w:ra.w, h:ra.h, poly:A });
-      dropHits.push({ slot:'main', x:rb.x, y:rb.y, w:rb.w, h:rb.h, poly:B });
+    function bounds(poly){
+      var xs = poly.map(function(q){ return q[0]; }), ys = poly.map(function(q){ return q[1]; });
+      var x0 = Math.min.apply(null, xs), y0 = Math.min.apply(null, ys);
+      return { x:x0, y:y0, w:Math.max.apply(null, xs) - x0, h:Math.max.apply(null, ys) - y0, poly:poly };
     }
+    place(c, g, opts, 'pic.second', function(c){ fillHalf(c, A, phoneImg, false, 'phone'); }, { slot:'second', hit:bounds(A) });
+    place(c, g, opts, 'pic.main', function(c){ fillHalf(c, B, frame === paintedFrame ? null : frame, true, 'win'); }, { slot:'main', hit:bounds(B) });
     report.pictures = 1;
 
     // the slash along the cut
@@ -1021,20 +1050,28 @@
     var labelRoom = Math.max(12*k, (tall ? 0.035 : 0.06)*H) + 0.05*H;
     var room = tall ? g.bottom - (H*0.46 + lean*W/2 + labelRoom) : H*0.4;
     var set = bestBreak(c, state.line1, state.line2, maxW, start, 12*k, Math.min(H*(tall ? 0.34 : 0.4), room));
-    var px = set.px, cap = px ? capOf(c, px) : 0, lead = cap*1.28, b = g.bottom;
-    if (g.stamp && (g.left + g.right)/2 + maxW/2 > g.stampX) b = Math.min(b, g.stampY - 0.02*H);
-    for (var i = set.lines.length - 1; i >= 0; i--) {
-      slantedLine(c, [{ t:set.lines[i].t, color:set.lines[i].accent ? st[2] : state.line1Color }], (g.left + g.right)/2, b, px);
-      b -= lead;
-    }
+    var px = set.px, cap = px ? capOf(c, px) : 0, lead = cap*1.28, bottom = g.bottom;
+    if (g.stamp && (g.left + g.right)/2 + maxW/2 > g.stampX) bottom = Math.min(bottom, g.stampY - 0.02*H);
+    if (set.lines.length) place(c, g, opts, 'headline', function(c){
+      var b = bottom;
+      for (var i = set.lines.length - 1; i >= 0; i--) {
+        slantedLine(c, [{ t:set.lines[i].t, color:set.lines[i].accent ? st[2] : state.line1Color }], (g.left + g.right)/2, b, px);
+        b -= lead;
+      }
+    });
     report.headCap = cap / H;
 
     // logo, then each label at the top of its half
     var lh = 64*k*state.logoSize, labelH = Math.max(12*k, (tall ? 0.035 : 0.06)*H), y1 = g.top;
-    if (state.logo && ready.logo) { c.drawImage(logo, g.left, g.top, logo.width * lh / logo.height, lh); y1 = g.top + lh + 0.02*H; }
-    drawLabel(c, state.beforeLabel, g.left, y1, labelH, false, st, true);
-    if (tall) drawLabel(c, state.afterLabel, g.left, H*0.46 + lean*W/2 + 0.025*H, labelH, true, st, true);
-    else drawLabel(c, state.afterLabel, W/2 + lean*H/2 + 0.03*W, g.top, labelH, true, st, true);
+    if (state.logo && ready.logo) {
+      place(c, g, opts, 'logo', function(c){ c.drawImage(logo, g.left, g.top, logo.width * lh / logo.height, lh); });
+      y1 = g.top + lh + 0.02*H;
+    }
+    if (state.beforeLabel.trim()) place(c, g, opts, 'label.before', function(c){ drawLabel(c, state.beforeLabel, g.left, y1, labelH, false, st, true); });
+    if (state.afterLabel.trim()) place(c, g, opts, 'label.after', function(c){
+      if (tall) drawLabel(c, state.afterLabel, g.left, H*0.46 + lean*W/2 + 0.025*H, labelH, true, st, true);
+      else drawLabel(c, state.afterLabel, W/2 + lean*H/2 + 0.03*W, g.top, labelH, true, st, true);
+    });
   }
 
   function drawVersus(c, p, opts){
@@ -1045,131 +1082,90 @@
 
     var l1 = state.line1.toUpperCase().trim(), l2 = state.line2.toUpperCase().trim();
     var accent = st[2], ink = state.line1Color;
+    var lean = Math.tan(state.splitAngle * Math.PI/180), sl = lean*H/2;
 
-    // the headline first: it claims the bottom, the pictures get the rest
-    var headTop, cap = 0, headline = null;
-    var lean = Math.tan(state.splitAngle * Math.PI/180);
-    // Over the split field the accent would sit on its own colour, so the
-    // words are set twice, each clipped to its side of the cut: as chosen on
-    // the dark, and with the accent turned to ink over the field.
-    function splitAware(parts, set){
-      if (state.vsDivider !== 'split') return set(parts);
-      var sl = lean*H/2, onField = inkOn(st[2]);
-      c.save(); c.beginPath(); c.moveTo(0, 0); c.lineTo(W/2 + sl, 0); c.lineTo(W/2 - sl, H); c.lineTo(0, H); c.closePath(); c.clip();
-      set(parts); c.restore();
-      c.save(); c.beginPath(); c.moveTo(W/2 + sl, 0); c.lineTo(W, 0); c.lineTo(W, H); c.lineTo(W/2 - sl, H); c.closePath(); c.clip();
-      set(parts.map(function(q){ return { t:q.t, color:q.color === accent ? onField : q.color }; })); c.restore();
-    }
-    if (g.wide) {
-      var parts = [];
-      if (l1) parts.push({ t:l1, color:ink });
-      if (l2) parts.push({ t:l2, color:accent });
-      var text = parts.map(function(q){ return q.t; }).join(' ');
-      var maxW = (g.right - g.left) * 0.98;
-      // starts where the capitals come to about 0.12 of the height (Anton's
-      // capitals are 0.86 of its size) - the bar's aim - so a short headline
-      // doesn't crowd out the pictures
-      var px = text ? fitWith(c, text, maxW, 0.14*H*state.headScale, 14*k, function(q){ return q*0.2; }) : 0;
-      cap = text ? capOf(c, px) : 0;
-      var base = g.bottom;
-      // out of the timestamp corner: a centred line that reaches it rises
-      if (g.stamp && (W/2 + maxW/2) > g.stampX) base = Math.min(base, g.stampY - 0.02*H);
-      headTop = base - cap;
-      // set last, once the divider and pictures are down, so nothing paints over it
-      if (text) headline = function(){ splitAware(parts, function(q){ slantedLine(c, q, (g.left + g.right)/2, base, px); }); };
-    } else {
-      var lines = [l1, l2].filter(Boolean), pxs = lines.map(function(t){
-        return fitWith(c, t, (g.right - g.left)*0.96, 0.12*H*state.headScale, 12*k, function(q){ return q*0.2; });
-      });
-      var pxT = pxs.length ? Math.min.apply(null, pxs) : 0;
-      cap = pxT ? capOf(c, pxT) : 0;
-      var lead = cap * 1.28, b = g.bottom;
-      headTop = b - cap - (lines.length - 1)*lead;
-      for (var li = lines.length - 1; li >= 0; li--) {
-        slantedLine(c, [{ t:lines[li], color: (li === lines.length - 1 && l2) ? accent : ink }], (g.left + g.right)/2, b, pxT);
-        b -= lead;
-      }
-    }
+    // the headline is sized first: it claims the bottom, the pictures get the rest
+    var parts = [];
+    if (l1) parts.push({ t:l1, color:ink });
+    if (l2) parts.push({ t:l2, color:accent });
+    var text = parts.map(function(q){ return q.t; }).join(' ');
+    var maxW = (g.right - g.left) * 0.98;
+    // starts where the capitals come to about 0.12 of the height (Anton's
+    // capitals are 0.86 of its size) - the bar's aim - so a short headline
+    // doesn't crowd out the pictures
+    var px = text ? fitWith(c, text, maxW, 0.14*H*state.headScale, 14*k, function(q){ return q*0.2; }) : 0;
+    var cap = text ? capOf(c, px) : 0;
+    var base = g.bottom;
+    // out of the timestamp corner: a centred line that reaches it rises
+    if (g.stamp && (W/2 + maxW/2) > g.stampX) base = Math.min(base, g.stampY - 0.02*H);
+    var headTop = base - cap;
     report.headCap = cap / H;
 
-    // the logo, small, top left, when on
-    // it gets its own row, so no picture covers it
-    var top = g.top, labelH = Math.max(12*k, 0.06*H);
-    if (state.logo && ready.logo) {
-      var lh = 64*k*state.logoSize;
-      c.drawImage(logo, g.left, g.top, logo.width * lh / logo.height, lh);
-      top = g.top + lh + 0.02*H;
-    }
+    // the logo gets its own row, so no picture covers it
+    var top = g.top, labelH = Math.max(12*k, 0.06*H), lh = 0;
+    if (state.logo && ready.logo) { lh = 64*k*state.logoSize; top = g.top + lh + 0.02*H; }
 
     // the pictures: as big as the room above the headline allows, each
     // whole shape - label, ring and shadow - inside the frame with a margin
     // to spare, never run to the edge
     var zoneTop = top + labelH*0.55, zoneBot = headTop - 0.035*H, zoneH = zoneBot - zoneTop;
-    var d, c1, c2;
-    if (g.wide) {
-      var card = state.vsShape === 'card', aspW = card ? 1.18 : 1, aspH = card ? 0.86 : 1;
-      var m = 0.035*W, gapX = 0.05*W;
-      var half = ((g.right - m) - (g.left + m) - gapX) / 2;
-      d = Math.max(0, Math.min(zoneH / aspH, half / aspW));
-      var bw = d*aspW;
-      c1 = { x:W/2 - gapX/2 - bw/2, y:zoneTop + zoneH/2 };
-      c2 = { x:W/2 + gapX/2 + bw/2, y:zoneTop + zoneH/2 };
-    } else {
-      var gapY = 0.03*H;
-      d = Math.max(0, Math.min((zoneH - gapY)/2, (g.right - g.left) * 0.78));
-      var cxT = (g.left + g.right)/2;
-      c1 = { x:cxT, y:zoneTop + zoneH/2 - gapY/2 - d/2 };
-      c2 = { x:cxT, y:zoneTop + zoneH/2 + gapY/2 + d/2 };
-    }
+    var card = state.vsShape === 'card', aspW = card ? 1.18 : 1, aspH = card ? 0.86 : 1;
+    var m = 0.035*W, gapX = 0.05*W;
+    var half = ((g.right - m) - (g.left + m) - gapX) / 2;
+    var d = Math.max(0, Math.min(zoneH / aspH, half / aspW)), bw = d*aspW;
+    var c1 = { x:W/2 - gapX/2 - bw/2, y:zoneTop + zoneH/2 };
+    var c2 = { x:W/2 + gapX/2 + bw/2, y:zoneTop + zoneH/2 };
 
     // the divider, behind the pictures: a bright slash, or a split field
     if (state.vsDivider === 'split') {
       var fill = c.createLinearGradient(0, 0, W, H);
       fill.addColorStop(0, st[1]); fill.addColorStop(1, st[2]);
       c.save(); c.globalAlpha = 0.85; c.beginPath();
-      if (g.wide) { var sl = lean*H/2; c.moveTo(W/2 + sl, 0); c.lineTo(W, 0); c.lineTo(W, H); c.lineTo(W/2 - sl, H); }
-      else { var my = (c1.y + c2.y)/2, tl = lean*W/2; c.moveTo(0, my + tl); c.lineTo(W, my - tl); c.lineTo(W, H); c.lineTo(0, H); }
+      c.moveTo(W/2 + sl, 0); c.lineTo(W, 0); c.lineTo(W, H); c.lineTo(W/2 - sl, H);
       c.closePath(); c.fillStyle = fill; c.fill(); c.restore();
     } else {
       var sw = Math.max(3, 0.014*Math.min(W, H) * 1.6);
+      var sg = c.createLinearGradient(0, 0, 0, H);
+      sg.addColorStop(0, 'rgba(255,255,255,.95)'); sg.addColorStop(0.75, 'rgba(255,255,255,.55)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
       c.save();
-      var sg;
-      if (g.wide) {
-        var sx = lean*H/2;
-        sg = c.createLinearGradient(0, 0, 0, H);
-        sg.addColorStop(0, 'rgba(255,255,255,.95)'); sg.addColorStop(0.75, 'rgba(255,255,255,.55)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
-        c.beginPath(); c.moveTo(W/2 + sx - sw/2, 0); c.lineTo(W/2 + sx + sw/2, 0); c.lineTo(W/2 - sx + sw/2, H); c.lineTo(W/2 - sx - sw/2, H);
-      } else {
-        var yy = (c1.y + c2.y)/2, ty = lean*W/2;
-        sg = c.createLinearGradient(0, 0, W, 0);
-        sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(0.2, 'rgba(255,255,255,.8)'); sg.addColorStop(0.8, 'rgba(255,255,255,.8)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
-        c.beginPath(); c.moveTo(0, yy + ty - sw/2); c.lineTo(W, yy - ty - sw/2); c.lineTo(W, yy - ty + sw/2); c.lineTo(0, yy + ty + sw/2);
-      }
+      c.beginPath(); c.moveTo(W/2 + sl - sw/2, 0); c.lineTo(W/2 + sl + sw/2, 0); c.lineTo(W/2 - sl + sw/2, H); c.lineTo(W/2 - sl - sw/2, H);
       c.closePath(); c.shadowColor = 'rgba(255,255,255,.35)'; c.shadowBlur = sw*2; c.fillStyle = sg; c.fill();
       c.restore();
     }
 
-    var b1 = null, b2 = null;
     if (d > 0) {
-      b1 = drawPicture(c, c1.x, c1.y, d, phoneImg, false, 'phone', opts, k, st);
-      b2 = drawPicture(c, c2.x, c2.y, d, frame === paintedFrame ? null : frame, true, 'win', opts, k, st);
-      if (opts.preview) {
-        dropHits.push({ slot:'second', x:b1.x, y:b1.y, w:b1.w, h:b1.h });
-        dropHits.push({ slot:'main', x:b2.x, y:b2.y, w:b2.w, h:b2.h });
-      }
-      report.pictures = (state.vsShape === 'card' ? 2*b1.w*b1.h : 2*Math.PI*d*d/4) / (W*H);
-
-      if (state.arrow) {
-        if (g.wide) {
-          drawCurvedArrow(c, b1.x + b1.w*0.86, b1.y + b1.h*0.9, b2.x + b2.w*0.08, b2.y + b2.h*0.8, { x:0, y:d*0.28 }, k);
-        } else {
-          drawCurvedArrow(c, b1.x + b1.w*0.95, b1.y + b1.h*0.72, b2.x + b2.w*0.95, b2.y + b2.h*0.28, { x:d*0.3, y:0 }, k);
-        }
-      }
-      drawLabel(c, state.beforeLabel, c1.x, b1.y, labelH, false, st);
-      drawLabel(c, state.afterLabel,  c2.x, b2.y, labelH, true, st);
+      var b1 = pictureBox(c1.x, c1.y, d), b2 = pictureBox(c2.x, c2.y, d);
+      place(c, g, opts, 'pic.second', function(c){ drawPicture(c, c1.x, c1.y, d, phoneImg, false, 'phone', opts, k, st); },
+            { slot:'second', hit:b1 });
+      place(c, g, opts, 'pic.main', function(c){ drawPicture(c, c2.x, c2.y, d, frame === paintedFrame ? null : frame, true, 'win', opts, k, st); },
+            { slot:'main', hit:b2 });
+      report.pictures = (card ? 2*b1.w*b1.h : 2*Math.PI*d*d/4) / (W*H);
+      if (state.arrow) place(c, g, opts, 'arrow', function(c){
+        drawCurvedArrow(c, b1.x + b1.w*0.86, b1.y + b1.h*0.9, b2.x + b2.w*0.08, b2.y + b2.h*0.8, { x:0, y:d*0.28 }, k);
+      });
+      if (state.beforeLabel.trim()) place(c, g, opts, 'label.before', function(c){ drawLabel(c, state.beforeLabel, c1.x, b1.y, labelH, false, st); }, { parent:'pic.second' });
+      if (state.afterLabel.trim()) place(c, g, opts, 'label.after', function(c){ drawLabel(c, state.afterLabel, c2.x, b2.y, labelH, true, st); }, { parent:'pic.main' });
     }
-    if (headline) headline();
+
+    if (lh) place(c, g, opts, 'logo', function(c){ c.drawImage(logo, g.left, g.top, logo.width * lh / logo.height, lh); });
+
+    // Set last, so nothing paints over it. Over the split field the accent
+    // would sit on its own colour, so the words are set twice, each clipped
+    // to its side of the cut - the cut stays where it is when the words move
+    // - as chosen on the dark, and with the accent turned to ink over the field.
+    if (text) place(c, g, opts, 'headline', function(c){
+      var set = function(q){ slantedLine(c, q, (g.left + g.right)/2, base, px); };
+      if (state.vsDivider !== 'split') return set(parts);
+      var o = offsetOf('headline', W, H), onField = inkOn(st[2]);
+      c.save(); c.translate(-o[0], -o[1]);
+      c.beginPath(); c.moveTo(0, 0); c.lineTo(W/2 + sl, 0); c.lineTo(W/2 - sl, H); c.lineTo(0, H); c.closePath();
+      c.translate(o[0], o[1]); c.clip();
+      set(parts); c.restore();
+      c.save(); c.translate(-o[0], -o[1]);
+      c.beginPath(); c.moveTo(W/2 + sl, 0); c.lineTo(W, 0); c.lineTo(W, H); c.lineTo(W/2 - sl, H); c.closePath();
+      c.translate(o[0], o[1]); c.clip();
+      set(parts.map(function(q){ return { t:q.t, color:q.color === accent ? onField : q.color }; })); c.restore();
+    });
   }
 
   // Collage, built to docs/quality-bar.md: a paper panel with brush bands
@@ -1178,6 +1174,33 @@
   // pictures; then one big photo to the edge. Tall frames stack the three
   // bands top to bottom.
   var dropHits = [];   // preview only: [{ slot, x, y, w, h, poly? }] for routing a drop, drag or click
+
+  // ---- movable elements -------------------------------------------------
+  // Every element a person can move - headline, pictures, logo, arrows,
+  // labels - is drawn through place(). It shifts the element by its saved
+  // offset, a fraction of the frame kept per template and per shape of frame
+  // (a stacked tall layout is not the wide one), so a move survives a change
+  // of size. An element can hang off another (a label off its picture) and
+  // then moves with it as well as on its own. On the preview each placed
+  // element is remembered, with its drawing, so the pointer can find it.
+  var layers = [];     // preview only: [{ el, slot, draw, dx, dy }] in drawing order
+  function frameShape(W, H){ var a = W/H; return a < 0.85 ? 'tall' : a < 1.2 ? 'square' : 'wide'; }
+  function moveKey(el, W, H){ return state.layout + '.' + frameShape(W, H) + '.' + el; }
+  function offsetOf(el, W, H, parent){
+    var m = state.moves[moveKey(el, W, H)] || [0, 0], q = parent ? state.moves[moveKey(parent, W, H)] || [0, 0] : [0, 0];
+    return [(m[0] + q[0])*W, (m[1] + q[1])*H];
+  }
+  function place(c, g, opts, el, draw, o){
+    o = o || {};
+    var d = offsetOf(el, g.W, g.H, o.parent);
+    c.save(); c.translate(d[0], d[1]); draw(c); c.restore();
+    if (opts.preview) {
+      layers.push({ el:el, slot:o.slot || null, draw:draw, dx:d[0], dy:d[1] });
+      // a picture's box goes where the picture went, for drops and framing
+      if (o.hit) dropHits.push({ slot:o.slot, x:o.hit.x + d[0], y:o.hit.y + d[1], w:o.hit.w, h:o.hit.h,
+        poly:o.hit.poly && o.hit.poly.map(function(q){ return [q[0] + d[0], q[1] + d[1]]; }) });
+    }
+  }
 
   // A rough band with a brushed edge. The wobble is a sum of sines, so it is
   // the same on every render and every size.
@@ -1229,6 +1252,14 @@
     return { x:x0, y:y0, w:bw, h:bh, poly:quad };
   }
 
+  // A picture panel as a movable element: its box is known before it draws.
+  function placeQuad(c, g, opts, quad, s, after, st){
+    var xs = quad.map(function(q){ return q[0]; }), ys = quad.map(function(q){ return q[1]; });
+    var x0 = Math.min.apply(null, xs), y0 = Math.min.apply(null, ys);
+    place(c, g, opts, 'pic.' + s.slot, function(c){ fillQuad(c, quad, s.img, after, s.slot, opts, st, s.label); },
+          { slot:s.slot, hit:{ x:x0, y:y0, w:Math.max.apply(null, xs) - x0, h:Math.max.apply(null, ys) - y0, poly:quad } });
+  }
+
   // Luminance contrast between two colours, for choosing an ink that reads.
   function contrast(a, b){
     function lum(hex){
@@ -1248,7 +1279,6 @@
     var ink = contrast(state.line1Color, paper) >= 3 ? state.line1Color : '#1b1a1f';
     // the accent must read on paper too: the palette's first colour, deepened
     var acc = deepShade(st[0], 0.42);
-    if (opts.preview) dropHits = [];
     c.fillStyle = paper; c.fillRect(0, 0, W, H);
 
     var tall = (W/H) < 0.85, gap = Math.max(3, 0.015*W);   // the reference's gutter: 1.5% of the width
@@ -1281,14 +1311,13 @@
         for (var i = 0; i < rows; i++) {
           var y0 = i*(rh + rg), y1 = y0 + rh;
           var q = [[sx(xa + gap, y0), y0], [sx(xa + sw, y0), y0], [sx(xa + sw, y1), y1], [sx(xa + gap, y1), y1]];
-          var bx = fillQuad(c, q, slots[i].img, i === 1, slots[i].slot, opts, st, slots[i].label);
-          if (opts.preview) dropHits.push({ slot:slots[i].slot, x:bx.x, y:bx.y, w:bx.w, h:bx.h, poly:bx.poly });
+          placeQuad(c, g, opts, q, slots[i], i === 1, st);
           picsArea += (sw - gap) * rh;
         }
       }
       var hx = xa + sw + gap;
       var hq = [[sx(hx, 0), 0], [W, 0], [W, H], [sx(hx, H), H]];
-      var hb = fillQuad(c, hq, frame === paintedFrame ? null : frame, true, 'main', opts, st, 'Drop the main photo');
+      placeQuad(c, g, opts, hq, { img:frame === paintedFrame ? null : frame, slot:'main', label:'Drop the main photo' }, true, st);
       picsArea += (W - hx) * H;
       // the words sit in the paper, clear of the leaning edge at its narrowest
       // The paper's right edge leans, so the room for a line depends on its
@@ -1308,18 +1337,16 @@
         for (var j = 0; j < cols; j++) {
           var x0 = j*(cw + cg), x1 = x0 + cw;
           var q2 = [[x0, sy(ya + gap, x0)], [x1, sy(ya + gap, x1)], [x1, sy(ya + sh, x1)], [x0, sy(ya + sh, x0)]];
-          var bx2 = fillQuad(c, q2, slots[j].img, j === 1, slots[j].slot, opts, st, slots[j].label);
-          if (opts.preview) dropHits.push({ slot:slots[j].slot, x:bx2.x, y:bx2.y, w:bx2.w, h:bx2.h, poly:bx2.poly });
+          placeQuad(c, g, opts, q2, slots[j], j === 1, st);
           picsArea += cw * (sh - gap);
         }
       }
       var hy = ya + sh + gap;
-      var hb = fillQuad(c, [[0, sy(hy, 0)], [W, sy(hy, W)], [W, H], [0, H]], frame === paintedFrame ? null : frame, true, 'main', opts, st, 'Drop the main photo');
+      placeQuad(c, g, opts, [[0, sy(hy, 0)], [W, sy(hy, W)], [W, H], [0, H]], { img:frame === paintedFrame ? null : frame, slot:'main', label:'Drop the main photo' }, true, st);
       picsArea += W * (H - hy);
       textBox = { x0:g.left, x1:g.right, y0:Math.max(g.top, H*0.06), y1:ya - lean*W/2 - 0.03*H };
     }
     report.pictures = picsArea / (W*H);
-    if (opts.preview && hb) dropHits.push({ slot:'main', x:hb.x, y:hb.y, w:hb.w, h:hb.h, poly:hb.poly });
 
     // the headline, stacked as tight as sets it biggest, centred in the paper
     var colW = textBox.x1 - textBox.x0, room = textBox.y1 - textBox.y0;
@@ -1345,33 +1372,37 @@
         blockH = cap + (set.lines.length - 1)*lead; top = textBox.y0 + (room - swooshRoom - blockH)/2;
       }
     }
-    var base = top + cap;
+    report.headCap = cap / H;
     // The whole block - words and underline - turns about its centre, rising
     // to the right, as the reference's does (measured at -3.7 degrees).
-    c.save();
-    var pivotY = top + blockH/2;
-    c.translate(cx, pivotY); c.rotate(state.collageTilt * Math.PI/180); c.translate(-cx, -pivotY);
-    c.textAlign = 'center';
-    set.lines.forEach(function(l){
-      tightFont(c, px); c.fillStyle = l.accent ? acc : ink;
-      c.fillText(l.t, cx, base);
-      base += lead;
+    if (set.lines.length) place(c, g, opts, 'headline', function(c){
+      var base = top + cap;
+      c.save();
+      var pivotY = top + blockH/2;
+      c.translate(cx, pivotY); c.rotate(state.collageTilt * Math.PI/180); c.translate(-cx, -pivotY);
+      c.textAlign = 'center';
+      set.lines.forEach(function(l){
+        tightFont(c, px); c.fillStyle = l.accent ? acc : ink;
+        c.fillText(l.t, cx, base);
+        base += lead;
+      });
+      looseFont(c); c.textAlign = 'left';
+      if (state.brush) {
+        tightFont(c, px); var widest = Math.max.apply(null, set.lines.map(function(l){ return c.measureText(l.t).width; })); looseFont(c);
+        brushSwoosh(c, cx, base - lead + cap*0.62, widest*0.78, Math.max(3, cap*0.2), ink);
+      }
+      c.restore();
     });
-    looseFont(c); c.textAlign = 'left';
-    report.headCap = cap / H;
-    if (state.brush && set.lines.length) {
-      tightFont(c, px); var widest = Math.max.apply(null, set.lines.map(function(l){ return c.measureText(l.t).width; })); looseFont(c);
-      brushSwoosh(c, cx, base - lead + cap*0.62, widest*0.78, Math.max(3, cap*0.2), ink);
-    }
-    c.restore();
 
     // the logo, small, in the photo's top corner - the paper belongs to the words
     if (state.logo && ready.logo) {
       var lh = 56*k*state.logoSize, lw = logo.width * lh / logo.height;
-      var ly = tall ? H*0.5 + (state.strip ? H*0.12 : 0) + 0.03*H : g.top + (state.brush ? 0 : 0);
-      c.save(); c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 16*k; c.shadowOffsetY = 4*k;
-      c.drawImage(logo, g.right - lw, ly, lw, lh);
-      c.restore();
+      var ly = tall ? H*0.5 + (state.strip ? H*0.12 : 0) + 0.03*H : g.top;
+      place(c, g, opts, 'logo', function(c){
+        c.save(); c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 16*k; c.shadowOffsetY = 4*k;
+        c.drawImage(logo, g.right - lw, ly, lw, lh);
+        c.restore();
+      });
     }
   }
 
@@ -1487,38 +1518,38 @@
     }
     c.fill();
 
-    // the arc and its dot, just outside the ring on the open side (circles only)
-    c.save();
-    if (roundish) {
-    c.strokeStyle = ink; c.lineWidth = Math.max(1.5, 2.5*k);
-    var ar = d/2 + Math.max(10*k, d*0.07), a0 = tall ? -0.35*Math.PI : -0.38*Math.PI, a1 = tall ? 0.05*Math.PI : 0.3*Math.PI;
-    c.beginPath(); c.arc(cx, cy, ar, a0, a1); c.stroke();
-    c.beginPath(); c.arc(cx + Math.cos(a0)*ar, cy + Math.sin(a0)*ar, Math.max(3, 5*k), 0, Math.PI*2); c.fillStyle = ink; c.fill();
-    }
-    c.restore();
-
-    // the photo, in a white ring (circle) or a white-edged frame turned a touch
+    // the photo, in a white ring (circle) or a white-edged frame turned a
+    // touch; with a circle, a thin arc and its dot just outside the ring
     var ring = Math.max(2, Math.min(hw, hh)*0.028);
-    function outline(pad){
-      c.beginPath();
-      if (roundish) c.arc(cx, cy, hw - pad, 0, Math.PI*2);
-      else roundRect(c, cx - hw + pad, cy - hh + pad, 2*(hw - pad), 2*(hh - pad), Math.max(0, Math.min(hw, hh)*0.08 - pad));
-    }
-    c.save();
-    c.translate(cx, cy); c.rotate(tilt); c.translate(-cx, -cy);
-    c.save();
-    c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = d*0.08; c.shadowOffsetY = d*0.03;
-    outline(0); c.fillStyle = '#ffffff'; c.fill();
-    c.restore();
-    c.save(); outline(ring); c.clip();
-    if (opts.preview) dropHits.push({ slot:'main', x:cx - hw, y:cy - hh, w:2*hw, h:2*hh });
-    if (has) shown.win = cover(c, frame, cx - hw, cy - hh, 2*hw, 2*hh, state.zoom, state.panX*W, state.panY*H);
-    else {
-      paintStandIn(c, cx - hw, cy - hh, 2*hw, 2*hh, true, st);
-      if (opts.preview) placeholderLabel(c, cx - hw, cy - hh, 2*hw, 2*hh, 'Drop the photo', 'rgba(255,255,255,.8)');
-    }
-    c.restore();
-    c.restore();
+    place(c, g, opts, 'pic.main', function(c){
+      if (roundish) {
+        c.save();
+        c.strokeStyle = ink; c.lineWidth = Math.max(1.5, 2.5*k);
+        var ar = d/2 + Math.max(10*k, d*0.07), a0 = tall ? -0.35*Math.PI : -0.38*Math.PI, a1 = tall ? 0.05*Math.PI : 0.3*Math.PI;
+        c.beginPath(); c.arc(cx, cy, ar, a0, a1); c.stroke();
+        c.beginPath(); c.arc(cx + Math.cos(a0)*ar, cy + Math.sin(a0)*ar, Math.max(3, 5*k), 0, Math.PI*2); c.fillStyle = ink; c.fill();
+        c.restore();
+      }
+      function outline(pad){
+        c.beginPath();
+        if (roundish) c.arc(cx, cy, hw - pad, 0, Math.PI*2);
+        else roundRect(c, cx - hw + pad, cy - hh + pad, 2*(hw - pad), 2*(hh - pad), Math.max(0, Math.min(hw, hh)*0.08 - pad));
+      }
+      c.save();
+      c.translate(cx, cy); c.rotate(tilt); c.translate(-cx, -cy);
+      c.save();
+      c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = d*0.08; c.shadowOffsetY = d*0.03;
+      outline(0); c.fillStyle = '#ffffff'; c.fill();
+      c.restore();
+      c.save(); outline(ring); c.clip();
+      if (has) shown.win = cover(c, frame, cx - hw, cy - hh, 2*hw, 2*hh, state.zoom, state.panX*W, state.panY*H);
+      else {
+        paintStandIn(c, cx - hw, cy - hh, 2*hw, 2*hh, true, st);
+        if (opts.preview) placeholderLabel(c, cx - hw, cy - hh, 2*hw, 2*hh, 'Drop the photo', 'rgba(255,255,255,.8)');
+      }
+      c.restore();
+      c.restore();
+    }, { slot:'main', hit:{ x:cx - hw, y:cy - hh, w:2*hw, h:2*hh } });
     report.pictures = (roundish ? Math.PI*hw*hw : 4*hw*hh) / (W*H);
 
     // the words: main lines stacked and slanted, the accent line half again
@@ -1527,10 +1558,10 @@
     var sag = roundish ? 0 : hw*Math.sin(3*Math.PI/180);
     var tb = !tall ? { x0:g.left, x1:cx - hw - sag - 0.04*W, y0:g.top, y1:g.bottom }
                    : { x0:g.left, x1:g.right, y0:cy + hh + sag + 0.04*H, y1:g.bottom };
-    // The logo never sits on the picture: beside it, it takes a row above the
-    // words; stacked, a row under them.
-    var logoRow = (state.logo && ready.logo) ? 52*k*state.logoSize + 0.02*H : 0;
-    if (tall) tb.y1 -= logoRow; else tb.y0 += logoRow;
+    // The logo never sits on the picture. Beside it, it takes a row above
+    // the words. Stacked, it sits under the words, in the room their
+    // centring leaves - taking none from them.
+    if (state.logo && ready.logo && !tall) tb.y0 += 52*k*state.logoSize + 0.02*H;
     var main = state.line1.toUpperCase().trim().split(/\s+/).filter(Boolean);
     var accent = state.line2.toUpperCase().trim();
     var colW = tb.x1 - tb.x0, room = tb.y1 - tb.y0;
@@ -1538,7 +1569,9 @@
     // give the key word whatever height is left - up to 2.6 times the main
     // size, so it leads without swallowing the rest. The key word's size
     // decides between arrangements first, the main lines' second.
-    var best = null, big = 0.3*H*state.headScale;
+    var big = 0.3*H*state.headScale;
+    function fitWords(room){
+    var best = null;
     for (var n = 1; n <= Math.min(4, Math.max(1, main.length)); n++) {
       var per = Math.ceil(main.length / n), lines = [];
       for (var i = 0; i < main.length; i += per) lines.push(main.slice(i, i + per).join(' '));
@@ -1568,31 +1601,56 @@
       var score = capA*2 + capM;
       if (!best || score > best.score) best = { px:px, apx:apx, lines:lines, capM:capM, capA:capA, h:hgt, score:score };
     }
+    return best;
+    }
+    var best = fitWords(room);
+    // Stacked, the logo takes no room from the words where it can help it:
+    // beside the last line when that line leaves space at its end, else
+    // under the words in the room their centring leaves; only where neither
+    // fits do the words give up a row for it.
+    var llh = 52*k*state.logoSize, llw = (state.logo && ready.logo) ? logo.width * llh / logo.height : 0, logoGap = 0.03*H;
+    var logoAt = null;
+    function lastLineEnd(b){
+      if (accent) {
+        tightFont(c, b.apx); var aw = c.measureText(accent).width; looseFont(c);
+        return tb.x0 + Math.min(b.capM*0.8, Math.max(0, colW - aw)) + b.capA*0.2 + aw;
+      }
+      tightFont(c, b.px); var lw0 = b.lines.length ? c.measureText(b.lines[b.lines.length - 1]).width : 0; looseFont(c);
+      return tb.x0 + b.capM*0.2 + lw0;
+    }
+    if (tall && llw) {
+      if (g.right - lastLineEnd(best) >= llw + 0.03*W) logoAt = 'beside';
+      else if ((room - best.h)/2 >= llh + logoGap) logoAt = 'under';
+      else { room -= llh + logoGap; best = fitWords(room); logoAt = 'under'; }
+    }
     var y = tb.y0 + (room - best.h)/2;
-    function slant(text, x, base, px, fill){
+    function slant(c, text, x, base, px, fill){
       c.save();
       c.translate(0, base); c.transform(1, 0, -0.2, 1, 0, 0); c.translate(0, -base);
       tightFont(c, px); c.fillStyle = fill; c.fillText(text, x, base);
       looseFont(c); c.restore();
     }
+    // where the lines end, for the arrow, measured before anything is drawn
     var lastEnd = tb.x0, firstEnd = tb.x0, firstTop = y;
+    tightFont(c, best.px);
     best.lines.forEach(function(t, i){
-      var base = y + best.capM + i*best.capM*1.2;
-      slant(t, tb.x0 + best.capM*0.2, base, best.px, ink);
-      tightFont(c, best.px);
       var end = tb.x0 + best.capM*0.2 + c.measureText(t).width;
-      looseFont(c);
       lastEnd = Math.max(lastEnd, end); if (!i) firstEnd = end;
     });
-    if (accent) {
-      var abase = y + best.h;
-      var apx = best.apx;
-      tightFont(c, apx); var aw = c.measureText(accent).width; looseFont(c);
-      var ax = tb.x0 + Math.min(best.capM*0.8, Math.max(0, colW - aw));
-      var ag = c.createLinearGradient(ax, 0, ax + aw, 0);
-      ag.addColorStop(0, g0); ag.addColorStop(1, g1);
-      slant(accent, ax + best.capA*0.2, abase, apx, ag);
-    }
+    looseFont(c);
+    place(c, g, opts, 'headline', function(c){
+      best.lines.forEach(function(t, i){
+        slant(c, t, tb.x0 + best.capM*0.2, y + best.capM + i*best.capM*1.2, best.px, ink);
+      });
+      if (accent) {
+        var apx = best.apx;
+        tightFont(c, apx); var aw = c.measureText(accent).width; looseFont(c);
+        var ax = tb.x0 + Math.min(best.capM*0.8, Math.max(0, colW - aw));
+        var ag = c.createLinearGradient(ax, 0, ax + aw, 0);
+        ag.addColorStop(0, g0); ag.addColorStop(1, g1);
+        slant(c, accent, ax + best.capA*0.2, y + best.h, apx, ag);
+      }
+    });
     report.headCap = Math.max(best.capM, best.capA) / H;
 
     // the arrow: from beside the circle, curling down onto the words
@@ -1603,19 +1661,22 @@
         // above the longer lines that follow
         var hx = firstEnd + 0.025*W, hy = firstTop + best.capM*0.45;
         var tx = Math.min(cx - hw*0.84, hx + 0.16*W), ty = Math.max(g.top*0.5, firstTop - best.capM*0.9);
-        if (tx - hx > 0.05*W) handArrow(c, tx, ty, tx - 0.01*W, hy, hx, hy, t, ink);
+        if (tx - hx > 0.05*W) place(c, g, opts, 'arrow', function(c){ handArrow(c, tx, ty, tx - 0.01*W, hy, hx, hy, t, ink); });
       } else if (g.right - lastEnd > 0.16*W) {
         // only where the first line leaves room beside it
         var sx0 = g.right - 0.05*W, sy0 = firstTop + best.capM;
-        handArrow(c, sx0, sy0, sx0 + 0.03*W, cy + hh + 0.02*H, cx + hw*0.5, cy + hh - hh*0.04, t, ink);
+        place(c, g, opts, 'arrow', function(c){ handArrow(c, sx0, sy0, sx0 + 0.03*W, cy + hh + 0.02*H, cx + hw*0.5, cy + hh - hh*0.04, t, ink); });
       }
     }
 
     // the logo, small, in the row kept for it
     if (state.logo && ready.logo) {
       var lh = 52*k*state.logoSize, lw = logo.width * lh / logo.height;
-      if (tall) c.drawImage(logo, g.right - lw, tb.y1 + 0.02*H, lw, lh);
-      else c.drawImage(logo, g.left, g.top, lw, lh);
+      place(c, g, opts, 'logo', function(c){
+        if (logoAt === 'beside') c.drawImage(logo, g.right - lw, y + best.h - lh, lw, lh);
+        else if (logoAt === 'under') c.drawImage(logo, g.right - lw, y + best.h + logoGap, lw, lh);
+        else c.drawImage(logo, g.left, g.top, lw, lh);
+      });
     }
   }
 
@@ -1681,20 +1742,22 @@
   if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
     window.TF = {
       quality:function(){ return measure(current()); },
-      qualityAll:function(){ return PRESETS.filter(function(p){ return p.id !== 'custom'; }).map(measure); }
+      qualityAll:function(){ return PRESETS.filter(function(p){ return p.id !== 'custom'; }).map(measure); },
+      // the movable elements on the preview, with the box each one paints
+      layers:function(){ draw(); return layerMasks().map(function(m){ return { el:m.L.el, slot:m.L.slot, box:m.box }; }); }
     };
   }
 
   function render(c, p, opts){
     opts = opts || {};
-    if (opts.preview) dropHits = [];
+    if (opts.preview) { dropHits = []; layers = []; masks = null; }
     c.clearRect(0, 0, p.w, p.h);
     templateById(state.layout).draw(c, p, opts);
     if (opts.guides) drawGuides(c, p);
   }
 
 
-  var firstDraw = true;
+  var firstDraw = true, lastScene = '';
   function draw(){
     var p = current();
     if (cv.width !== p.w || cv.height !== p.h) {
@@ -1709,7 +1772,13 @@
         });
       }
     }
+    // a selection belongs to one template at one size
+    var scene = state.layout + '|' + p.w + 'x' + p.h;
+    if (scene !== lastScene) { selected = null; stopAdjusting(); lastScene = scene; }
     render(ctx, p, { guides: state.safe, preview: true });
+    drawSelection();
+    var pre = state.layout + '.' + frameShape(p.w, p.h) + '.', resetBtn = document.getElementById('movesReset');
+    if (resetBtn) resetBtn.hidden = !Object.keys(state.moves).some(function(key){ return key.indexOf(pre) === 0; });
     tintWell();
     document.getElementById('what').textContent = p.label;
     document.getElementById('dims').innerHTML = p.w + ' &times; ' + p.h;
@@ -2115,7 +2184,7 @@
 
   // ---- custom widgets the schema places ---------------------------------
   function buildPictureHint(){
-    var p = hintEl('Drag a picture on the preview to move it, or drop a file on it to replace it. Below 100% zoom the whole picture shows, with a blurred copy around it.');
+    var p = hintEl('Click a picture on the preview, or drop a file on it, to replace it. Double-click it to move the photo inside its frame. Below 100% zoom the whole picture shows, with a blurred copy around it.');
     p.style.marginTop = '-8px';
     return p;
   }
@@ -2124,6 +2193,16 @@
     var lg = el('legend', 'legend', 'Template'); f.appendChild(lg);
     var box = el('div', 'tpls'); box.id = 'tpls'; f.appendChild(box);
     var hint = hintEl(''); hint.id = 'layoutHint'; f.appendChild(hint);
+    // moving things is done on the preview; this only takes it back
+    var row = el('div', 'moverow');
+    row.appendChild(hintEl('Drag anything on the preview to move it.'));
+    var reset = el('button', 'btn btn-sm', 'Reset positions'); reset.id = 'movesReset'; reset.type = 'button'; reset.hidden = true;
+    reset.addEventListener('click', function(){
+      var p = current(), pre = state.layout + '.' + frameShape(p.w, p.h) + '.';
+      Object.keys(state.moves).forEach(function(key){ if (key.indexOf(pre) === 0) delete state.moves[key]; });
+      selected = null; stopAdjusting(); persist(); draw();
+    });
+    row.appendChild(reset); f.appendChild(row);
     return f;
   }
   function buildPaletteSlot(){
@@ -2434,7 +2513,7 @@
     var out = {
       preset:state.preset, customW:state.customW, customH:state.customH,
       palette:state.palette, customStops:state.customStops, logoSrc:state.logoSrc,
-      derived:state.derived, feed:state.feed
+      derived:state.derived, feed:state.feed, moves:state.moves
     };
     remembered().forEach(function(ctl){ out[ctl.key] = state[ctl.key]; });
     try { localStorage.setItem('tf-state', JSON.stringify(out)); } catch(e) {
@@ -2497,59 +2576,180 @@
     }
   });
 
-  // ---- drag to pan (stored as a fraction, so it survives a size change) --
-  // A full redraw costs ~22ms at 3000x3000, and pointermove fires faster than
-  // the frame rate, so drawing per event overruns the budget and the drag
-  // stutters. Coalesce to one redraw per frame. The displayed size cannot
-  // change mid-drag, so the rect is read once instead of on every move.
-  // A drag moves whichever picture it starts on, each by its own framing.
-  var dragging = false, dragSlot = 'main', clickSlot = null, sx=0, sy=0, spx=0, spy=0, dragW=1, dragH=1, panRaf=0;
-  cv.addEventListener('pointerdown', function(e){
-    dragging = true; cv.classList.add('dragging'); cv.setPointerCapture(e.pointerId);
-    draw();   // refresh shown and dropHits: an export may have drawn at another size since
-    var hit = hitAt(e), p = current(), rect = cv.getBoundingClientRect(), f;
-    dragSlot = hit ? hit.slot : 'main'; f = FRAMING[dragSlot];
-    sx = e.clientX; sy = e.clientY; clickSlot = hit ? hit.slot : null;
-    if (dragSlot === 'main') {
-      spx = shown.win[0]/p.w; spy = shown.win[1]/p.h;
-      dragW = rect.width || 1; dragH = rect.height || 1;
-    } else {
-      spx = shown[f.shown][0]/hit.w; spy = shown[f.shown][1]/hit.w;
-      dragW = dragH = (rect.width || 1) * hit.w / cv.width;
+  // ---- finding what is under the pointer --------------------------------
+  // Each element placed on the preview is drawn again, small and on its own,
+  // into a mask, and the pointer takes the topmost element with paint under
+  // it - so a click lands on the letters or the ring, not on a box around
+  // them. Soft shadows stay below the cut-off, so they are not grabbed. The
+  // masks are made on the first pointer event after a redraw.
+  var masks = null;
+  function layerMasks(){
+    if (masks) return masks;
+    var s = Math.min(1, 480 / Math.max(cv.width, cv.height));
+    var w = Math.max(1, Math.round(cv.width*s)), h = Math.max(1, Math.round(cv.height*s));
+    var keep = JSON.stringify(shown);   // drawing a picture again rewrites its framing
+    masks = layers.map(function(L){
+      var m = document.createElement('canvas'); m.width = w; m.height = h;
+      var mc = m.getContext('2d', { willReadFrequently:true });
+      mc.setTransform(s, 0, 0, s, 0, 0); mc.translate(L.dx, L.dy);
+      try { L.draw(mc); } catch(e){}
+      var d = mc.getImageData(0, 0, w, h).data, x0 = w, y0 = h, x1 = -1, y1 = -1;
+      for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
+        if (d[(y*w + x)*4 + 3] > 160) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      }
+      return { L:L, d:d, w:w, h:h, s:s, box: x1 < 0 ? null : { x:x0/s, y:y0/s, w:(x1 - x0 + 1)/s, h:(y1 - y0 + 1)/s } };
+    });
+    shown = JSON.parse(keep);
+    return masks;
+  }
+  function canvasPoint(e){
+    var rect = cv.getBoundingClientRect();
+    return [(e.clientX - rect.left) * cv.width / (rect.width || 1), (e.clientY - rect.top) * cv.height / (rect.height || 1)];
+  }
+  // topmost first; a couple of pixels of slack so a thin arrow is easy to catch
+  function layerAt(e){
+    var ms = layerMasks(), pt = canvasPoint(e);
+    for (var i = ms.length - 1; i >= 0; i--) {
+      var m = ms[i], mx = Math.round(pt[0]*m.s), my = Math.round(pt[1]*m.s);
+      for (var dy = -2; dy <= 2; dy++) for (var dx = -2; dx <= 2; dx++) {
+        var x = mx + dx, y = my + dy;
+        if (x >= 0 && y >= 0 && x < m.w && y < m.h && m.d[(y*m.w + x)*4 + 3] > 160) return m;
+      }
     }
-  });
-  cv.addEventListener('pointermove', function(e){
-    if (!dragging) return;
-    // past a few pixels it is a drag, not a click
-    if (clickSlot && Math.abs(e.clientX - sx) + Math.abs(e.clientY - sy) > 4) clickSlot = null;
-    var f = FRAMING[dragSlot];
-    state[f.x] = spx + (e.clientX - sx) / dragW;
-    state[f.y] = spy + (e.clientY - sy) / dragH;
-    if (panRaf) return;
-    panRaf = requestAnimationFrame(function(){ panRaf = 0; draw(); });
-  });
+    return null;
+  }
 
-  // Dragging is the only way to reframe the image, so it needs a keyboard path.
-  // Shift takes bigger steps, the way nudging works elsewhere.
-  var PAN_KEYS = { ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1] };
-  cv.addEventListener('keydown', function(e){
-    var d = PAN_KEYS[e.key];
-    if (!d || e.metaKey || e.ctrlKey || e.altKey) return;
-    e.preventDefault();
-    var step = e.shiftKey ? 0.05 : 0.01, p = current();
-    state.panX = shown.win[0]/p.w + d[0] * step;
-    state.panY = shown.win[1]/p.h + d[1] * step;
+  // ---- moving elements, and adjusting a photo inside its frame ----------
+  // A drag moves whatever it starts on. A double-click on a picture that
+  // holds a photo switches to adjusting the photo instead: drags then move
+  // the photo inside its frame until a click lands elsewhere or Esc is
+  // pressed. A click that doesn't move on a picture opens its file picker -
+  // after a moment, when the picture holds a photo, so a double-click can
+  // claim it first. Positions are fractions of the frame, so they survive a
+  // change of size. A full redraw costs ~22ms at 3000x3000 and pointermove
+  // fires faster than that, so redraws are coalesced to one per frame.
+  var drag = null, selected = null, adjusting = null, panRaf = 0, hoverRaf = 0, pickTimer = 0;
+  function redrawSoon(){ if (!panRaf) panRaf = requestAnimationFrame(function(){ panRaf = 0; draw(); }); }
+  function stopAdjusting(){
+    if (!adjusting) return;
+    adjusting = null; setStatus('');
+  }
+  // The selection outline, drawn on the preview only; downloads re-render
+  // without it.
+  function drawSelection(){
+    var el = selected && selected.el, L = null;
+    for (var i = 0; i < layers.length; i++) if (layers[i].el === el) L = layers[i];
+    if (!L || !selected.box) return;
+    var b = selected.box, x = b.x + L.dx - selected.dx, y = b.y + L.dy - selected.dy;
+    var k = Math.sqrt(cv.width*cv.height / (1280*720)), pad = 6*k;
+    ctx.save();
+    ctx.lineWidth = Math.max(1.5, 2.5*k);
+    ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.strokeRect(x - pad, y - pad, b.w + 2*pad, b.h + 2*pad);
+    ctx.strokeStyle = '#ee7b58';
+    if (adjusting) ctx.setLineDash([10*k, 7*k]);
+    ctx.strokeRect(x - pad - 1, y - pad - 1, b.w + 2*pad + 2, b.h + 2*pad + 2);
+    ctx.restore();
+  }
+  function select(m){
+    selected = m ? { el:m.L.el, box:m.box, dx:m.L.dx, dy:m.L.dy } : null;
+  }
+
+  cv.addEventListener('pointerdown', function(e){
+    draw();   // refresh shown, dropHits and layers: an export may have drawn at another size since
+    var m = layerAt(e), p = current(), rect = cv.getBoundingClientRect();
+    if (adjusting) {
+      var h = hitAt(e);
+      if (h && h.slot === adjusting) {
+        // pan the photo inside its frame, each picture by its own framing
+        var f = FRAMING[adjusting], spx, spy, dw, dh;
+        if (adjusting === 'main') { spx = shown.win[0]/p.w; spy = shown.win[1]/p.h; dw = rect.width || 1; dh = rect.height || 1; }
+        else { spx = shown[f.shown][0]/h.w; spy = shown[f.shown][1]/h.w; dw = dh = (rect.width || 1) * h.w / cv.width; }
+        drag = { mode:'pan', f:f, sx:e.clientX, sy:e.clientY, spx:spx, spy:spy, dw:dw, dh:dh, moved:false };
+        cv.setPointerCapture(e.pointerId); cv.classList.add('dragging');
+        return;
+      }
+      stopAdjusting();
+    }
+    select(m);
+    if (m) {
+      var key = moveKey(m.L.el, p.w, p.h), start = state.moves[key] || [0, 0];
+      drag = { mode:'move', key:key, slot:m.L.slot, sx:e.clientX, sy:e.clientY, start:start.slice(),
+               rw:rect.width || 1, rh:rect.height || 1, moved:false };
+      cv.setPointerCapture(e.pointerId); cv.classList.add('dragging');
+    }
     draw();
   });
-  ['pointerup','pointercancel'].forEach(function(ev){
-    cv.addEventListener(ev, function(){
-      dragging = false; cv.classList.remove('dragging');
+  cv.addEventListener('pointermove', function(e){
+    if (!drag) {
+      // the cursor says what a drag would do
+      if (hoverRaf) return;
+      var ev = e;
+      hoverRaf = requestAnimationFrame(function(){
+        hoverRaf = 0;
+        var h = adjusting && hitAt(ev);
+        cv.style.cursor = (h && h.slot === adjusting) ? 'grab' : layerAt(ev) ? 'move' : 'default';
+      });
+      return;
+    }
+    // past a few pixels it is a drag, not a click
+    if (!drag.moved && Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) > 4) drag.moved = true;
+    if (!drag.moved) return;
+    if (drag.mode === 'pan') {
+      state[drag.f.x] = drag.spx + (e.clientX - drag.sx) / drag.dw;
+      state[drag.f.y] = drag.spy + (e.clientY - drag.sy) / drag.dh;
+    } else {
+      state.moves[drag.key] = [drag.start[0] + (e.clientX - drag.sx) / drag.rw, drag.start[1] + (e.clientY - drag.sy) / drag.rh];
+    }
+    redrawSoon();
+  });
+  ['pointerup','pointercancel'].forEach(function(evName){
+    cv.addEventListener(evName, function(){
+      if (!drag) return;
+      var d = drag; drag = null;
+      cv.classList.remove('dragging');
       if (panRaf) { cancelAnimationFrame(panRaf); panRaf = 0; }
+      if (d.moved && d.mode === 'move') { persist(); syncControls(); }
       draw();   // land on the exact final position
-      // a click that didn't move opens the picker for the picture it landed on
-      if (ev === 'pointerup' && clickSlot) pickFor(clickSlot);
-      clickSlot = null;
+      // a click that didn't move on a picture opens its file picker
+      if (evName === 'pointerup' && !d.moved && d.mode === 'move' && d.slot) {
+        clearTimeout(pickTimer);
+        if (!SLOTS[d.slot].has()) pickFor(d.slot);
+        else pickTimer = setTimeout(function(){ pickFor(d.slot); }, 300);
+      }
     });
+  });
+  cv.addEventListener('dblclick', function(e){
+    var m = layerAt(e);
+    if (!m || !m.L.slot || !SLOTS[m.L.slot].has()) return;
+    clearTimeout(pickTimer);
+    adjusting = m.L.slot; select(m);
+    setStatus('Adjusting the photo: drag it inside its frame, or use Zoom. Click outside or press Esc when done.');
+    draw();
+  });
+
+  // The keyboard path for all of it. Arrows nudge the selected element, or
+  // the photo being adjusted; Shift takes bigger steps. Esc lets go.
+  var PAN_KEYS = { ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1] };
+  cv.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && (adjusting || selected)) { stopAdjusting(); selected = null; draw(); return; }
+    var d = PAN_KEYS[e.key];
+    if (!d || e.metaKey || e.ctrlKey || e.altKey) return;
+    var step = e.shiftKey ? 0.05 : 0.01, p = current();
+    if (adjusting) {
+      e.preventDefault();
+      var f = FRAMING[adjusting], h = null;
+      if (adjusting === 'main') { state.panX = shown.win[0]/p.w + d[0]*step; state.panY = shown.win[1]/p.h + d[1]*step; }
+      else {
+        for (var i = 0; i < dropHits.length; i++) if (dropHits[i].slot === adjusting) h = dropHits[i];
+        if (h) { state[f.x] = shown[f.shown][0]/h.w + d[0]*step; state[f.y] = shown[f.shown][1]/h.w + d[1]*step; }
+      }
+      draw();
+    } else if (selected) {
+      e.preventDefault();
+      var key = moveKey(selected.el, p.w, p.h), o = state.moves[key] || [0, 0];
+      state.moves[key] = [o[0] + d[0]*step, o[1] + d[1]*step];
+      persist(); syncControls(); draw();
+    }
   });
   // The same file input the slot's Choose button opens, so a picture
   // chosen either way loads the same way.

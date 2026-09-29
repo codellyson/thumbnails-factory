@@ -339,7 +339,8 @@ def main():
         page = page.replace("<!--FAQ-->", faq_markup())
         for key, val in (("TITLE", pg["title"]), ("DESC", pg["desc"]),
                          ("OGTITLE", pg["ogtitle"]), ("URL", pg["url"]),
-                         ("PREFIX", pg["prefix"])):
+                         ("PREFIX", pg["prefix"]),
+                         ("BODY", ' class="editor"' if pg["nav"] == "tool" else "")):
             page = page.replace("{{" + key + "}}", val)
         for key in ("tool", "sizes", "privacy"):
             page = page.replace("{{NAV_" + key.upper() + "}}",

@@ -62,41 +62,155 @@ card, the SVG and both PNGs draw it from one function. The card's text is set in
 Instrument Sans, kept in `tools/fonts/` under the SIL Open Font License, so the
 card comes out the same on any machine.
 
-## Layouts
+## Templates
 
-**Full picture** fills the frame with the image, darkens the bottom, and sets the
-headline over it.
+The **Template** picker at the top of the controls shows a live preview of each
+template, drawn with your own headline and pictures at the size you picked. All
+templates draw from the same content, so switching keeps what you typed. Adding a
+template is one entry in `TEMPLATES` in `src/app.js`: a name, a hint and a draw
+function that reads `state`.
 
-**Showcase** is for build and tutorial videos. The image goes into a desktop
-window (title bar, three lights, an optional title), turned away in perspective,
-on a dark backdrop lit by a blurred copy of the same image. Beside it sits an optional phone playing a Short:
-its own picture, or the main image if none is given, with a two-line caption
-(the second line highlighted), a handle and the action buttons, each optional.
-The window takes the picture's own shape (held between 1.2:1 and 2.2:1), so a
-screenshot shows whole instead of cut mid-line. The window, the phone and the
-backdrop each take their own picture: the phone shows an empty tinted screen until
-it gets one, and the backdrop glow falls back to the window's picture. Drop a file on the phone to set its picture,
-and drag on either screen to reframe just that one. The headline takes the left half in
-landscape and runs under the cards in tall and square sizes; the window and phone
-switch between side-by-side and stacked, whichever comes out bigger in the room
-left over. The play badge is full-picture only.
+## Pictures: the same controls for every one
+
+Every picture a template uses is listed at the top of the panel, in the order the
+template shows it, and each gets the same controls: **Choose**, **Remove**, and a
+**Zoom** from 40% to 250% inside its own block. Below 100% the whole picture
+shows, with a blurred copy filling the room around it. Clicking a picture on the
+preview opens the file picker for it, and dropping a file on a picture replaces
+that picture. Double-clicking a picture that holds a photo switches to adjusting
+it: drags then move the photo inside its frame, until a click lands elsewhere or
+Esc is pressed. Where a template
+offers a shape (Before → After: circle or card; Talking point: auto, circle or
+frame), **Picture shape** sits right under its pictures.
+
+## Moving things
+
+Everything a template draws on top of its background can be dragged on the
+preview: the headline, each picture, the logo, arrows, the BEFORE and AFTER
+labels, and Launch's kicker, project tag and sticker. The element is outlined
+while selected, and the arrow keys nudge it (Shift for bigger steps).
+
+The round handle above the outline turns it about its centre; Shift snaps to 15°
+steps, and within 1.5° of straight it settles straight. `[` and `]` turn the
+selection a degree at a time (with Shift, 15°).
+
+The four corner handles resize it, evenly, holding the opposite corner still;
+with Alt (Option) it resizes about its centre instead. `-` and `=` resize it
+about its centre, 5% a step (with Shift, 20%). Sizes run from 20% to 500%.
+Resizing scales the element as drawn: a resized headline keeps its breaks and
+colours, and the headline bar measures it at the template's own size.
+
+The centre is fixed the first time an element is turned or resized, so later
+changes don't shift it.
+
+A label moves and turns with its picture, and so does Launch's sticker with its
+window, as well as on their own. A turned picture's photo, when adjusted, moves
+along the picture's own axes.
+
+A move is kept per template and per shape of frame, as a fraction of the frame,
+so it survives a change of size within that shape; a wide layout and a stacked
+tall one are arranged differently, so each keeps its own. **Reset positions**,
+under the template picker, appears when something has moved and puts that
+template back.
+
+The pointer finds an element by its paint, not a box around it: each element is
+drawn again, small and on its own, into a mask, and a click takes the topmost
+element with paint under it.
+
+## Controls: defined once
+
+Every setting is one entry in `CONTROLS` in `src/app.js`: its key, type, label,
+default, the panel it sits in, and the templates it belongs to. From that list the
+page builds the whole panel (`src/page.html` holds only an empty `#fields`), sets
+the defaults, decides what is remembered between visits, wires the change handler,
+and shows each control only for the templates that use it. A saved value is only
+restored when it is the same kind as the default, so a stale entry cannot break the
+page. Adding a control is adding an entry; a template then reads `state[key]`.
+
+Types: `text` (optionally with a paired colour), `color`, `range` (`%` stores a
+fraction), `choice`, `toggle`, `font`, `image` (names a picture slot: main, second
+or backdrop) and `custom` for the few widgets that are their own thing - the
+template picker, the palette swatches, the logo and the font upload.
+
+| Panel | Controls | Templates |
+| --- | --- | --- |
+| (top) | template, picture and zoom, before picture and zoom, the two headline lines with colours and palette | per control |
+| Project tag | text, size | Launch |
+| Kicker | two lines | Launch |
+| Text | headline font, headline size, kicker font, your own font file | all |
+| Strip | show, top, middle and bottom pictures | Collage |
+| Window | title, sticker and its colour, tilt | Launch |
+| Background | base colour (neutral, from the palette, or custom), dot grid, paper colour, brush bands, hand-drawn arrow, background picture | per control |
+| Pictures | before and after labels, shape, divider (slash or split field), lean, arrow | Before → After (lean also Collage) |
+| Logo | the logo, show, size | all |
+
+Colours follow the headline palette: the gradient runs where a template uses one,
+and the palette's last stop is the template's solid accent. **Signal yellow** is a
+solid palette for the flat yellow look.
+
+**Collage** is built to the quality bar. Wide sizes lean three columns together: a
+paper panel with brush bands top and bottom and a stacked headline - broken over as
+many lines as sets it biggest, the accent words in a deep shade of the palette,
+a brushed underline - then a strip of three pictures, then one big photo to the
+edge. Tall sizes stack the same three bands top to bottom: paper, strip, photo.
+Drop a file straight onto any panel. The headline keeps its colour only where it
+reads on the paper; otherwise it sets in near-black.
+
+**Talking point** is built to the quality bar. Light textured paper, a stacked
+slanted headline whose key word takes its own line - sized from whatever room the
+lines above it leave, up to 2.6 times their size - in the palette's gradient, a
+thick hand-drawn arrow curling onto the first line, and one big circular photo
+over a bow-tie of two gradient triangles, with a thin arc and dot beside it. Tall
+sizes and square ones put the photo on top and the words below. The photo may run
+under a platform's buttons; the words never do. **Photo shape** on Auto keeps a
+circle for a photo and switches to a frame in the picture's own proportions for a
+screenshot, so a wide picture shows whole instead of cropped to a round middle.
+
+In every template, **Zoom** below 100% shrinks a picture inside its shape so all of
+it shows, filling the room around it with a blurred copy of the same picture.
+
+**Launch** sets a big two-line headline, with an arrow after the first line, beside
+the screenshot in a window framed in the accent. It adds an outlined project tag, a sticker in the window's title bar, and a dot-grid backdrop.
+
+**Before → After** is built to the quality bar in `docs/quality-bar.md`. Wide sizes
+set two big pictures - circles or cards - on a textured field in the palette's
+colours, with a bright slash between them, a curved dashed arrow from one to the
+other, small BEFORE / AFTER labels, and one heavy slanted headline across the
+bottom whose second line is the accent. Tall and square sizes go full bleed:
+before on top (or left), after below (or right), cut by the slash, with the
+headline broken over as many lines as sets it biggest. Until pictures are dropped
+in, painted stand-ins keep it looking finished. It sets its headline in Anton
+unless another face is picked; each template can name its own face.
+
+Fonts are a choice, not a fixture. The **Text** panel picks the headline face
+(by default each template's own - League Gothic for Collage, Anton for Talking
+point and Before → After, Archivo Black for Launch - or Archivo Black, Anton,
+League Gothic, Bebas Neue, Inter, Montserrat, Poppins,
+Bricolage Grotesque, Space Grotesk, Oswald, DM Serif Display, Playfair Display) and
+the monospace face for the kicker and labels (JetBrains Mono by default). Each stock
+face loads from Google Fonts only when picked, and carries its own tracking so a
+condensed face is not squeezed further. **Use your own font file** adds a
+.ttf/.otf/.woff to both lists for the open tab; it is read in the browser and never
+sent anywhere.
+
+Launch has a **kicker**: a corner bracket in the accent with two short monospace
+lines (JetBrains Mono), such as a series and an episode. Leave both lines empty to
+show the logo there instead.
 
 On a YouTube thumbnail the bottom-right corner belongs to the video's length.
-The showcase pieces and the play badge are kept out of it, and **Show safe areas**
+Every template keeps its words out of it, and **Show safe areas**
 draws a stand-in timestamp there.
 
-Both layouts take a **badge**: any short label in a pill, such as `NEW`,
-`PART 2` or a series name. Leave it empty for none.
+Launch takes a **project tag**: a short outlined label above its headline, such as
+`JUSTDB`. Leave it empty for none.
 
-Each piece has its own panel. Only one panel is open at a time, and on a wide
-screen the preview stays in view while you scroll the controls:
-
-| Panel | Controls |
-| --- | --- |
-| Badge | text, style (light, dark, outline, headline colours), position (by the logo, top right, on the headline), size |
-| Window | title, style (dark, light, no frame), turn in depth, tilt |
-| Phone | picture, zoom, two lines of on-screen text with an accent colour, handle, like and share buttons, side, size, tilt |
-| Backdrop | glow from a picture (its own, or the window's), from the headline colours, or none, and its strength |
+On a wide screen the tool is laid out like an editor and fits the window: sizes
+in a column on the left, the preview in the middle filling whatever room is left,
+and the options on the right. Below 1280px wide the size list narrows to its
+shapes, each named small underneath. The two side columns scroll on their own, and the
+page itself doesn't have to; the page's own text sits below the editor. On a
+phone the columns stack, with the preview pinned to the top. Only one panel is
+open at a time.
 
 **Show at feed size** puts the thumbnail beside the editor at the size people
 actually meet it: 168 px wide in YouTube's suggested list, 124 px in a TikTok or
@@ -199,16 +313,16 @@ piece of this data nobody else publishes.
 
 ## The starting image
 
-There is no photo baked into this file. The backdrop you see on first load is
-drawn at run time by `makeDefaultFrame()` — a gradient with a few soft blobs —
-so the file stays small and ships nobody's screenshot. Drop in your own image
-and it is replaced.
+There is no photo baked into this file. Until pictures are dropped in, the
+templates paint stand-ins at run time - soft gradients with a figure's shape -
+so the file stays small, ships nobody's photo, and every template still looks
+finished on first load.
 
 ## Safe areas
 
 Each preset carries a safe-area rectangle — the region left clear of the
 platform's own interface, such as TikTok's action rail, a Story's caption
-band, or YouTube's duration badge. The headline, logo, and play badge are
+band, or YouTube's duration badge. Headlines, labels and the logo are
 anchored to that rectangle rather than to the canvas edge, so a layout that
 works on a 16:9 thumbnail also works on a 9:16 cover.
 
@@ -225,8 +339,8 @@ Presets live in the `PRESETS` array at the top of the script:
 ```
 
 `safe` values are fractions of the canvas (`t`/`b` of the height, `l`/`r` of
-the width). `play` decides whether the red play badge is offered for that
-platform, and `short` is the label under its tile in the size chart. The tile
+the width). `play` marks platforms whose thumbnails are video thumbnails (no
+current template draws a play badge), and `short` is the label under its tile in the size chart. The tile
 files itself under Wide, Tall or Square from its own aspect ratio. Every other
 measurement (type size, logo size, badge radius, shadow blur) is derived from
 the target dimensions, so nothing else needs changing.
@@ -236,8 +350,10 @@ the target dimensions, so nothing else needs changing.
 - Pick a size from the chart at the top; the tiles are drawn at true proportion,
   so the shape tells you what you are about to make
 - Choose an image, drag one onto the canvas, or paste a screenshot with ⌘V
-- Drag the canvas to reposition the frame; the offset is stored as a fraction,
-  so it survives a switch between presets
-- Zoom and Vignette sliders adjust the crop and the darkening behind the text
+- Drag anything on the preview to move it, its round handle to turn it, or a
+  corner to resize it;
+  double-click a picture to move the photo inside its frame. Positions are stored as fractions, so they survive a
+  switch between presets
+- Zoom adjusts the crop of each picture
 - Headline text, colours, your logo, the selected platform, and any custom size
   persist in `localStorage`

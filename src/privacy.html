@@ -35,7 +35,7 @@
         <li>The two lines of headline text</li>
         <li>The size you last picked, and any custom width and height</li>
         <li>Your headline colours</li>
-        <li>Your layout, badge, window, phone and backdrop settings</li>
+        <li>Your template and its settings</li>
         <li>A logo you uploaded, if you replaced the default one</li>
       </ul>
       <p>The picture you are working on is <em>not</em> stored. It lives in memory while
@@ -61,11 +61,14 @@
       Opening the page as a file from your own disk sends nothing at all.</p>
 
       <h2>What the page does load from elsewhere</h2>
-      <p>One stylesheet, from Google Fonts, for the typefaces the page and the headlines are set in.
-      That request tells Google the font was requested from this site, in the ordinary way
-      any web font does. It carries nothing about your image or your text. If you would
-      rather avoid it, the page still works with that request blocked; the headline simply
-      falls back to a system typeface.</p>
+      <p>One stylesheet, from Google Fonts, for the typefaces the page and the headlines
+      are set in, and one more for each other font you pick in the Text panel. Each
+      request tells Google a font was requested from this site, in the ordinary way any
+      web font does. It carries nothing about your image or your text. If you would
+      rather avoid it, the page still works with those requests blocked; the headline
+      simply falls back to a system typeface.</p>
+      <p>A font file of your own is read in the browser, used in the open tab, and not
+      sent anywhere.</p>
 
       <h2>Why it is built this way</h2>
       <p>Most free thumbnail tools upload your picture to process it. That is a reasonable

@@ -78,7 +78,7 @@
 </script>
 
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Archivo+Black&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Archivo+Black&family=JetBrains+Mono:wght@700&display=swap">
 <style>
   :root{
     /* Warm and low-glare: an off-white page, cream cards, near-black ink for
@@ -127,7 +127,7 @@
   .home img{ display:block; }   /* the SVG carries its own corners */
   .home span{ font-size:16px; font-weight:600; letter-spacing:-.02em; }
   .home:focus-visible{ outline:2px solid var(--ink); outline-offset:4px; border-radius:6px; }
-  header nav{ margin-left:auto; display:flex; gap:6px; }
+  header nav{ margin-inline-start:auto; display:flex; gap:6px; }
   header nav a{
     position:relative; color:var(--muted); font-size:15px; font-weight:500; text-decoration:none;
     padding:8px 12px; border-radius:var(--pill); transition:color .14s linear, background-color .14s linear;
@@ -137,7 +137,7 @@
   /* the current page gets a small coral dot, the one bit of colour up here */
   header nav a[aria-current="page"]::after{
     content:""; position:absolute; left:50%; bottom:1px; width:5px; height:5px;
-    margin-left:-2.5px; border-radius:50%; background:var(--accent);
+    transform:translateX(-50%); border-radius:50%; background:var(--accent);   /* centred: same either way round */
   }
   header nav a:focus-visible{ outline:2px solid var(--ink); outline-offset:1px; }
 
@@ -152,7 +152,7 @@
   .prose{ max-width:68ch; }
   .prose h2{ font-size:22px; font-weight:500; letter-spacing:-.03em; margin:34px 0 10px; }
   .prose p, .prose li{ font-size:16px; margin:0 0 14px; }
-  .prose ul{ margin:0 0 16px; padding-left:20px; }
+  .prose ul{ margin:0 0 16px; padding-inline-start:20px; }
   .prose li{ margin:0 0 6px; }
   .prose li::marker{ color:var(--accent); }
   .prose code{ font-size:14px; background:var(--cream); padding:2px 6px; border-radius:6px; }
@@ -193,7 +193,7 @@
   .canvas-wrap{
     position:relative; background:var(--well);
     border-radius:var(--r-well); overflow:hidden; isolation:isolate;
-    transition:background-color .4s linear;
+    transition:background-color .15s linear;
     display:flex; align-items:center; justify-content:center;
     min-height:260px; padding:18px;
   }
@@ -202,7 +202,8 @@
     cursor:grab; touch-action:none; background:#000; border-radius:6px;   /* 24 well − 18 padding */
     transition:opacity .12s linear;
   }
-  #cv{ position:relative; z-index:1; box-shadow:0 10px 40px rgb(0 0 0 / .28); }
+  #cv{ position:relative; z-index:1; box-shadow:0 10px 40px rgb(0 0 0 / .28); outline:1px solid oklch(1 0 0 / 0.1); outline-offset:-1px; }
+  #cv:focus-visible{ outline:2px solid var(--accent); outline-offset:4px; }
   .canvas-wrap .ambient{
     position:absolute; inset:0; width:100%; height:100%; max-height:none; z-index:0;
     border-radius:0; background:none; cursor:inherit; pointer-events:none;
@@ -226,7 +227,7 @@
     padding:14px 4px 0; margin:0;
   }
   .readout .what{ font-weight:600; letter-spacing:-.01em; }
-  .readout .dims{ margin-left:auto; color:var(--muted); }
+  .readout .dims{ margin-inline-start:auto; color:var(--muted); }
   .howto{ margin:10px 4px 0; max-width:56ch; color:var(--muted); font-size:14px; }
   .howto p{ margin:0 0 3px; }
 
@@ -238,7 +239,8 @@
   .feed .hint{ margin:2px 0 14px; color:#a3a3a3; }
   .feedrow{ display:flex; flex-wrap:wrap; gap:18px 22px; align-items:flex-start; }
   .feeditem{ margin:0; display:flex; flex-direction:column; gap:6px; min-width:0; max-width:100%; }
-  .feeditem canvas{ display:block; max-width:100%; max-height:none; border-radius:8px; cursor:default; background:#000; }
+  .feeditem canvas{ display:block; max-width:100%; max-height:none; border-radius:8px; cursor:default; background:#000;
+    outline:1px solid oklch(1 0 0 / 0.1); outline-offset:-1px; }
   .feeditem figcaption{ font-size:12px; color:#a3a3a3; }
   /* Grey bars where the title and channel would be, so the thumbnail is seen
      among the things it competes with, not alone. */
@@ -254,7 +256,6 @@
   .bench h2, .sizegroup h2{
     font-size:13px; font-weight:500; margin:0 0 10px; color:var(--muted);
   }
-  .rule{ height:1px; background:var(--line-strong); }
 
   /* ---- size chart: the point of the page ---- */
   .sizes{
@@ -264,7 +265,7 @@
     padding:18px 0 20px; margin:0 0 26px; min-width:0;
   }
   .sizegroup{ min-width:0; }
-  .sizegroup + .sizegroup{ border-left:1px solid var(--line); padding-left:28px; margin-left:0; }
+  .sizegroup + .sizegroup{ border-inline-start:1px solid var(--line); padding-inline-start:28px; margin-inline-start:0; }
   .tiles{ display:flex; flex-wrap:wrap; gap:14px; max-width:286px; }
   .tile{ width:86px; }
   .sizegroup.customgroup .tile{ width:54px; }
@@ -279,7 +280,7 @@
   .chipbox{ height:40px; display:flex; align-items:flex-end; }
   .chip{
     display:block; background:var(--surface); border:1px solid var(--line-strong); border-radius:4px;
-    transition:background-color .14s linear, border-color .14s linear, transform .14s cubic-bezier(0.2, 0, 0, 1);
+    transition-property:background-color, border-color; transition-duration:.14s; transition-timing-function:linear;
   }
   .tile.custom .chip{ border-style:dashed; display:flex; align-items:center; justify-content:center;
     font-size:17px; font-weight:500; line-height:1; color:var(--muted); }
@@ -297,6 +298,8 @@
   .field{ display:flex; flex-direction:column; gap:6px; min-width:0; }
   .field > label, .legend{ font-size:13px; font-weight:500; }
   .hint{ font-size:12.5px; margin:4px 0 0; color:var(--muted); }
+  /* a picture's zoom lives in its block, just under its buttons */
+  .field > .field{ margin-top:8px; }
   input[type=text], input[type=number]{
     font-family:var(--ui); font-size:15px; font-variant-numeric:tabular-nums;
     background:var(--surface); color:var(--ink);
@@ -305,6 +308,15 @@
     transition:box-shadow .14s linear;
   }
   input::placeholder{ color:var(--muted); opacity:.8; }
+  select{
+    -webkit-appearance:none; appearance:none; width:100%;
+    font-family:var(--ui); font-size:15px; color:var(--ink);
+    background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%237f7c77' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 14px center;
+    border:0; box-shadow:0 0 0 1px var(--line-strong); border-radius:var(--r);
+    padding:10px 36px 10px 12px; cursor:pointer; transition:box-shadow .14s linear;
+  }
+  @media (hover: hover){ select:hover{ box-shadow:0 0 0 1px var(--muted); } }
+  select:focus-visible{ outline:none; box-shadow:0 0 0 1.5px var(--ink), 0 0 0 5px rgb(35 34 31 / .08); }
   @media (hover: hover){ input[type=text]:hover, input[type=number]:hover{ box-shadow:0 0 0 1px var(--muted); } }
   input[type=text]:focus-visible, input[type=number]:focus-visible{
     outline:none; box-shadow:0 0 0 1.5px var(--ink), 0 0 0 5px rgb(35 34 31 / .08);
@@ -315,7 +327,26 @@
   .row .field.narrow{ flex:1; min-width:70px; }
   .row[hidden]{ display:none; }
   .field[hidden]{ display:none; }
+  /* controls a template does not use; beats each control's own display */
+  .fields [hidden], .toggles [hidden]{ display:none !important; }
+
+  /* template picker: a live preview of each, your content in its arrangement */
+  .tpls{ display:grid; grid-template-columns:1fr 1fr; gap:14px 10px; }
+  .tpl{ position:relative; display:flex; flex-direction:column; gap:6px; cursor:pointer; font-size:13px; font-weight:500; color:var(--muted); }
+  .tpl input{ position:absolute; opacity:0; width:1px; height:1px; }
+  .tpl canvas{
+    display:block; width:100%; height:auto; aspect-ratio:16/9; object-fit:contain;
+    max-height:none; border-radius:10px; background:var(--well); cursor:pointer;
+    box-shadow:0 0 0 1px oklch(0 0 0 / 0.1); transition:box-shadow .14s linear;   /* untinted: a tinted ring reads as dirt on the edge */
+  }
+  @media (hover: hover){ .tpl:hover canvas{ box-shadow:0 0 0 1px var(--muted); } }
+  .tpl:has(input:checked){ color:var(--ink); }
+  .tpl:has(input:checked) canvas{ box-shadow:0 0 0 2px var(--canvas), 0 0 0 3.5px var(--ink); }
+  .tpl:has(input:focus-visible) canvas{ outline:2px solid var(--ink); outline-offset:4px; }
   .customgroup .row{ width:190px; }
+  .moverow{ display:flex; align-items:center; gap:10px; justify-content:space-between; margin-top:2px; }
+  .moverow .hint{ margin:0; }
+  .moverow .btn{ width:auto; white-space:nowrap; flex:none; }
   .customgroup .row .field{ gap:4px; }
 
   /* segmented choice: a cream track with the chosen segment lifted to white */
@@ -332,19 +363,18 @@
   .segs label:has(input:focus-visible){ outline:2px solid var(--ink); outline-offset:1px; }
 
   /* folding panels */
-  .showcase{ display:flex; flex-direction:column; gap:16px; }
-  .showcase[hidden], .phonebits[hidden]{ display:none; }
-  .phonebits{ display:flex; flex-direction:column; gap:12px; margin-top:4px; }
-  .group{ border-top:1px solid var(--line-strong); padding-top:12px; display:flex; flex-direction:column; gap:14px; }
+  .group{ border-top:1px solid var(--line-strong); padding-top:12px; }
+  /* a panel's first control hangs closer to its title (10) than controls sit to each other (16) */
+  .gbody{ display:flex; flex-direction:column; gap:16px; padding-top:10px; }
+  /* a panel's first control hangs closer to its title than controls sit to each other */
   .group > summary{ font-size:14px; font-weight:500; cursor:pointer;
     list-style:none; display:flex; align-items:center; gap:8px; min-height:28px; }
   .group > summary::-webkit-details-marker{ display:none; }
-  .group > summary::after{ content:""; margin-left:auto; width:6px; height:6px; border:solid var(--muted);
+  .group > summary::after{ content:""; margin-inline-start:auto; width:6px; height:6px; border:solid var(--muted);
     border-width:0 1.5px 1.5px 0; transform:translateY(-2px) rotate(45deg); transition:transform .16s cubic-bezier(0.2, 0, 0, 1); }
-  .group[open] > summary::after{ transform:translateY(1px) rotate(-135deg); }
+  .group[open] > summary::after{ transform:translateY(1px) rotate(-135deg); border-width:0 2px 2px 0; }   /* matches the semibold open title */
   .group[open] > summary{ font-weight:600; }
   .group > summary:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; border-radius:6px; }
-  .group:not([open]){ gap:0; }
 
   input[type=range]{
     -webkit-appearance:none; appearance:none; width:100%; background:transparent; margin:8px 0;
@@ -365,7 +395,7 @@
   .tog{ display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer; min-height:24px; }
   .tog input{ width:16px; height:16px; margin:0; accent-color:var(--ink); }
   .tog.off{ opacity:.45; cursor:default; }
-  .note{ font-size:12.5px; margin:-2px 0 0 26px; max-width:34ch; color:var(--muted); }
+  .note{ font-size:12.5px; margin:-2px 0 0; margin-inline-start:26px; max-width:34ch; color:var(--muted); }
   .note[hidden]{ display:none; }
 
   /* ---- brand controls ---- */
@@ -434,7 +464,7 @@
     transition-timing-function:cubic-bezier(0.2, 0, 0, 1);
   }
   @media (hover: hover){ .btn:hover{ box-shadow:0 0 0 1px var(--muted); } }
-  .btn:active:not(:disabled){ transform:scale(0.97); }
+  .btn:active:not(:disabled){ transform:scale(0.96); }
   .btn:focus-visible{ outline:2px solid var(--ink); outline-offset:3px; }
   .btn-sm{ padding:8px 14px; font-size:13.5px; min-height:36px; }
   .btn-sm[hidden]{ display:none; }
@@ -446,7 +476,15 @@
     .btn:disabled:hover{ box-shadow:0 0 0 1px var(--line-strong); }
     .btn-go:disabled:hover{ box-shadow:none; opacity:.45; }
   }
-  .actions{ display:flex; flex-direction:column; gap:10px; }
+  /* The one decisive action stays in reach however long the panel gets: it
+     rides the bottom of the view while the controls above it scroll. */
+  .actions{
+    display:flex; flex-direction:column; gap:10px;
+    position:sticky; bottom:0; z-index:2; margin:8px -20px -20px;
+    padding:14px 20px calc(20px + env(safe-area-inset-bottom));
+    background:var(--cream); border-radius:0 0 var(--r-panel) var(--r-panel);
+    box-shadow:0 -10px 16px -12px rgb(35 34 31 / .18);
+  }
 
   .status{ font-size:13px; min-height:19px; font-weight:500; color:var(--muted); }
   .status.ok{ color:var(--ok); }
@@ -464,7 +502,7 @@
   .sizeref h2{ font-size:22px; font-weight:500; letter-spacing:-.03em; margin:0 0 8px; }
   .sizeref > p{ margin:0 0 18px; max-width:66ch; font-size:15.5px; color:var(--muted); }
   .sizeref table{ border-collapse:collapse; width:100%; font-size:14.5px; }
-  .sizeref th, .sizeref td{ text-align:left; padding:11px 14px 11px 0; vertical-align:top;
+  .sizeref th, .sizeref td{ text-align:start; padding-block:11px; padding-inline:0 14px; vertical-align:top;
     border-bottom:1px solid var(--line); }
   .sizeref thead th{ font-size:12.5px; font-weight:500; color:var(--muted); }
   .sizeref tbody th{ font-weight:500; }
@@ -500,18 +538,123 @@
   }
 
   @media (max-width:900px){
-    .layout{ grid-template-columns:minmax(0,1fr); }
+    .layout{ grid-template-columns:minmax(0,1fr); gap:16px; }
+    .sizes{ margin-bottom:0; }
     /* one scrolling row, so the preview is still on the first screen */
     .sizes{ flex-wrap:nowrap; overflow-x:auto; gap:0 18px; padding-bottom:14px; }
     .sizegroup{ flex:0 0 auto; }
-    .sizegroup + .sizegroup{ padding-left:18px; }
+    .sizegroup + .sizegroup{ padding-inline-start:18px; }
     .tiles{ flex-wrap:nowrap; max-width:none; gap:12px; }
     .customgroup .row{ width:150px; }
     .canvas-wrap{ min-height:0; padding:10px; border-radius:16px; }
     canvas{ border-radius:6px; }
-    .bench{ border-radius:24px; padding:16px; }
+    .bench{ border-radius:28px; padding:16px; }   /* 12 + 16 */
+    .actions{ margin:8px -16px -16px; padding:12px 16px calc(16px + env(safe-area-inset-bottom)); border-radius:0 0 28px 28px; }
     header{ margin-bottom:28px; }
+    /* One column: the preview pins to the top, small, so a change further
+       down the panel is seen as it is made. With the feed strip open the
+       column would be too tall to pin, so it scrolls as before. */
+    .stage{ position:sticky; top:0; z-index:3; background:var(--canvas); padding-block:8px; }
+    .stage canvas{ max-height:30vh; }
+    .stage .howto{ display:none; }
+    .stage:has(.feed:not([hidden])){ position:static; }
   }
+
+  /* ---- the editor: one window, three columns, nothing to scroll ----
+     Sizes on the left, the preview in the middle filling whatever room is
+     left, the options on the right. Each side column scrolls on its own; the
+     preview never moves. The page's own words wait below the fold for anyone
+     who wants them. */
+  .rail{ min-width:0; }
+  .sizes legend + .sizegroup h2{ margin-top:0; }
+  @media (min-width:901px){
+    body.editor{ padding:0; }
+    body.editor .shell{ max-width:none; }
+    body.editor header{ padding:0 20px; height:56px; min-height:0; margin:0; flex-wrap:nowrap; }
+    body.editor .layout{
+      height:calc(100dvh - 56px);   /* the header, rule included */
+      grid-template-columns:184px minmax(0,1fr) 324px; gap:0; align-items:stretch;
+      border-bottom:1px solid var(--line);
+    }
+    body.editor .rail{ overflow-y:auto; overscroll-behavior:contain; border-inline-end:1px solid var(--line); padding:12px 8px 20px; }
+    body.editor .sizes{ flex-direction:column; flex-wrap:nowrap; gap:14px; border:0; padding:0; margin:0; }
+    body.editor .sizegroup + .sizegroup{ border-inline-start:0; padding-inline-start:0; border-top:1px solid var(--line); padding-top:12px; }
+    body.editor .sizegroup h2{ margin:0 0 6px; padding-inline:8px; }
+    body.editor .tiles{ flex-direction:column; flex-wrap:nowrap; gap:2px; max-width:none; }
+    /* a size is a row: its shape, then its name over its pixels */
+    body.editor .tile{
+      width:auto; display:grid; grid-template-columns:40px minmax(0,1fr); grid-template-rows:auto auto;
+      column-gap:8px; row-gap:1px; align-items:center; padding:6px 8px; border-radius:10px;
+      transition:background-color .14s linear;
+    }
+    body.editor .tile .chipbox{ grid-row:1 / span 2; height:28px; width:40px; align-items:center; justify-content:center; }
+    body.editor .tile .name{ font-size:13.5px; }
+    body.editor .tile .size{ font-size:11.5px; }
+    @media (hover: hover){ body.editor .tile:hover{ background:var(--cream); } }
+    body.editor .tile:has(input:checked){ background:var(--cream); }
+    body.editor .tile.custom{ grid-template-columns:40px minmax(0,1fr); }
+    body.editor .tile.custom .name{ display:block; }
+    body.editor .sizegroup.customgroup .tile{ width:auto; }
+    body.editor .customgroup .row{ width:auto; gap:6px; padding:6px 8px 0; }
+    /* two numbers side by side in a narrow column: no room for spinners */
+    body.editor .customgroup input[type=number]{ padding:8px 10px; -moz-appearance:textfield; appearance:textfield; }
+    body.editor .customgroup input[type=number]::-webkit-inner-spin-button,
+    body.editor .customgroup input[type=number]::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
+
+    /* the preview takes every pixel the columns leave */
+    body.editor .stage{ position:static; display:flex; flex-direction:column; min-height:0; padding:12px 16px 10px; }
+    body.editor .canvas-wrap{ flex:1 1 0; min-height:0; padding:16px; border-radius:var(--r-well); }
+    /* the well is a big surface here: its glow stays a hint of the picture's
+       colour, not a blurred copy that competes with it */
+    body.editor .canvas-wrap .ambient{ opacity:.3; filter:blur(60px) saturate(1.1); }
+    body.editor canvas#cv{ max-width:100%; max-height:100%; }
+    body.editor .stage:has(.feed:not([hidden])) canvas{ max-height:100%; }
+    body.editor .readout{ flex:none; padding-top:10px; }
+    body.editor .howto{ flex:none; margin-top:2px; max-width:none; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    body.editor .howto p{ display:inline; }
+    body.editor .howto p + p::before{ content:" "; }
+    body.editor .feed{ flex:none; margin-top:12px; padding:12px 14px; }
+    body.editor .stage:has(.feed:not([hidden])) .howto{ display:none; }
+
+    /* the options scroll inside their column; Download stays at its foot */
+    body.editor .bench{ overflow-y:auto; overscroll-behavior:contain; border-radius:0; padding:16px 18px 0; gap:18px; }
+    body.editor .actions{ margin:auto -18px 0; padding:12px 18px 16px; gap:8px; border-radius:0; }
+    body.editor .actions .btn-go{ min-height:44px; padding:10px 18px; }
+    body.editor .actions .btn:not(.btn-go){ min-height:40px; padding:8px 18px; font-size:14px; }
+    body.editor .status:empty{ display:none; }
+
+    body.editor .about{ padding:40px 20px 0; max-width:1240px; margin:0 auto; }
+    body.editor footer{ margin:56px 20px 0; padding-bottom:40px; }
+  }
+  /* Between 901 and 1279 the three columns crowd the preview, so the size
+     rail narrows to a column of shapes, each with its name set small under
+     it (six wide shapes alone look alike). The group titles step aside for
+     screen readers only; the shapes already say wide, tall or square. */
+  @media (min-width:901px) and (max-width:1279px){
+    body.editor .layout{ grid-template-columns:80px minmax(0,1fr) 316px; }
+    /* still scrolls on a short window, but a scrollbar would eat the names' room */
+    body.editor .rail{ padding:10px 4px 16px; scrollbar-width:none; }
+    body.editor .rail::-webkit-scrollbar{ display:none; }
+    body.editor .sizes{ gap:8px; }
+    body.editor .sizegroup h2{
+      position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+      overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;
+    }
+    body.editor .sizegroup + .sizegroup{ padding-top:8px; }
+    body.editor .tile, body.editor .tile.custom{
+      display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 2px;
+    }
+    body.editor .tile .chipbox{ width:44px; height:26px; }
+    body.editor .tile .name, body.editor .tile.custom .name{
+      display:block; font-size:10.5px; line-height:1.15; text-align:center; max-width:100%;
+    }
+    body.editor .tile .size{ display:none; }
+    /* the custom numbers stack, each the rail's width */
+    body.editor .customgroup .row{ flex-direction:column; gap:6px; padding:6px 0 0; }
+    body.editor .customgroup .field > label{ font-size:11px; text-align:center; }
+    body.editor .customgroup input[type=number]{ padding:6px 4px; font-size:13px; text-align:center; }
+  }
+  .about h1{ margin-top:0; }
 
   @media (prefers-reduced-motion:reduce){
     *{ transition-duration:0ms !important; animation-duration:0ms !important; }

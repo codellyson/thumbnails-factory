@@ -1833,7 +1833,7 @@
   // panel, so the number you type sits next to the shape it changes.
   function buildCustomRow(){
     customRow = document.createElement('div');
-    customRow.className = 'row'; customRow.id = 'customRow'; customRow.hidden = true;
+    customRow.className = 'row'; customRow.id = 'customRow'; customRow.hidden = state.preset !== 'custom';   // open at load if the saved size is custom
     [['cw','Width',state.customW],['ch','Height',state.customH]].forEach(function(f){
       var field = document.createElement('div'); field.className = 'field';
       var lab = document.createElement('label'); lab.htmlFor = f[0]; lab.textContent = f[1];

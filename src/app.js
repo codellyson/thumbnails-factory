@@ -1156,14 +1156,14 @@
     if (text) place(c, g, opts, 'headline', function(c){
       var set = function(q){ slantedLine(c, q, (g.left + g.right)/2, base, px); };
       if (state.vsDivider !== 'split') return set(parts);
-      var o = offsetOf('headline', W, H), onField = inkOn(st[2]);
-      c.save(); c.translate(-o[0], -o[1]);
+      var m = xformOf('headline', W, H), inv = m.inverse(), onField = inkOn(st[2]);
+      c.save(); applyM(c, inv);
       c.beginPath(); c.moveTo(0, 0); c.lineTo(W/2 + sl, 0); c.lineTo(W/2 - sl, H); c.lineTo(0, H); c.closePath();
-      c.translate(o[0], o[1]); c.clip();
+      applyM(c, m); c.clip();
       set(parts); c.restore();
-      c.save(); c.translate(-o[0], -o[1]);
+      c.save(); applyM(c, inv);
       c.beginPath(); c.moveTo(W/2 + sl, 0); c.lineTo(W, 0); c.lineTo(W, H); c.lineTo(W/2 - sl, H); c.closePath();
-      c.translate(o[0], o[1]); c.clip();
+      applyM(c, m); c.clip();
       set(parts.map(function(q){ return { t:q.t, color:q.color === accent ? onField : q.color }; })); c.restore();
     });
   }
@@ -1180,25 +1180,43 @@
   // labels - is drawn through place(). It shifts the element by its saved
   // offset, a fraction of the frame kept per template and per shape of frame
   // (a stacked tall layout is not the wide one), so a move survives a change
-  // of size. An element can hang off another (a label off its picture) and
-  // then moves with it as well as on its own. On the preview each placed
+  // of size, and it can be turned about its centre. An element can hang off
+  // another (a label off its picture) and then moves and turns with it as
+  // well as on its own. On the preview each placed
   // element is remembered, with its drawing, so the pointer can find it.
-  var layers = [];     // preview only: [{ el, slot, draw, dx, dy }] in drawing order
+  var layers = [];     // preview only: [{ el, parent, slot, draw, m }] in drawing order
   function frameShape(W, H){ var a = W/H; return a < 0.85 ? 'tall' : a < 1.2 ? 'square' : 'wide'; }
   function moveKey(el, W, H){ return state.layout + '.' + frameShape(W, H) + '.' + el; }
-  function offsetOf(el, W, H, parent){
-    var m = state.moves[moveKey(el, W, H)] || [0, 0], q = parent ? state.moves[moveKey(parent, W, H)] || [0, 0] : [0, 0];
-    return [(m[0] + q[0])*W, (m[1] + q[1])*H];
+  // A saved placement is [dx, dy, degrees, pivotX, pivotY]: the offset and
+  // the pivot as fractions of the frame, the pivot in the element's own
+  // coordinates - its centre when it was first turned. Older saves hold
+  // only the offset.
+  function moveOf(el, W, H){ return state.moves[moveKey(el, W, H)] || [0, 0]; }
+  // The element's transform on the frame: its parent's first, then its own.
+  function xformOf(el, W, H, parent){
+    var m = parent ? xformOf(parent, W, H) : new DOMMatrix();
+    var v = moveOf(el, W, H);
+    m = m.translate(v[0]*W, v[1]*H);
+    if (v[2]) { var px = v[3]*W, py = v[4]*H; m = m.translate(px, py).rotate(v[2]).translate(-px, -py); }
+    return m;
   }
+  function applyM(c, m){ c.transform(m.a, m.b, m.c, m.d, m.e, m.f); }
   function place(c, g, opts, el, draw, o){
     o = o || {};
-    var d = offsetOf(el, g.W, g.H, o.parent);
-    c.save(); c.translate(d[0], d[1]); draw(c); c.restore();
+    var m = xformOf(el, g.W, g.H, o.parent);
+    c.save(); applyM(c, m); draw(c); c.restore();
     if (opts.preview) {
-      layers.push({ el:el, slot:o.slot || null, draw:draw, dx:d[0], dy:d[1] });
-      // a picture's box goes where the picture went, for drops and framing
-      if (o.hit) dropHits.push({ slot:o.slot, x:o.hit.x + d[0], y:o.hit.y + d[1], w:o.hit.w, h:o.hit.h,
-        poly:o.hit.poly && o.hit.poly.map(function(q){ return [q[0] + d[0], q[1] + d[1]]; }) });
+      layers.push({ el:el, parent:o.parent || null, slot:o.slot || null, draw:draw, m:m });
+      // a picture's box goes where the picture went, turned with it, for
+      // drops and framing; bw keeps its own width for framing's arithmetic
+      if (o.hit) {
+        var h = o.hit, poly = (h.poly || [[h.x, h.y], [h.x + h.w, h.y], [h.x + h.w, h.y + h.h], [h.x, h.y + h.h]])
+          .map(function(q){ var t = m.transformPoint({ x:q[0], y:q[1] }); return [t.x, t.y]; });
+        var xs = poly.map(function(q){ return q[0]; }), ys = poly.map(function(q){ return q[1]; });
+        var x0 = Math.min.apply(null, xs), y0 = Math.min.apply(null, ys);
+        dropHits.push({ slot:o.slot, x:x0, y:y0, w:Math.max.apply(null, xs) - x0, h:Math.max.apply(null, ys) - y0,
+                        bw:h.w, poly:poly, angle:Math.atan2(m.b, m.a) });
+      }
     }
   }
 
@@ -1744,7 +1762,8 @@
       quality:function(){ return measure(current()); },
       qualityAll:function(){ return PRESETS.filter(function(p){ return p.id !== 'custom'; }).map(measure); },
       // the movable elements on the preview, with the box each one paints
-      layers:function(){ draw(); return layerMasks().map(function(m){ return { el:m.L.el, slot:m.L.slot, box:m.box }; }); }
+      layers:function(){ draw(); return layerMasks().map(function(m){ return { el:m.L.el, slot:m.L.slot, box:m.box, placed:placedBox(m) }; }); },
+      handle:function(){ var q = selGeom(); return q && { x:q.handle.x, y:q.handle.y }; }
     };
   }
 
@@ -2195,7 +2214,7 @@
     var hint = hintEl(''); hint.id = 'layoutHint'; f.appendChild(hint);
     // moving things is done on the preview; this only takes it back
     var row = el('div', 'moverow');
-    row.appendChild(hintEl('Drag anything on the preview to move it.'));
+    row.appendChild(hintEl('Drag anything on the preview to move it; drag its handle to turn it.'));
     var reset = el('button', 'btn btn-sm', 'Reset positions'); reset.id = 'movesReset'; reset.type = 'button'; reset.hidden = true;
     reset.addEventListener('click', function(){
       var p = current(), pre = state.layout + '.' + frameShape(p.w, p.h) + '.';
@@ -2588,19 +2607,35 @@
     var s = Math.min(1, 480 / Math.max(cv.width, cv.height));
     var w = Math.max(1, Math.round(cv.width*s)), h = Math.max(1, Math.round(cv.height*s));
     var keep = JSON.stringify(shown);   // drawing a picture again rewrites its framing
+    // painted into one scratch canvas at a time: as placed, for the hit
+    // test, and untransformed, for the element's own box - the outline and
+    // the pivot are worked out in the element's own coordinates
+    var m = document.createElement('canvas'); m.width = w; m.height = h;
+    var mc = m.getContext('2d', { willReadFrequently:true });
+    function paint(L, placed){
+      mc.setTransform(1, 0, 0, 1, 0, 0); mc.clearRect(0, 0, w, h);
+      mc.setTransform(s, 0, 0, s, 0, 0);
+      if (placed) applyM(mc, L.m);
+      mc.save(); try { L.draw(mc); } catch(e){} mc.restore();
+      return mc.getImageData(0, 0, w, h).data;
+    }
     masks = layers.map(function(L){
-      var m = document.createElement('canvas'); m.width = w; m.height = h;
-      var mc = m.getContext('2d', { willReadFrequently:true });
-      mc.setTransform(s, 0, 0, s, 0, 0); mc.translate(L.dx, L.dy);
-      try { L.draw(mc); } catch(e){}
-      var d = mc.getImageData(0, 0, w, h).data, x0 = w, y0 = h, x1 = -1, y1 = -1;
+      var d = paint(L, true), own = paint(L, false), x0 = w, y0 = h, x1 = -1, y1 = -1;
       for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
-        if (d[(y*w + x)*4 + 3] > 160) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        if (own[(y*w + x)*4 + 3] > 160) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
       }
       return { L:L, d:d, w:w, h:h, s:s, box: x1 < 0 ? null : { x:x0/s, y:y0/s, w:(x1 - x0 + 1)/s, h:(y1 - y0 + 1)/s } };
     });
     shown = JSON.parse(keep);
     return masks;
+  }
+  // where an element's paint sits on the frame, from its placed mask
+  function placedBox(m){
+    var x0 = m.w, y0 = m.h, x1 = -1, y1 = -1;
+    for (var y = 0; y < m.h; y++) for (var x = 0; x < m.w; x++) {
+      if (m.d[(y*m.w + x)*4 + 3] > 160) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    }
+    return x1 < 0 ? null : { x:x0/m.s, y:y0/m.s, w:(x1 - x0 + 1)/m.s, h:(y1 - y0 + 1)/m.s };
   }
   function canvasPoint(e){
     var rect = cv.getBoundingClientRect();
@@ -2634,24 +2669,57 @@
     if (!adjusting) return;
     adjusting = null; setStatus('');
   }
-  // The selection outline, drawn on the preview only; downloads re-render
-  // without it.
+  // The selection outline, drawn on the preview only - downloads re-render
+  // without it - turned with the element, with the rotate handle standing
+  // off its top edge.
+  function selLayer(){
+    if (!selected) return null;
+    for (var i = layers.length - 1; i >= 0; i--) if (layers[i].el === selected.el) return layers[i];
+    return null;
+  }
+  function selGeom(){
+    var L = selLayer(); if (!L || !selected.box) return null;
+    var k = Math.sqrt(cv.width*cv.height / (1280*720)), pad = 6*k, b = selected.box;
+    var r = { x:b.x - pad, y:b.y - pad, w:b.w + 2*pad, h:b.h + 2*pad };
+    var stem = 26*k, knob = 9*k;
+    // the handle's own-coordinate spot, and where that lands on the frame
+    var hx = r.x + r.w/2, hy = r.y - stem, hp = L.m.transformPoint({ x:hx, y:hy });
+    return { L:L, k:k, r:r, stem:stem, knob:knob, hx:hx, hy:hy, handle:hp };
+  }
   function drawSelection(){
-    var el = selected && selected.el, L = null;
-    for (var i = 0; i < layers.length; i++) if (layers[i].el === el) L = layers[i];
-    if (!L || !selected.box) return;
-    var b = selected.box, x = b.x + L.dx - selected.dx, y = b.y + L.dy - selected.dy;
-    var k = Math.sqrt(cv.width*cv.height / (1280*720)), pad = 6*k;
+    var q = selGeom(); if (!q) return;
+    var r = q.r, k = q.k;
     ctx.save();
+    applyM(ctx, q.L.m);
     ctx.lineWidth = Math.max(1.5, 2.5*k);
-    ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.strokeRect(x - pad, y - pad, b.w + 2*pad, b.h + 2*pad);
+    ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.strokeRect(r.x + 1, r.y + 1, r.w, r.h);
     ctx.strokeStyle = '#ee7b58';
     if (adjusting) ctx.setLineDash([10*k, 7*k]);
-    ctx.strokeRect(x - pad - 1, y - pad - 1, b.w + 2*pad + 2, b.h + 2*pad + 2);
+    ctx.strokeRect(r.x, r.y, r.w, r.h);
+    ctx.setLineDash([]);
+    if (!adjusting) {
+      ctx.beginPath(); ctx.moveTo(q.hx, r.y); ctx.lineTo(q.hx, q.hy); ctx.stroke();
+      ctx.beginPath(); ctx.arc(q.hx, q.hy, q.knob, 0, Math.PI*2);
+      ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.stroke();
+    }
     ctx.restore();
   }
   function select(m){
-    selected = m ? { el:m.L.el, box:m.box, dx:m.L.dx, dy:m.L.dy } : null;
+    selected = m ? { el:m.L.el, box:m.box } : null;
+  }
+  // Turning: about the element's centre, fixed the first time it is turned
+  // so a later turn doesn't shift it. Shift snaps to 15 degrees.
+  function startTurn(q, e, p){
+    var key = moveKey(q.L.el, p.w, p.h), v = (state.moves[key] || [0, 0]).slice();
+    while (v.length < 5) v.push(0);
+    if (!v[2] && !v[3] && !v[4]) {
+      var b = selected.box;
+      v[3] = (b.x + b.w/2) / p.w; v[4] = (b.y + b.h/2) / p.h;
+    }
+    state.moves[key] = v;
+    var pc = xformOf(q.L.el, p.w, p.h, q.L.parent).transformPoint({ x:v[3]*p.w, y:v[4]*p.h });
+    var pt = canvasPoint(e);
+    return { mode:'turn', key:key, pivot:pc, a0:Math.atan2(pt[1] - pc.y, pt[0] - pc.x), deg0:v[2], moved:false, sx:e.clientX, sy:e.clientY };
   }
 
   cv.addEventListener('pointerdown', function(e){
@@ -2663,12 +2731,22 @@
         // pan the photo inside its frame, each picture by its own framing
         var f = FRAMING[adjusting], spx, spy, dw, dh;
         if (adjusting === 'main') { spx = shown.win[0]/p.w; spy = shown.win[1]/p.h; dw = rect.width || 1; dh = rect.height || 1; }
-        else { spx = shown[f.shown][0]/h.w; spy = shown[f.shown][1]/h.w; dw = dh = (rect.width || 1) * h.w / cv.width; }
-        drag = { mode:'pan', f:f, sx:e.clientX, sy:e.clientY, spx:spx, spy:spy, dw:dw, dh:dh, moved:false };
+        else { spx = shown[f.shown][0]/h.bw; spy = shown[f.shown][1]/h.bw; dw = dh = (rect.width || 1) * h.bw / cv.width; }
+        drag = { mode:'pan', f:f, angle:h.angle || 0, sx:e.clientX, sy:e.clientY, spx:spx, spy:spy, dw:dw, dh:dh, moved:false };
         cv.setPointerCapture(e.pointerId); cv.classList.add('dragging');
         return;
       }
       stopAdjusting();
+    }
+    // the rotate handle of the current selection comes first
+    var q = !adjusting && selGeom();
+    if (q) {
+      var pt = canvasPoint(e);
+      if (Math.hypot(pt[0] - q.handle.x, pt[1] - q.handle.y) <= q.knob*2.2) {
+        drag = startTurn(q, e, p);
+        cv.setPointerCapture(e.pointerId); cv.classList.add('dragging');
+        return;
+      }
     }
     select(m);
     if (m) {
@@ -2686,8 +2764,9 @@
       var ev = e;
       hoverRaf = requestAnimationFrame(function(){
         hoverRaf = 0;
-        var h = adjusting && hitAt(ev);
-        cv.style.cursor = (h && h.slot === adjusting) ? 'grab' : layerAt(ev) ? 'move' : 'default';
+        var h = adjusting && hitAt(ev), q = !adjusting && selGeom(), pt = canvasPoint(ev);
+        var onKnob = q && Math.hypot(pt[0] - q.handle.x, pt[1] - q.handle.y) <= q.knob*2.2;
+        cv.style.cursor = onKnob ? 'alias' : (h && h.slot === adjusting) ? 'grab' : layerAt(ev) ? 'move' : 'default';
       });
       return;
     }
@@ -2695,10 +2774,19 @@
     if (!drag.moved && Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) > 4) drag.moved = true;
     if (!drag.moved) return;
     if (drag.mode === 'pan') {
-      state[drag.f.x] = drag.spx + (e.clientX - drag.sx) / drag.dw;
-      state[drag.f.y] = drag.spy + (e.clientY - drag.sy) / drag.dh;
+      // a turned picture's photo moves along the picture's own axes
+      var ddx = e.clientX - drag.sx, ddy = e.clientY - drag.sy, ca = Math.cos(-drag.angle), sa = Math.sin(-drag.angle);
+      state[drag.f.x] = drag.spx + (ddx*ca - ddy*sa) / drag.dw;
+      state[drag.f.y] = drag.spy + (ddx*sa + ddy*ca) / drag.dh;
+    } else if (drag.mode === 'turn') {
+      var pt = canvasPoint(e), a = Math.atan2(pt[1] - drag.pivot.y, pt[0] - drag.pivot.x);
+      var deg = drag.deg0 + (a - drag.a0) * 180/Math.PI;
+      deg = ((deg + 180) % 360 + 360) % 360 - 180;
+      if (e.shiftKey) deg = Math.round(deg / 15) * 15;
+      else if (Math.abs(deg) < 1.5) deg = 0;   // a small pull toward straight
+      state.moves[drag.key][2] = deg;
     } else {
-      state.moves[drag.key] = [drag.start[0] + (e.clientX - drag.sx) / drag.rw, drag.start[1] + (e.clientY - drag.sy) / drag.rh];
+      state.moves[drag.key] = [drag.start[0] + (e.clientX - drag.sx) / drag.rw, drag.start[1] + (e.clientY - drag.sy) / drag.rh].concat(drag.start.slice(2));
     }
     redrawSoon();
   });
@@ -2708,7 +2796,7 @@
       var d = drag; drag = null;
       cv.classList.remove('dragging');
       if (panRaf) { cancelAnimationFrame(panRaf); panRaf = 0; }
-      if (d.moved && d.mode === 'move') { persist(); syncControls(); }
+      if (d.moved && d.mode !== 'pan') { persist(); syncControls(); }
       draw();   // land on the exact final position
       // a click that didn't move on a picture opens its file picker
       if (evName === 'pointerup' && !d.moved && d.mode === 'move' && d.slot) {
@@ -2732,6 +2820,15 @@
   var PAN_KEYS = { ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1] };
   cv.addEventListener('keydown', function(e){
     if (e.key === 'Escape' && (adjusting || selected)) { stopAdjusting(); selected = null; draw(); return; }
+    // [ and ] turn the selection a degree at a time, Shift 15
+    if ((e.key === '[' || e.key === ']' || e.key === '{' || e.key === '}') && selected && !adjusting && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      var q = selGeom(), pp = current(); if (!q) return;
+      var t = startTurn(q, { clientX:0, clientY:0 }, pp), step2 = e.shiftKey ? 15 : 1;
+      var v = state.moves[t.key]; v[2] = Math.round((v[2] + ((e.key === '[' || e.key === '{') ? -step2 : step2)) * 10) / 10;
+      persist(); syncControls(); draw();
+      return;
+    }
     var d = PAN_KEYS[e.key];
     if (!d || e.metaKey || e.ctrlKey || e.altKey) return;
     var step = e.shiftKey ? 0.05 : 0.01, p = current();
@@ -2741,13 +2838,13 @@
       if (adjusting === 'main') { state.panX = shown.win[0]/p.w + d[0]*step; state.panY = shown.win[1]/p.h + d[1]*step; }
       else {
         for (var i = 0; i < dropHits.length; i++) if (dropHits[i].slot === adjusting) h = dropHits[i];
-        if (h) { state[f.x] = shown[f.shown][0]/h.w + d[0]*step; state[f.y] = shown[f.shown][1]/h.w + d[1]*step; }
+        if (h) { state[f.x] = shown[f.shown][0]/h.bw + d[0]*step; state[f.y] = shown[f.shown][1]/h.bw + d[1]*step; }
       }
       draw();
     } else if (selected) {
       e.preventDefault();
       var key = moveKey(selected.el, p.w, p.h), o = state.moves[key] || [0, 0];
-      state.moves[key] = [o[0] + d[0]*step, o[1] + d[1]*step];
+      state.moves[key] = [o[0] + d[0]*step, o[1] + d[1]*step].concat(o.slice(2));
       persist(); syncControls(); draw();
     }
   });

@@ -88,9 +88,16 @@ frame), **Picture shape** sits right under its pictures.
 Everything a template draws on top of its background can be dragged on the
 preview: the headline, each picture, the logo, arrows, the BEFORE and AFTER
 labels, and Launch's kicker, project tag and sticker. The element is outlined
-while selected, and the arrow keys nudge it (Shift for bigger steps). A label
-moves with its picture, and so does Launch's sticker with its window, as well as
-on its own.
+while selected, and the arrow keys nudge it (Shift for bigger steps).
+
+The round handle above the outline turns it about its centre; Shift snaps to 15°
+steps, and within 1.5° of straight it settles straight. `[` and `]` turn the
+selection a degree at a time (with Shift, 15°). The centre is fixed the first
+time an element is turned, so later turns don't shift it.
+
+A label moves and turns with its picture, and so does Launch's sticker with its
+window, as well as on their own. A turned picture's photo, when adjusted, moves
+along the picture's own axes.
 
 A move is kept per template and per shape of frame, as a fraction of the frame,
 so it survives a change of size within that shape; a wide layout and a stacked
@@ -335,8 +342,8 @@ the target dimensions, so nothing else needs changing.
 - Pick a size from the chart at the top; the tiles are drawn at true proportion,
   so the shape tells you what you are about to make
 - Choose an image, drag one onto the canvas, or paste a screenshot with ⌘V
-- Drag anything on the preview to move it; double-click a picture to move the
-  photo inside its frame. Positions are stored as fractions, so they survive a
+- Drag anything on the preview to move it, or its handle to turn it;
+  double-click a picture to move the photo inside its frame. Positions are stored as fractions, so they survive a
   switch between presets
 - Zoom adjusts the crop of each picture
 - Headline text, colours, your logo, the selected platform, and any custom size

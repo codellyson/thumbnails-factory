@@ -1043,7 +1043,19 @@
     var accent = st[2], ink = state.line1Color;
 
     // the headline first: it claims the bottom, the pictures get the rest
-    var headTop, cap = 0;
+    var headTop, cap = 0, headline = null;
+    var lean = Math.tan(state.splitAngle * Math.PI/180);
+    // Over the split field the accent would sit on its own colour, so the
+    // words are set twice, each clipped to its side of the cut: as chosen on
+    // the dark, and with the accent turned to ink over the field.
+    function splitAware(parts, set){
+      if (state.vsDivider !== 'split') return set(parts);
+      var sl = lean*H/2, onField = inkOn(st[2]);
+      c.save(); c.beginPath(); c.moveTo(0, 0); c.lineTo(W/2 + sl, 0); c.lineTo(W/2 - sl, H); c.lineTo(0, H); c.closePath(); c.clip();
+      set(parts); c.restore();
+      c.save(); c.beginPath(); c.moveTo(W/2 + sl, 0); c.lineTo(W, 0); c.lineTo(W, H); c.lineTo(W/2 - sl, H); c.closePath(); c.clip();
+      set(parts.map(function(q){ return { t:q.t, color:q.color === accent ? onField : q.color }; })); c.restore();
+    }
     if (g.wide) {
       var parts = [];
       if (l1) parts.push({ t:l1, color:ink });
@@ -1059,7 +1071,8 @@
       // out of the timestamp corner: a centred line that reaches it rises
       if (g.stamp && (W/2 + maxW/2) > g.stampX) base = Math.min(base, g.stampY - 0.02*H);
       headTop = base - cap;
-      if (text) slantedLine(c, parts, (g.left + g.right)/2, base, px);
+      // set last, once the divider and pictures are down, so nothing paints over it
+      if (text) headline = function(){ splitAware(parts, function(q){ slantedLine(c, q, (g.left + g.right)/2, base, px); }); };
     } else {
       var lines = [l1, l2].filter(Boolean), pxs = lines.map(function(t){
         return fitWith(c, t, (g.right - g.left)*0.96, 0.12*H*state.headScale, 12*k, function(q){ return q*0.2; });
@@ -1084,7 +1097,6 @@
 
     // the pictures: as big as the room above the headline allows
     var zoneTop = top, zoneBot = headTop - 0.035*H, zoneH = zoneBot - zoneTop;
-    var lean = Math.tan(state.splitAngle * Math.PI/180);
     var d, c1, c2, labelH = Math.max(12*k, 0.06*H);
     if (g.wide) {
       var half = (g.right - g.left) / 2, gapX = 0.05*W;
@@ -1143,6 +1155,7 @@
       drawLabel(c, state.beforeLabel, c1.x, b1.y, labelH, false, st);
       drawLabel(c, state.afterLabel,  c2.x, b2.y, labelH, true, st);
     }
+    if (headline) headline();
   }
 
   // Collage, built to docs/quality-bar.md: a paper panel with brush bands

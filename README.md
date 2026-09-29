@@ -92,8 +92,16 @@ while selected, and the arrow keys nudge it (Shift for bigger steps).
 
 The round handle above the outline turns it about its centre; Shift snaps to 15°
 steps, and within 1.5° of straight it settles straight. `[` and `]` turn the
-selection a degree at a time (with Shift, 15°). The centre is fixed the first
-time an element is turned, so later turns don't shift it.
+selection a degree at a time (with Shift, 15°).
+
+The four corner handles resize it, evenly, holding the opposite corner still;
+with Alt (Option) it resizes about its centre instead. `-` and `=` resize it
+about its centre, 5% a step (with Shift, 20%). Sizes run from 20% to 500%.
+Resizing scales the element as drawn: a resized headline keeps its breaks and
+colours, and the headline bar measures it at the template's own size.
+
+The centre is fixed the first time an element is turned or resized, so later
+changes don't shift it.
 
 A label moves and turns with its picture, and so does Launch's sticker with its
 window, as well as on their own. A turned picture's photo, when adjusted, moves
@@ -342,7 +350,8 @@ the target dimensions, so nothing else needs changing.
 - Pick a size from the chart at the top; the tiles are drawn at true proportion,
   so the shape tells you what you are about to make
 - Choose an image, drag one onto the canvas, or paste a screenshot with ⌘V
-- Drag anything on the preview to move it, or its handle to turn it;
+- Drag anything on the preview to move it, its round handle to turn it, or a
+  corner to resize it;
   double-click a picture to move the photo inside its frame. Positions are stored as fractions, so they survive a
   switch between presets
 - Zoom adjusts the crop of each picture

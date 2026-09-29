@@ -1969,7 +1969,9 @@
     var m = xformOf(el, g.W, g.H, o.parent);
     c.save(); applyM(c, m); draw(c); c.restore();
     if (opts.preview) {
-      layers.push({ el:el, parent:o.parent || null, slot:o.slot || null, draw:draw, m:m });
+      // a picture keeps its frame's own shape, for an outline that hugs it
+      var shape = o.hit ? (o.hit.poly || [[o.hit.x, o.hit.y], [o.hit.x + o.hit.w, o.hit.y], [o.hit.x + o.hit.w, o.hit.y + o.hit.h], [o.hit.x, o.hit.y + o.hit.h]]) : null;
+      layers.push({ el:el, parent:o.parent || null, slot:o.slot || null, draw:draw, m:m, shape:shape });
       // a picture's box goes where the picture went, turned with it, for
       // drops and framing; bw keeps its own width for framing's arithmetic
       if (o.hit) {
@@ -2983,7 +2985,7 @@
     var hint = hintEl(''); hint.id = 'layoutHint'; f.appendChild(hint);
     // moving things is done on the preview; this only takes it back
     var row = el('div', 'moverow');
-    row.appendChild(hintEl('On the preview: drag to move, handle to turn, corners to resize.'));
+    row.appendChild(hintEl('On the preview: drag to move, handle to turn, corners to resize - on a picture, to zoom the photo inside.'));
     var reset = el('button', 'btn btn-sm', 'Reset positions'); reset.id = 'movesReset'; reset.type = 'button'; reset.hidden = true;
     reset.addEventListener('click', function(){
       var p = current(), pre = state.layout + '.' + frameShape(p.w, p.h) + '.';
@@ -3453,9 +3455,13 @@
     var m = L.m, sc = Math.hypot(m.a, m.b) || 1, ang = Math.atan2(m.b, m.a);
     var k = Math.sqrt(cv.width*cv.height / (1280*720)), pad = 6*k / sc, b = selected.box;
     var r = { x:b.x - pad, y:b.y - pad, w:b.w + 2*pad, h:b.h + 2*pad };
-    var corners = [[r.x, r.y], [r.x + r.w, r.y], [r.x + r.w, r.y + r.h], [r.x, r.y + r.h]]
-      .map(function(q){ var t = m.transformPoint({ x:q[0], y:q[1] }); return { x:t.x, y:t.y, lx:q[0], ly:q[1] }; });
-    var top = m.transformPoint({ x:r.x + r.w/2, y:r.y }), stem = 26*k, knob = 9*k;
+    // a picture's outline is its frame - the slanted panel, the card, the
+    // half - so it reads as one self-contained piece; anything else gets a
+    // box around its paint
+    var pts = L.shape && L.shape.length === 4 ? L.shape : [[r.x, r.y], [r.x + r.w, r.y], [r.x + r.w, r.y + r.h], [r.x, r.y + r.h]];
+    var corners = pts.map(function(q){ var t = m.transformPoint({ x:q[0], y:q[1] }); return { x:t.x, y:t.y, lx:q[0], ly:q[1] }; });
+    var topL = { x:(pts[0][0] + pts[1][0])/2, y:(pts[0][1] + pts[1][1])/2 };
+    var top = m.transformPoint(topL), stem = 26*k, knob = 9*k;
     // the stem stands off the top edge, square to it whichever way it is turned
     var handle = { x:top.x + Math.sin(ang)*stem, y:top.y - Math.cos(ang)*stem };
     return { L:L, k:k, r:r, corners:corners, top:top, handle:handle, knob:knob, ang:ang, sq:7*k };
@@ -3516,6 +3522,14 @@
     return { mode:'scale', key:pl.key, el:q.L.el, parent:q.L.parent, p:p, s0:pl.v[5], pivot:pl.pivot,
              anchor:{ lx:opp.lx, ly:opp.ly, x:opp.x, y:opp.y }, start:canvasPoint(e), moved:false, sx:e.clientX, sy:e.clientY };
   }
+  // On a picture the corners scale the photo inside its frame instead - the
+  // same setting as its Zoom slider - and the frame stays where it is.
+  function startZoom(q, e){
+    var f = FRAMING[q.L.slot], c4 = q.corners;
+    var cx = (c4[0].x + c4[1].x + c4[2].x + c4[3].x)/4, cy = (c4[0].y + c4[1].y + c4[2].y + c4[3].y)/4;
+    return { mode:'zoom', zkey:f.zoom, z0:state[f.zoom], centre:{ x:cx, y:cy }, start:canvasPoint(e), moved:false, sx:e.clientX, sy:e.clientY };
+  }
+  var ZOOM_MIN = 0.4, ZOOM_MAX = 2.5;
   var SCALE_MIN = 0.2, SCALE_MAX = 5;
   function doScale(d, e){
     var pt = canvasPoint(e), from = e.altKey ? d.pivot : d.anchor;
@@ -3556,7 +3570,7 @@
     // the current selection's handles come first
     var q = !adjusting && selGeom(), hd = q ? handleAt(q, canvasPoint(e)) : null;
     if (hd !== null) {
-      drag = hd === 'turn' ? startTurn(q, e, p) : startScale(q, hd, e, p);
+      drag = hd === 'turn' ? startTurn(q, e, p) : q.L.slot ? startZoom(q, e) : startScale(q, hd, e, p);
       cv.setPointerCapture(e.pointerId); cv.classList.add('dragging');
       return;
     }
@@ -3594,6 +3608,11 @@
       state[drag.f.y] = drag.spy + (ddx*sa + ddy*ca) / drag.dh;
     } else if (drag.mode === 'scale') {
       doScale(drag, e);
+    } else if (drag.mode === 'zoom') {
+      var zp = canvasPoint(e), c0 = drag.centre;
+      var z = drag.z0 * Math.hypot(zp[0] - c0.x, zp[1] - c0.y) / (Math.hypot(drag.start[0] - c0.x, drag.start[1] - c0.y) || 1);
+      state[drag.zkey] = Math.round(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z)) * 100) / 100;
+      syncControls();
     } else if (drag.mode === 'turn') {
       var pt = canvasPoint(e), a = Math.atan2(pt[1] - drag.pivot.y, pt[0] - drag.pivot.x);
       var deg = drag.deg0 + (a - drag.a0) * 180/Math.PI;
@@ -3649,7 +3668,14 @@
     if (['-', '=', '_', '+'].indexOf(e.key) >= 0 && selected && !adjusting && !e.metaKey && !e.ctrlKey && !e.altKey) {
       e.preventDefault();
       var q2 = selGeom(), pp2 = current(); if (!q2) return;
-      var v2 = placement(q2, pp2).v, f2 = e.shiftKey ? 1.2 : 1.05;
+      var f2 = e.shiftKey ? 1.2 : 1.05, grow = !(e.key === '-' || e.key === '_');
+      if (q2.L.slot) {
+        var zk = FRAMING[q2.L.slot].zoom;
+        state[zk] = Math.round(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, grow ? state[zk] * f2 : state[zk] / f2)) * 100) / 100;
+        syncControls(); draw();
+        return;
+      }
+      var v2 = placement(q2, pp2).v;
       v2[5] = Math.max(SCALE_MIN, Math.min(SCALE_MAX, (e.key === '-' || e.key === '_') ? v2[5] / f2 : v2[5] * f2));
       persist(); syncControls(); draw();
       return;

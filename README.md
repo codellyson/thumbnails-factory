@@ -94,7 +94,12 @@ The round handle above the outline turns it about its centre; Shift snaps to 15�
 steps, and within 1.5° of straight it settles straight. `[` and `]` turn the
 selection a degree at a time (with Shift, 15°).
 
-The four corner handles resize it, evenly, holding the opposite corner still;
+On a picture, the outline is the picture's own frame - the slanted Collage
+panel, the card, the half - and its corner handles scale the photo inside the
+frame, the same setting as its Zoom slider (40% to 250%); the frame stays where
+it is, and `-` and `=` step the same zoom.
+
+On anything else, the four corner handles resize it, evenly, holding the opposite corner still;
 with Alt (Option) it resizes about its centre instead. `-` and `=` resize it
 about its centre, 5% a step (with Shift, 20%). Sizes run from 20% to 500%.
 Resizing scales the element as drawn: a resized headline keeps its breaks and

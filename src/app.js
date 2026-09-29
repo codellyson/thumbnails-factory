@@ -1093,20 +1093,27 @@
     report.headCap = cap / H;
 
     // the logo, small, top left, when on
-    var top = g.top;
+    // it gets its own row, so no picture covers it
+    var top = g.top, labelH = Math.max(12*k, 0.06*H);
     if (state.logo && ready.logo) {
       var lh = 64*k*state.logoSize;
       c.drawImage(logo, g.left, g.top, logo.width * lh / logo.height, lh);
+      top = g.top + lh + 0.02*H;
     }
 
-    // the pictures: as big as the room above the headline allows
-    var zoneTop = top, zoneBot = headTop - 0.035*H, zoneH = zoneBot - zoneTop;
-    var d, c1, c2, labelH = Math.max(12*k, 0.06*H);
+    // the pictures: as big as the room above the headline allows, each
+    // whole shape - label, ring and shadow - inside the frame with a margin
+    // to spare, never run to the edge
+    var zoneTop = top + labelH*0.55, zoneBot = headTop - 0.035*H, zoneH = zoneBot - zoneTop;
+    var d, c1, c2;
     if (g.wide) {
-      var half = (g.right - g.left) / 2, gapX = 0.05*W;
-      d = Math.max(0, Math.min(zoneH, half - gapX));
-      c1 = { x:W/2 - gapX/2 - d/2 - (state.vsShape === 'card' ? d*0.09 : 0), y:zoneTop + zoneH/2 };
-      c2 = { x:W/2 + gapX/2 + d/2 + (state.vsShape === 'card' ? d*0.09 : 0), y:zoneTop + zoneH/2 };
+      var card = state.vsShape === 'card', aspW = card ? 1.18 : 1, aspH = card ? 0.86 : 1;
+      var m = 0.035*W, gapX = 0.05*W;
+      var half = ((g.right - m) - (g.left + m) - gapX) / 2;
+      d = Math.max(0, Math.min(zoneH / aspH, half / aspW));
+      var bw = d*aspW;
+      c1 = { x:W/2 - gapX/2 - bw/2, y:zoneTop + zoneH/2 };
+      c2 = { x:W/2 + gapX/2 + bw/2, y:zoneTop + zoneH/2 };
     } else {
       var gapY = 0.03*H;
       d = Math.max(0, Math.min((zoneH - gapY)/2, (g.right - g.left) * 0.78));
@@ -1440,26 +1447,27 @@
     var shapeOf = W/H;
     // the photo claims its side first; the words get the rest
     var d, cx, cy, hw, hh, tilt = roundish ? 0 : -3*Math.PI/180;
-    // Big enough to beat the reference's share of the frame (0.25): a photo
-    // may run under a platform's buttons, since only words must stay clear.
+    // Big enough to beat the reference's share of the frame (0.25) and the
+    // bar's 0.33, but never to the edge: a margin all round, and room on the
+    // right for the arc outside the ring.
     if (!tall) {
-      d = Math.min(H*0.96, W*(square ? 0.66 : 0.5));
-      cx = W - Math.max(0.01*W, (W - g.right)*0.5) - d/2; cy = H/2;
+      d = Math.min(H*0.9, W*(square ? 0.66 : 0.5));   // 5% clear top and bottom
+      cx = W - Math.max(0.06*W, W - g.right) - d/2; cy = H/2;
     } else {
-      d = Math.min(W*0.98, H*(shapeOf < 0.7 ? 0.5 : shapeOf < 0.9 ? 0.6 : 0.66));   // 9:16, 4:5, square
+      d = Math.min(W*0.9, H*(shapeOf < 0.7 ? 0.5 : shapeOf < 0.9 ? 0.6 : 0.66));   // 9:16, 4:5, square
       cx = W/2; cy = Math.max(g.top*0.6, 0.02*H) + d/2;
     }
     hw = hh = d/2;
     if (!roundish) {
       var fa = Math.max(0.6, Math.min(2.2, pa)), mw, mh;
-      // As big as the words allow: 60% of the width beside them; edge to
-      // edge above them in stacked sizes, where the photo may run under a
-      // platform's buttons and only the words must stay clear.
-      if (!tall) { mw = W*0.6; mh = H*0.86; }
-      else { mw = W; mh = H*(shapeOf < 0.7 ? 0.46 : shapeOf < 0.9 ? 0.56 : 0.5); }
+      // As big as the words allow - 58% of the width beside them, nearly the
+      // full width above them in stacked sizes - with room left so the
+      // tilted corners stay inside the frame.
+      if (!tall) { mw = W*0.58; mh = H*0.8; }
+      else { mw = W*0.92; mh = H*(shapeOf < 0.7 ? 0.46 : shapeOf < 0.9 ? 0.56 : 0.5); }
       var pw = Math.min(mw, mh*fa), ph = pw/fa;
       hw = pw/2; hh = ph/2;
-      if (!tall) { cx = W - Math.max(0.02*W, (W - g.right)*0.6) - hw; cy = H/2; }
+      if (!tall) { cx = W - Math.max(0.05*W, W - g.right) - hw; cy = H/2; }
       else { cx = W/2; cy = Math.max(g.top*0.6, 0.03*H) + hh; }
       d = Math.max(pw, ph);
     }
@@ -1519,9 +1527,10 @@
     var sag = roundish ? 0 : hw*Math.sin(3*Math.PI/180);
     var tb = !tall ? { x0:g.left, x1:cx - hw - sag - 0.04*W, y0:g.top, y1:g.bottom }
                    : { x0:g.left, x1:g.right, y0:cy + hh + sag + 0.04*H, y1:g.bottom };
-    // stacked with a frame, the logo gets its own row under the words
-    var logoRow = (tall && !roundish && state.logo && ready.logo) ? 52*k*state.logoSize + 0.02*H : 0;
-    tb.y1 -= logoRow;
+    // The logo never sits on the picture: beside it, it takes a row above the
+    // words; stacked, a row under them.
+    var logoRow = (state.logo && ready.logo) ? 52*k*state.logoSize + 0.02*H : 0;
+    if (tall) tb.y1 -= logoRow; else tb.y0 += logoRow;
     var main = state.line1.toUpperCase().trim().split(/\s+/).filter(Boolean);
     var accent = state.line2.toUpperCase().trim();
     var colW = tb.x1 - tb.x0, room = tb.y1 - tb.y0;
@@ -1602,13 +1611,11 @@
       }
     }
 
-    // the logo, small, in the top corner over the photo's side
+    // the logo, small, in the row kept for it
     if (state.logo && ready.logo) {
       var lh = 52*k*state.logoSize, lw = logo.width * lh / logo.height;
-      // stacked with a frame, the top belongs to the picture (which may carry
-      // its own logo), so ours goes under the words instead
-      if (tall && !roundish) c.drawImage(logo, g.right - lw, tb.y1 + 0.02*H, lw, lh);
-      else c.drawImage(logo, tall ? g.left : g.right - lw, g.top, lw, lh);
+      if (tall) c.drawImage(logo, g.right - lw, tb.y1 + 0.02*H, lw, lh);
+      else c.drawImage(logo, g.left, g.top, lw, lh);
     }
   }
 

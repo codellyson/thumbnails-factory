@@ -29,6 +29,7 @@ height; areas are fractions of the frame.
 | 6 | **It reads at 168 px.** | Capital height at 168 px wide | ≥ 8 px on a 16:9 frame, which rule 1's pass line guarantees; 11 px at the 0.12 aim |
 | 7 | **It looks finished with nothing dropped in.** Stand-ins are painted to look like content, not like wireframes. | The default render, no pictures loaded, passes rules 1–3 | Yes |
 | 8 | **Correctness still holds.** Safe areas, the timestamp corner, every size. | Existing checks | All 12 sizes |
+| 9 | **Framed pictures sit inside the frame.** A card, circle or window never runs to the edge, and nothing covers the logo. Full-bleed layouts (Collage's panels, split halves) are exempt: they are meant to reach the edge. | Gap from a framed picture's shape, ring and label to the frame's edge | ≥ 3.5% of W at the sides, ≥ 4% of H top and bottom |
 
 The pass line for rule 1 comes from the reference itself: its four-word headline
 measures 0.084, so a template has to beat that with the same words. A headline

@@ -112,6 +112,14 @@ A label moves and turns with its picture, and so does Launch's sticker with its
 window, as well as on their own. A turned picture's photo, when adjusted, moves
 along the picture's own axes.
 
+Pictures that make up a template's layout are fixed in place: Collage's three
+strip panels and its main photo, and Before → After's full-bleed halves on tall
+and square sizes. Moving one would break the layout, so a drag on it moves the
+photo inside instead, the arrow keys do the same, and it has no turn handle; its
+corners still zoom the photo, and a click still picks a file. Pictures that float
+on the layout - Talking point's circle or frame, Before → After's cards, Launch's
+window - move, turn and zoom like everything else.
+
 A move is kept per template and per shape of frame, as a fraction of the frame,
 so it survives a change of size within that shape; a wide layout and a stacked
 tall one are arranged differently, so each keeps its own. **Reset positions**,

@@ -1799,8 +1799,8 @@
       var x0 = Math.min.apply(null, xs), y0 = Math.min.apply(null, ys);
       return { x:x0, y:y0, w:Math.max.apply(null, xs) - x0, h:Math.max.apply(null, ys) - y0, poly:poly };
     }
-    place(c, g, opts, 'pic.second', function(c){ fillHalf(c, A, phoneImg, false, 'phone'); }, { slot:'second', hit:bounds(A) });
-    place(c, g, opts, 'pic.main', function(c){ fillHalf(c, B, frame === paintedFrame ? null : frame, true, 'win'); }, { slot:'main', hit:bounds(B) });
+    place(c, g, opts, 'pic.second', function(c){ fillHalf(c, A, phoneImg, false, 'phone'); }, { slot:'second', locked:true, hit:bounds(A) });
+    place(c, g, opts, 'pic.main', function(c){ fillHalf(c, B, frame === paintedFrame ? null : frame, true, 'win'); }, { slot:'main', locked:true, hit:bounds(B) });
     report.pictures = 1;
 
     // the slash along the cut
@@ -1955,7 +1955,9 @@
   // (a stacked tall layout is not the wide one), so a move survives a change
   // of size, and it can be turned about its centre. An element can hang off
   // another (a label off its picture) and then moves and turns with it as
-  // well as on its own. On the preview each placed
+  // well as on its own. Pictures that tile the template's layout - Collage's
+  // panels, Before -> After's full-bleed halves - are locked: a drag on one
+  // moves its photo instead, and it has no turn handle. On the preview each placed
   // element is remembered, with its drawing, so the pointer can find it.
   var layers = [];     // preview only: [{ el, parent, slot, draw, m }] in drawing order
   function frameShape(W, H){ var a = W/H; return a < 0.85 ? 'tall' : a < 1.2 ? 'square' : 'wide'; }
@@ -1977,12 +1979,13 @@
   function applyM(c, m){ c.transform(m.a, m.b, m.c, m.d, m.e, m.f); }
   function place(c, g, opts, el, draw, o){
     o = o || {};
-    var m = xformOf(el, g.W, g.H, o.parent);
+    // a locked element is part of the template's layout: it stays put
+    var m = o.locked ? new DOMMatrix() : xformOf(el, g.W, g.H, o.parent);
     c.save(); applyM(c, m); draw(c); c.restore();
     if (opts.preview) {
       // a picture keeps its frame's own shape, for an outline that hugs it
       var shape = o.hit ? (o.hit.poly || [[o.hit.x, o.hit.y], [o.hit.x + o.hit.w, o.hit.y], [o.hit.x + o.hit.w, o.hit.y + o.hit.h], [o.hit.x, o.hit.y + o.hit.h]]) : null;
-      layers.push({ el:el, parent:o.parent || null, slot:o.slot || null, draw:draw, m:m, shape:shape });
+      layers.push({ el:el, parent:o.parent || null, slot:o.slot || null, draw:draw, m:m, shape:shape, locked:!!o.locked });
       // a picture's box goes where the picture went, turned with it, for
       // drops and framing; bw keeps its own width for framing's arithmetic
       if (o.hit) {
@@ -2051,7 +2054,7 @@
     var xs = quad.map(function(q){ return q[0]; }), ys = quad.map(function(q){ return q[1]; });
     var x0 = Math.min.apply(null, xs), y0 = Math.min.apply(null, ys);
     place(c, g, opts, 'pic.' + s.slot, function(c){ fillQuad(c, quad, s.img, after, s.slot, opts, st, s.label); },
-          { slot:s.slot, hit:{ x:x0, y:y0, w:Math.max.apply(null, xs) - x0, h:Math.max.apply(null, ys) - y0, poly:quad } });
+          { slot:s.slot, locked:true, hit:{ x:x0, y:y0, w:Math.max.apply(null, xs) - x0, h:Math.max.apply(null, ys) - y0, poly:quad } });
   }
 
   // Luminance contrast between two colours, for choosing an ink that reads.
@@ -3475,7 +3478,7 @@
     var top = m.transformPoint(topL), stem = 26*k, knob = 9*k;
     // the stem stands off the top edge, square to it whichever way it is turned
     var handle = { x:top.x + Math.sin(ang)*stem, y:top.y - Math.cos(ang)*stem };
-    return { L:L, k:k, r:r, corners:corners, top:top, handle:handle, knob:knob, ang:ang, sq:7*k };
+    return { L:L, k:k, r:r, corners:corners, top:top, handle:handle, knob:knob, ang:ang, sq:7*k, locked:L.locked };
   }
   function drawSelection(){
     var q = selGeom(); if (!q) return;
@@ -3489,9 +3492,11 @@
     outline(); ctx.stroke();
     ctx.setLineDash([]);
     if (!adjusting) {
-      ctx.beginPath(); ctx.moveTo(q.top.x, q.top.y); ctx.lineTo(q.handle.x, q.handle.y); ctx.stroke();
       ctx.fillStyle = '#ffffff';
-      ctx.beginPath(); ctx.arc(q.handle.x, q.handle.y, q.knob, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      if (!q.locked) {
+        ctx.beginPath(); ctx.moveTo(q.top.x, q.top.y); ctx.lineTo(q.handle.x, q.handle.y); ctx.stroke();
+        ctx.beginPath(); ctx.arc(q.handle.x, q.handle.y, q.knob, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      }
       c4.forEach(function(p){
         ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(q.ang);
         ctx.fillRect(-q.sq, -q.sq, 2*q.sq, 2*q.sq); ctx.strokeRect(-q.sq, -q.sq, 2*q.sq, 2*q.sq);
@@ -3505,7 +3510,7 @@
   }
   // Which handle is under a point: 'turn', a corner's index, or null.
   function handleAt(q, pt){
-    if (Math.hypot(pt[0] - q.handle.x, pt[1] - q.handle.y) <= q.knob*2.2) return 'turn';
+    if (!q.locked && Math.hypot(pt[0] - q.handle.x, pt[1] - q.handle.y) <= q.knob*2.2) return 'turn';
     for (var i = 0; i < 4; i++) if (Math.hypot(pt[0] - q.corners[i].x, pt[1] - q.corners[i].y) <= q.sq*2.4) return i;
     return null;
   }
@@ -3565,14 +3570,17 @@
   cv.addEventListener('pointerdown', function(e){
     draw();   // refresh shown, dropHits and layers: an export may have drawn at another size since
     var m = layerAt(e), p = current(), rect = cv.getBoundingClientRect();
+    // pan a photo inside its frame, each picture by its own framing
+    function startPan(slot, h){
+      var f = FRAMING[slot], spx, spy, dw, dh;
+      if (slot === 'main') { spx = shown.win[0]/p.w; spy = shown.win[1]/p.h; dw = rect.width || 1; dh = rect.height || 1; }
+      else { spx = shown[f.shown][0]/h.bw; spy = shown[f.shown][1]/h.bw; dw = dh = (rect.width || 1) * h.bw / cv.width; }
+      return { mode:'pan', slot:slot, f:f, angle:h.angle || 0, scale:h.scale || 1, sx:e.clientX, sy:e.clientY, spx:spx, spy:spy, dw:dw, dh:dh, moved:false };
+    }
     if (adjusting) {
       var h = hitAt(e);
       if (h && h.slot === adjusting) {
-        // pan the photo inside its frame, each picture by its own framing
-        var f = FRAMING[adjusting], spx, spy, dw, dh;
-        if (adjusting === 'main') { spx = shown.win[0]/p.w; spy = shown.win[1]/p.h; dw = rect.width || 1; dh = rect.height || 1; }
-        else { spx = shown[f.shown][0]/h.bw; spy = shown[f.shown][1]/h.bw; dw = dh = (rect.width || 1) * h.bw / cv.width; }
-        drag = { mode:'pan', f:f, angle:h.angle || 0, scale:h.scale || 1, sx:e.clientX, sy:e.clientY, spx:spx, spy:spy, dw:dw, dh:dh, moved:false };
+        drag = startPan(adjusting, h);
         cv.setPointerCapture(e.pointerId); cv.classList.add('dragging');
         return;
       }
@@ -3586,6 +3594,17 @@
       return;
     }
     select(m);
+    if (m && m.L.locked) {
+      // a locked picture stays put: a drag moves its photo, a click picks a file
+      var hl = null;
+      for (var i = 0; i < dropHits.length; i++) if (dropHits[i].slot === m.L.slot) hl = dropHits[i];
+      if (hl) {
+        drag = startPan(m.L.slot, hl); drag.click = true;
+        cv.setPointerCapture(e.pointerId); cv.classList.add('dragging');
+      }
+      draw();
+      return;
+    }
     if (m) {
       var key = moveKey(m.L.el, p.w, p.h), start = state.moves[key] || [0, 0];
       drag = { mode:'move', key:key, slot:m.L.slot, sx:e.clientX, sy:e.clientY, start:start.slice(),
@@ -3601,11 +3620,11 @@
       var ev = e;
       hoverRaf = requestAnimationFrame(function(){
         hoverRaf = 0;
-        var h = adjusting && hitAt(ev), q = !adjusting && selGeom(), hd = q ? handleAt(q, canvasPoint(ev)) : null;
+        var lm, h = adjusting && hitAt(ev), q = !adjusting && selGeom(), hd = q ? handleAt(q, canvasPoint(ev)) : null;
         // a corner's resize cursor follows the diagonal it sits on, as turned
         var diag = hd !== null && hd !== 'turn' && ((((hd % 2) ? -45 : 45) + q.ang*180/Math.PI) % 180 + 180) % 180;
         cv.style.cursor = hd === 'turn' ? 'alias' : hd !== null ? (diag < 90 ? 'nwse-resize' : 'nesw-resize')
-          : (h && h.slot === adjusting) ? 'grab' : layerAt(ev) ? 'move' : 'default';
+          : (h && h.slot === adjusting) ? 'grab' : (lm = layerAt(ev)) ? (lm.L.locked ? 'grab' : 'move') : 'default';
       });
       return;
     }
@@ -3652,7 +3671,7 @@
       if (d.moved && d.mode !== 'pan') { persist(); syncControls(); }
       draw();   // land on the exact final position
       // a click that didn't move on a picture opens its file picker
-      if (evName === 'pointerup' && !d.moved && d.mode === 'move' && d.slot) {
+      if (evName === 'pointerup' && !d.moved && (d.mode === 'move' || d.click) && d.slot) {
         clearTimeout(pickTimer);
         if (!SLOTS[d.slot].has()) pickFor(d.slot);
         else pickTimer = setTimeout(function(){ pickFor(d.slot); }, 300);
@@ -3673,8 +3692,10 @@
   var PAN_KEYS = { ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1] };
   cv.addEventListener('keydown', function(e){
     if (e.key === 'Escape' && (adjusting || selected)) { stopAdjusting(); selected = null; draw(); return; }
+    // a locked picture's arrows move its photo, and it doesn't turn
+    var selL = selected && selLayer(), lockedSlot = selL && selL.locked ? selL.slot : null;
     // [ and ] turn the selection a degree at a time, Shift 15
-    if ((e.key === '[' || e.key === ']' || e.key === '{' || e.key === '}') && selected && !adjusting && !e.metaKey && !e.ctrlKey && !e.altKey) {
+    if ((e.key === '[' || e.key === ']' || e.key === '{' || e.key === '}') && selected && !adjusting && !lockedSlot && !e.metaKey && !e.ctrlKey && !e.altKey) {
       e.preventDefault();
       var q = selGeom(), pp = current(); if (!q) return;
       var v = placement(q, pp).v, step2 = e.shiftKey ? 15 : 1;
@@ -3701,12 +3722,13 @@
     var d = PAN_KEYS[e.key];
     if (!d || e.metaKey || e.ctrlKey || e.altKey) return;
     var step = e.shiftKey ? 0.05 : 0.01, p = current();
-    if (adjusting) {
+    var panSlot = adjusting || lockedSlot;
+    if (panSlot) {
       e.preventDefault();
-      var f = FRAMING[adjusting], h = null;
-      if (adjusting === 'main') { state.panX = shown.win[0]/p.w + d[0]*step; state.panY = shown.win[1]/p.h + d[1]*step; }
+      var f = FRAMING[panSlot], h = null;
+      if (panSlot === 'main') { state.panX = shown.win[0]/p.w + d[0]*step; state.panY = shown.win[1]/p.h + d[1]*step; }
       else {
-        for (var i = 0; i < dropHits.length; i++) if (dropHits[i].slot === adjusting) h = dropHits[i];
+        for (var i = 0; i < dropHits.length; i++) if (dropHits[i].slot === panSlot) h = dropHits[i];
         if (h) { state[f.x] = shown[f.shown][0]/h.bw + d[0]*step; state[f.y] = shown[f.shown][1]/h.bw + d[1]*step; }
       }
       draw();

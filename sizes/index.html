@@ -294,12 +294,24 @@
   .tile .size{ font-size:11px; line-height:1; color:var(--muted); }
 
   /* ---- fields ---- */
-  .fields{ display:flex; flex-direction:column; gap:16px; }
+  .fields{ display:flex; flex-direction:column; gap:14px; }
   .field{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+  /* a slider is one line: name, track, value - names share a column so the
+     tracks line up down the panel */
+  .field.slide{ display:grid; grid-template-columns:84px minmax(0,1fr) 40px; align-items:center; column-gap:10px; }
+  .field.slide > label{ font-weight:400; color:var(--muted); font-size:13px; }
+  .field.slide output{ font-size:12.5px; color:var(--muted); text-align:end; font-variant-numeric:tabular-nums; }
+  .field.slide input[type=range]{ margin:6px 0; }
+  .field.slide > .hint{ grid-column:1 / -1; margin-top:0; }
+  /* a picture: its name and buttons on one line, its zoom under them */
+  .pichead{ display:flex; align-items:center; gap:8px; min-height:32px; }
+  .pichead .legend{ flex:1; min-width:0; }
+  .pichead .logobtns{ flex:none; }
+  .field.pic{ gap:2px; }
   .field > label, .legend{ font-size:13px; font-weight:500; }
   .hint{ font-size:12.5px; margin:4px 0 0; color:var(--muted); }
   /* a picture's zoom lives in its block, just under its buttons */
-  .field > .field{ margin-top:8px; }
+  .field > .field{ margin-top:0; }
   input[type=text], input[type=number]{
     font-family:var(--ui); font-size:15px; font-variant-numeric:tabular-nums;
     background:var(--surface); color:var(--ink);
@@ -365,7 +377,7 @@
   /* folding panels */
   .group{ border-top:1px solid var(--line-strong); padding-top:12px; }
   /* a panel's first control hangs closer to its title (10) than controls sit to each other (16) */
-  .gbody{ display:flex; flex-direction:column; gap:16px; padding-top:10px; }
+  .gbody{ display:flex; flex-direction:column; gap:14px; padding-top:10px; }
   /* a panel's first control hangs closer to its title than controls sit to each other */
   .group > summary{ font-size:14px; font-weight:500; cursor:pointer;
     list-style:none; display:flex; align-items:center; gap:8px; min-height:28px; }
@@ -622,6 +634,8 @@
     body.editor .actions .btn-go{ min-height:44px; padding:10px 18px; }
     body.editor .actions .btn:not(.btn-go){ min-height:40px; padding:8px 18px; font-size:14px; }
     body.editor .status:empty{ display:none; }
+    /* with a pointer, the panel's small buttons can be compact; touch keeps 36px */
+    @media (pointer:fine){ body.editor .bench .btn-sm{ padding:5px 12px; font-size:13px; min-height:30px; } }
 
     body.editor .about{ padding:40px 20px 0; max-width:1240px; margin:0 auto; }
     body.editor footer{ margin:56px 20px 0; padding-bottom:40px; }

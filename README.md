@@ -94,7 +94,12 @@ The round handle above the outline turns it about its centre; Shift snaps to 15�
 steps, and within 1.5° of straight it settles straight. `[` and `]` turn the
 selection a degree at a time (with Shift, 15°).
 
-The four corner handles resize it, evenly, holding the opposite corner still;
+On a picture, the outline is the picture's own frame - the slanted Collage
+panel, the card, the half - and its corner handles scale the photo inside the
+frame, the same setting as its Zoom slider (40% to 250%); the frame stays where
+it is, and `-` and `=` step the same zoom.
+
+On anything else, the four corner handles resize it, evenly, holding the opposite corner still;
 with Alt (Option) it resizes about its centre instead. `-` and `=` resize it
 about its centre, 5% a step (with Shift, 20%). Sizes run from 20% to 500%.
 Resizing scales the element as drawn: a resized headline keeps its breaks and
@@ -106,6 +111,14 @@ changes don't shift it.
 A label moves and turns with its picture, and so does Launch's sticker with its
 window, as well as on their own. A turned picture's photo, when adjusted, moves
 along the picture's own axes.
+
+Pictures that make up a template's layout are fixed in place: Collage's three
+strip panels and its main photo, and Before → After's full-bleed halves on tall
+and square sizes. Moving one would break the layout, so a drag on it moves the
+photo inside instead, the arrow keys do the same, and it has no turn handle; its
+corners still zoom the photo, and a click still picks a file. Pictures that float
+on the layout - Talking point's circle or frame, Before → After's cards, Launch's
+window - move, turn and zoom like everything else.
 
 A move is kept per template and per shape of frame, as a fraction of the frame,
 so it survives a change of size within that shape; a wide layout and a stacked

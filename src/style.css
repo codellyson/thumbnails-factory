@@ -187,6 +187,8 @@
     background:rgb(0 0 0 / .55); padding:1px 5px; border-radius:4px; }
   @media (hover: hover){ .frametile:hover{ box-shadow:0 0 0 2px var(--ink); } }
   .frametile:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .frametile.hasface::after{ content:"Face"; position:absolute; top:4px; right:4px; font-size:10px; font-weight:600;
+    color:#fff; background:rgb(238 123 88 / .9); padding:1px 5px; border-radius:4px; }
   .frametile.used{ box-shadow:0 0 0 2px var(--canvas), 0 0 0 3.5px var(--accent); }
   .frametile:active{ transform:scale(0.97); }
   @media (max-width:560px){ .framerow{ grid-template-columns:repeat(3, minmax(0, 1fr)); } .titlerow{ flex-wrap:wrap; } }

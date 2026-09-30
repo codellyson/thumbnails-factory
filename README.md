@@ -99,6 +99,20 @@ busy scene can't take every place: the samples are split into scenes where the
 picture jumps, and each scene's best frame is offered before any scene's second.
 Six frames are shown, in time order.
 
+Faces count too. The first scan loads Google's MediaPipe face detector - its code
+from jsDelivr, its 224 KB model from `models/` - and runs it on a 640-pixel copy of
+each sample, in the page. A frame with a clear face, whole within the frame,
+ranks higher, more for a bigger face up to about a tenth of the frame, and its
+tile is marked **Face**. A detection counts when it is confident, or when the
+sample before or after finds a face in the same place, which weeds out patterns
+that look like a face for one frame. If the detector can't load, frames are
+picked without it and the strip says so.
+
+A frame with a face is framed on it when used: zoomed until the face is about 40%
+of the picture's height (never below 100%) and moved so it sits centred, a little
+above the middle. It stays framed on the face through changes of template, shape
+or size, until the picture is reframed by hand.
+
 A click puts a frame in the main picture; dragging it onto the preview puts it in
 the picture it lands on. The frame is taken again at the video's full size when
 it is used. Videos Chrome can't decode - iPhone `.mov` files in HEVC, often - get

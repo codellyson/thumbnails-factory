@@ -222,6 +222,8 @@
     background:rgb(0 0 0 / .55); padding:1px 5px; border-radius:4px; }
   @media (hover: hover){ .frametile:hover{ box-shadow:0 0 0 2px var(--ink); } }
   .frametile:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .frametile.hasface::after{ content:"Face"; position:absolute; top:4px; right:4px; font-size:10px; font-weight:600;
+    color:#fff; background:rgb(238 123 88 / .9); padding:1px 5px; border-radius:4px; }
   .frametile.used{ box-shadow:0 0 0 2px var(--canvas), 0 0 0 3.5px var(--accent); }
   .frametile:active{ transform:scale(0.97); }
   @media (max-width:560px){ .framerow{ grid-template-columns:repeat(3, minmax(0, 1fr)); } .titlerow{ flex-wrap:wrap; } }
@@ -740,6 +742,12 @@
       web font does. It carries nothing about your image or your text. If you would
       rather avoid it, the page still works with those requests blocked; the headline
       simply falls back to a system typeface.</p>
+      <p>Starting from a video, the first time only, loads Google's MediaPipe face
+      detector: its code from <code>cdn.jsdelivr.net</code>, about 12 MB, and a small
+      model file from this site. The detector runs in the page, on your device, and looks
+      at frames of your video there; the requests only fetch the detector and carry
+      nothing about the video. With them blocked, frames are still picked, just without
+      noticing faces.</p>
       <p>A font file of your own is read in the browser, used in the open tab, and not
       sent anywhere.</p>
 

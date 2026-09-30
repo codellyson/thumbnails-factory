@@ -69,6 +69,12 @@
       web font does. It carries nothing about your image or your text. If you would
       rather avoid it, the page still works with those requests blocked; the headline
       simply falls back to a system typeface.</p>
+      <p>Starting from a video, the first time only, loads Google's MediaPipe face
+      detector: its code from <code>cdn.jsdelivr.net</code>, about 12 MB, and a small
+      model file from this site. The detector runs in the page, on your device, and looks
+      at frames of your video there; the requests only fetch the detector and carry
+      nothing about the video. With them blocked, frames are still picked, just without
+      noticing faces.</p>
       <p>A font file of your own is read in the browser, used in the open tab, and not
       sent anywhere.</p>
 

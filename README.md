@@ -113,15 +113,17 @@ of the picture's height (never below 100%) and moved so it sits centred, a littl
 above the middle. It stays framed on the face through changes of template, shape
 or size, until the picture is reframed by hand.
 
-Under the title the strip offers short **headline takes**: four words at most, in
+**Shorter takes**, under the headline fields in the panel, offers short **headline takes** - made from the video title while the strip is open, else from the headline as typed: four words at most, in
 the title's own order, with the key word as the accent - a number with the word it
 counts ("10 TIPS"), else a word that carries the story (quit, never, truth...), else
-the longest. Filler is trimmed from both ends, so "Why I quit my job" gives
-"I QUIT / MY JOB" and "WHY I / QUIT". The takes are sorted by how big they
+the longest; a title with both a number and such a word gets takes around each.
+Filler is trimmed from both ends, so "Why I quit my job after 10 years" gives
+"I QUIT / MY JOB", "WHY I / QUIT" and "MY JOB / 10 YEARS". Picking a take doesn't
+count as typing, so the list stays put. The takes are sorted by how big they
 actually set in the template and size being made, loudest first, and one click
 applies one. **Use as headline** still puts the whole title in.
 
-In Chrome with its built-in language model, **More with Chrome's on-device AI** asks
+In Chrome with its built-in language model, **Ask Chrome's on-device AI**, under the takes, asks
 it for four more takes, in a fixed JSON shape, and adds them marked **AI**. The model
 runs on the device; the first use has Chrome download it, which only that button
 starts. Browsers without it don't show the button.

@@ -113,7 +113,19 @@ of the picture's height (never below 100%) and moved so it sits centred, a littl
 above the middle. It stays framed on the face through changes of template, shape
 or size, until the picture is reframed by hand.
 
-A click puts a frame in the main picture; dragging it onto the preview puts it in
+After the scan the strip offers up to six **ideas**: finished thumbnails, each a
+template with its pictures, shape and palette, built from the frames found. With
+a face, Talking point on the best face leads, then a Collage of different
+moments, Before → After from the start and the end of the video, Launch, and
+two more; without one - a screen recording, say - Launch leads. Each is drawn
+from the scan's small copies, with its faces framed, so nothing more is read from
+the video until one is applied; applying one sets its template, shape and palette
+the ordinary way, takes its frames at full size and frames them on their faces,
+and everything stays editable. Ideas are drawn at the size being made, redraw
+when it changes, and sit three, four or six across for wide, square and tall
+sizes; the strip takes at most half the column and scrolls inside itself.
+
+A click on a single frame puts it in the main picture; dragging it onto the preview puts it in
 the picture it lands on. The frame is taken again at the video's full size when
 it is used. Videos Chrome can't decode - iPhone `.mov` files in HEVC, often - get
 a message suggesting an MP4 export or a screenshot.

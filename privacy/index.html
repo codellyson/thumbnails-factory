@@ -222,6 +222,20 @@
     background:rgb(0 0 0 / .55); padding:1px 5px; border-radius:4px; }
   @media (hover: hover){ .frametile:hover{ box-shadow:0 0 0 2px var(--ink); } }
   .frametile:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .frames .subhead{ margin:10px 0 0; font-size:12.5px; font-weight:600; color:var(--muted); }
+  .frames .subhead[hidden]{ display:none; }
+  .idearow{ display:grid; grid-template-columns:repeat(var(--idea-cols, 3), minmax(0, 1fr)); gap:10px; margin-top:6px; }
+  .idearow:empty{ display:none; }
+  .idea{ display:flex; flex-direction:column; gap:4px; padding:0; border:0; background:none; cursor:pointer; text-align:start;
+    font:inherit; font-size:12px; color:var(--muted); }
+  .idea canvas{ display:block; width:100%; height:auto; max-height:none; border-radius:8px; background:var(--well); cursor:pointer;
+    box-shadow:0 0 0 1px oklch(0 0 0 / 0.1); transition:box-shadow .14s linear, transform .14s cubic-bezier(0.2, 0, 0, 1); }
+  @media (hover: hover){ .idea:hover canvas{ box-shadow:0 0 0 2px var(--ink); } }
+  .idea:focus-visible{ outline:none; }
+  .idea:focus-visible canvas{ outline:2px solid var(--ink); outline-offset:2px; }
+  .idea:active canvas{ transform:scale(0.98); }
+  .idea.on{ color:var(--ink); }
+  .idea.on canvas{ box-shadow:0 0 0 2px var(--canvas), 0 0 0 3.5px var(--accent); }
   .frametile.hasface::after{ content:"Face"; position:absolute; top:4px; right:4px; font-size:10px; font-weight:600;
     color:#fff; background:rgb(238 123 88 / .9); padding:1px 5px; border-radius:4px; }
   .frametile.used{ box-shadow:0 0 0 2px var(--canvas), 0 0 0 3.5px var(--accent); }
@@ -607,7 +621,8 @@
     body.editor .howto p + p::before{ content:" "; }
     body.editor .feed{ flex:none; margin-top:12px; padding:12px 14px; }
     body.editor .stage:has(.feed:not([hidden])) .howto{ display:none; }
-    body.editor .frames{ flex:none; }
+    /* the strip never takes more than half the column, so the preview stays */
+    body.editor .frames{ flex:none; max-height:50%; overflow-y:auto; overscroll-behavior:contain; }
     body.editor .stage:has(.frames:not([hidden])) .howto{ display:none; }
 
     /* the options scroll inside their column; Download stays at its foot */

@@ -1220,6 +1220,8 @@
     // a locked element is part of the template's layout: it stays put
     var m = o.locked ? new DOMMatrix() : xformOf(el, g.W, g.H, o.parent);
     c.save(); applyM(c, m); draw(c); c.restore();
+    // an off-screen render can ask where its pictures went, for framing
+    if (opts.hits && o.hit) opts.hits.push({ slot:o.slot, bw:o.hit.w, bh:o.hit.h });
     if (opts.preview) {
       // a picture keeps its frame's own shape, for an outline that hugs it
       var shape = o.hit ? (o.hit.poly || [[o.hit.x, o.hit.y], [o.hit.x + o.hit.w, o.hit.y], [o.hit.x + o.hit.w, o.hit.y + o.hit.h], [o.hit.x, o.hit.y + o.hit.h]]) : null;
@@ -1817,6 +1819,7 @@
     drawSelection();
     var pre = state.layout + '.' + frameShape(p.w, p.h) + '.', resetBtn = document.getElementById('movesReset');
     if (resetBtn) resetBtn.hidden = !Object.keys(state.moves).some(function(key){ return key.indexOf(pre) === 0; });
+    if (ideas && ideas.length) redrawIdeas();   // undefined until the video part of the script has run
     tintWell();
     document.getElementById('what').textContent = p.label;
     document.getElementById('dims').innerHTML = p.w + ' &times; ' + p.h;
@@ -2636,6 +2639,7 @@
   var framesStatus = document.getElementById('framesStatus'), titleEl = document.getElementById('videoTitle');
   var videoFile = document.getElementById('videoFile');
   var vid = null, vidUrl = null, scanId = 0, grabChain = Promise.resolve(), framesFound = {};
+  var ideaRow = document.getElementById('ideaRow'), ideasHead = document.getElementById('ideasHead'), framesHead = document.getElementById('framesHead'), ideas = [];
   var SAMPLES = 48, SMALL = 256, PICKS = 6;
   function isVideo(f){ return /^video\//.test(f.type || '') || /\.(mp4|m4v|mov|webm|mkv)$/i.test(f.name || ''); }
   document.getElementById('videoPick').addEventListener('click', function(){ videoFile.click(); });
@@ -2646,6 +2650,7 @@
   function closeFrames(){
     scanId++;
     framesEl.hidden = true; frameRow.textContent = ''; framesStatus.textContent = ''; framesFound = {};
+    ideaRow.textContent = ''; ideasHead.hidden = framesHead.hidden = true; ideas = [];
     if (vidUrl) URL.revokeObjectURL(vidUrl);
     vid = null; vidUrl = null;
   }
@@ -2801,6 +2806,10 @@
     for (var i = 0; i < dropHits.length; i++) if (dropHits[i].slot === slot) h = dropHits[i];
     if (!img || !h || !face) return;
     faceFor[slot] = { face:face, key:frameKey(h) };
+    setFaceFraming(slot, face, img, h, p);
+    syncControls(); draw();
+  }
+  function setFaceFraming(slot, face, img, h, p){
     var bw = h.bw, bh = h.bh || h.h, f = FRAMING[slot];
     var fit = Math.max(bw / img.width, bh / img.height);
     var z = Math.max(1, Math.min(ZOOM_MAX, 0.4 * bh / (face.h * img.height * fit)));
@@ -2811,7 +2820,6 @@
     state[f.zoom] = Math.round(z * 100) / 100;
     if (slot === 'main') { state.panX = dx / p.w; state.panY = dy / p.h; }
     else { state[f.x] = dx / bw; state[f.y] = dy / bw; }
-    syncControls(); draw();
   }
 
   function sigDist(a, b){ var s = 0; for (var i = 0; i < 144; i++) s += Math.abs(a[i] - b[i]); return s/144; }
@@ -2883,6 +2891,8 @@
         framesStatus.textContent = 'Click a frame to use it as the ' + labelFor(controlByKey('main'), state.layout).toLowerCase() +
           ', or drag it onto any picture in the preview.';
         best.forEach(addTile);
+        framesHead.hidden = false;
+        showIdeas(best, my);
         if (!faceDetector) framesStatus.textContent += ' (Face detection could not load, so frames are picked without it.)';
         draw();
         return;
@@ -2921,6 +2931,133 @@
     framesFound[r.t] = r;
     frameRow.appendChild(b);
   }
+  // ---- ideas: finished thumbnails built from the video --------------------
+  // Up to six, each a template with its pictures, shape and palette, chosen
+  // from what the scan found. With a face: Talking point on the best face,
+  // a Collage of different moments, Before -> After from the start and end.
+  // Without one - a screen recording, say - Launch leads. Each is drawn from
+  // the scan's small copies, so nothing more is read from the video until
+  // one is applied; then its frames are taken at full size and framed on
+  // their faces, and everything stays editable.
+  var IDEA_PALETTES = ['fromFrame', 'kk', 'ember', 'mint', 'signal', 'ice'];
+  function buildIdeas(best){
+    var byScore = best.slice().sort(function(a, b){ return b.score - a.score; });
+    var faces = best.filter(function(r){ return r.face; }).sort(function(a, b){ return b.face.w*b.face.h*b.face.score - a.face.w*a.face.h*a.face.score; });
+    var plain = byScore.filter(function(r){ return !r.face; });
+    var first = best[0], last = best[best.length - 1], top = faces[0] || byScore[0];
+    var others = function(not){ return byScore.filter(function(r){ return not.indexOf(r) < 0; }); };
+    var strip = others([top]);
+    var collage = { layout:'collage', pics:{ main:top, second:strip[0], third:strip[1], fourth:strip[2] } };
+    var talking = { layout:'talking', tpShape:'circle', pics:{ main:top } };
+    var talking2 = { layout:'talking', tpShape:'frame', pics:{ main:faces[1] || plain[0] || byScore[1] || top } };
+    var versus = { layout:'versus', vsShape:faces.length > 1 ? 'circle' : 'card', pics:{ second:first, main:last } };
+    var versus2 = { layout:'versus', vsShape:'card', pics:{ second:byScore[1] || first, main:top } };
+    var launch = { layout:'launch', pics:{ main:plain[0] || byScore[0] } };
+    var launch2 = { layout:'launch', pics:{ main:plain[1] || byScore[1] || byScore[0] } };
+    var list = faces.length ? [talking, collage, versus, launch, talking2, versus2]
+                            : [launch, collage, versus, launch2, talking2, versus2];
+    if (best.length < 2) list = list.filter(function(i){ return i.layout !== 'versus'; });
+    return list.slice(0, 6).map(function(idea, i){ idea.palette = IDEA_PALETTES[i % IDEA_PALETTES.length]; return idea; });
+  }
+  // The scan's small copies as pictures, for drawing ideas.
+  function smallImage(r){
+    if (r.img) return Promise.resolve(r.img);
+    return new Promise(function(done){ var im = new Image(); im.onload = function(){ r.img = im; done(im); }; im.onerror = function(){ done(null); }; im.src = r.thumb; });
+  }
+  var IDEA_KEYS = ['layout', 'vsShape', 'tpShape', 'palette', 'strip', 'zoom', 'panX', 'panY', 'phoneZoom', 'phonePanX', 'phonePanY', 'zoom3', 'pan3X', 'pan3Y', 'zoom4', 'pan4X', 'pan4Y'];
+  var IDEA_IMAGE = { main:'frame', second:'phoneImg', third:'img3', fourth:'img4' };
+  // Draws an idea by borrowing the state and pictures for the moment it
+  // takes, the way the template picker's previews do, then puts them back.
+  // It draws twice: once to learn where its pictures land, then framed on
+  // their faces.
+  function drawIdea(idea, cvs){
+    var p = current(), tw = cvs.width, th = cvs.height;
+    var small = { id:p.id, w:tw, h:th, safe:p.safe, play:p.play };
+    var keep = {}; IDEA_KEYS.forEach(function(k){ keep[k] = state[k]; });
+    var keepImgs = { frame:frame, phoneImg:phoneImg, img3:img3, img4:img4 }, keepShown = JSON.stringify(shown), keepDerived = state.derived.frame, keepMoves = state.moves;
+    try {
+      state.layout = idea.layout; state.strip = true;
+      if (idea.vsShape) state.vsShape = idea.vsShape;
+      if (idea.tpShape) state.tpShape = idea.tpShape;
+      state.palette = idea.palette; state.moves = {};
+      Object.keys(FRAMING).forEach(function(slot){ var f = FRAMING[slot]; state[f.zoom] = 1; state[f.x] = 0; state[f.y] = 0; });
+      frame = paintedFrame; phoneImg = img3 = img4 = null;
+      Object.keys(idea.pics).forEach(function(slot){
+        var r = idea.pics[slot]; if (!r || !r.img) return;
+        if (slot === 'main') frame = r.img; else if (slot === 'second') phoneImg = r.img; else if (slot === 'third') img3 = r.img; else img4 = r.img;
+      });
+      if (idea.palette === 'fromFrame') state.derived.frame = (idea.pics.main && idea.pics.main.img && paletteFromImage(idea.pics.main.img)) || state.derived.frame;
+      var c = cvs.getContext('2d'), hits = [];
+      render(c, small, { guides:false, hits:hits });
+      Object.keys(idea.pics).forEach(function(slot){
+        var r = idea.pics[slot], h = null;
+        hits.forEach(function(x){ if (x.slot === slot) h = x; });
+        if (r && r.face && r.img && h) setFaceFraming(slot, r.face, r.img, h, small);
+      });
+      render(c, small, { guides:false });
+    } finally {
+      IDEA_KEYS.forEach(function(k){ state[k] = keep[k]; });
+      frame = keepImgs.frame; phoneImg = keepImgs.phoneImg; img3 = keepImgs.img3; img4 = keepImgs.img4;
+      shown = JSON.parse(keepShown); state.derived.frame = keepDerived; state.moves = keepMoves;
+    }
+  }
+  // Ideas are drawn at the size being made; a new size draws them again.
+  var ideaSize = '';
+  function redrawIdeas(){
+    var p = current(), key = p.w + 'x' + p.h;
+    if (!ideas.length || key === ideaSize) return;
+    ideaSize = key;
+    var tw = 360, th = Math.round(tw * p.h / p.w), a = p.w / p.h;
+    ideaRow.style.setProperty('--idea-cols', a < 0.85 ? 6 : a < 1.2 ? 4 : 3);
+    Array.prototype.forEach.call(ideaRow.children, function(b, i){
+      var cvs = b.querySelector('canvas'); cvs.width = tw; cvs.height = th; drawIdea(ideas[i], cvs);
+    });
+  }
+  function ideaName(idea){
+    var t = templateById(idea.layout).name, sh = idea.tpShape || (idea.layout === 'versus' ? idea.vsShape : '');
+    var pal = idea.palette === 'fromFrame' ? 'picture colours' : paletteById(idea.palette).name.toLowerCase();
+    return t + (sh ? ', ' + sh : '') + ' · ' + pal;
+  }
+  function showIdeas(best, my){
+    var list = buildIdeas(best), need = [];
+    list.forEach(function(idea){ Object.keys(idea.pics).forEach(function(k){ if (idea.pics[k] && need.indexOf(idea.pics[k]) < 0) need.push(idea.pics[k]); }); });
+    Promise.all(need.map(smallImage)).then(function(){
+      if (my !== scanId) return;
+      ideas = list;
+      var p = current(), tw = 360, th = Math.round(tw * p.h / p.w), a = p.w / p.h;
+      // a row of tall ideas stays short: more of them across
+      ideaRow.style.setProperty('--idea-cols', a < 0.85 ? 6 : a < 1.2 ? 4 : 3);
+      list.forEach(function(idea){
+        var b = el('button', 'idea'); b.type = 'button';
+        var cvs = el('canvas'); cvs.width = tw; cvs.height = th; cvs.setAttribute('aria-hidden', 'true');
+        drawIdea(idea, cvs);
+        b.appendChild(cvs); b.appendChild(el('span', null, ideaName(idea)));
+        b.setAttribute('aria-label', 'Use this idea: ' + ideaName(idea));
+        b.addEventListener('click', function(){
+          Array.prototype.forEach.call(ideaRow.children, function(x){ x.classList.remove('on'); });
+          b.classList.add('on');
+          applyIdea(idea);
+        });
+        ideaRow.appendChild(b);
+      });
+      ideasHead.hidden = false; ideaSize = p.w + 'x' + p.h;
+      framesStatus.textContent = 'Pick an idea to start from, or a single frame below. Everything stays editable.';
+      draw();
+    });
+  }
+  // An idea, for real: template, shape and palette set the ordinary way,
+  // then each picture's frame taken at full size and framed on its face.
+  function applyIdea(idea){
+    if (idea.layout !== state.layout) { state.panX = state.panY = 0; state.zoom = 1; setControl('layout', idea.layout); syncLayout(); }
+    if (idea.vsShape) setControl('vsShape', idea.vsShape);
+    if (idea.tpShape) setControl('tpShape', idea.tpShape);
+    if (idea.layout === 'collage' && !state.strip) setControl('strip', true);
+    if (state.palette !== idea.palette) { state.palette = idea.palette; syncPalette(); persist(); }
+    ['main', 'second', 'third', 'fourth'].forEach(function(slot){
+      var r = idea.pics[slot]; if (r) useFrame(r.t, slot);
+    });
+  }
+
   // The frame at its full size, into a picture slot, through the same path a
   // chosen file takes. Grabs queue, so quick clicks land in order.
   function useFrame(t, slot, tile){

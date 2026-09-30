@@ -23,6 +23,8 @@
         <button class="btn btn-sm" id="videoPick" type="button">From a video&hellip;</button>
         <span class="dims" id="dims">1280 &times; 720</span>
       </p>
+      <!-- The quality bar (docs/quality-bar.md), checked as you work. -->
+      <div class="checks" id="checks" role="status" aria-live="polite"></div>
       <input type="file" id="videoFile" accept="video/*" hidden>
       <!-- Frames picked out of a video, all on this device: nothing is uploaded. -->
       <section class="frames" id="frames" aria-labelledby="framesTitle" hidden>

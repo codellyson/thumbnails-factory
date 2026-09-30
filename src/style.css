@@ -166,6 +166,23 @@
   .feedtext span{ display:block; height:9px; border-radius:3px; background:#3a3a3a; }
   .feedtext span + span{ width:60%; background:#2a2a2a; }
 
+  /* ---- the quality bar, live ---- */
+  .checks{ display:flex; flex-direction:column; gap:6px; margin:6px 4px 0; font-size:13px; }
+  .checks:empty{ display:none; }
+  .checks .ok{ color:var(--muted); }
+  .checks .ok::before{ content:"✓ "; color:var(--ok); font-weight:700; }
+  .check{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .check .what{ font-weight:600; }
+  .check .what::before{ content:""; display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--accent);
+    margin-inline-end:7px; vertical-align:1px; }
+  .check .why{ color:var(--muted); }
+  .check .btn{ width:auto; min-height:28px; padding:4px 11px; font-size:12.5px; }
+  .check .also{ color:var(--muted); font-size:12px; }
+  /* a size that fails the bar gets a coral dot on its tile */
+  .tile.warn .chipbox{ position:relative; }
+  .tile.warn .chipbox::after{ content:""; position:absolute; top:-3px; right:-3px; width:8px; height:8px; border-radius:50%;
+    background:var(--accent); box-shadow:0 0 0 2px var(--canvas); }
+
   /* ---- frames from a video ---- */
   .readout .btn{ width:auto; }
   .frames{ margin:12px 0 0; padding:12px 14px 14px; background:var(--cream); border-radius:var(--r-well); }
@@ -594,6 +611,7 @@
     body.editor canvas#cv{ max-width:100%; max-height:100%; }
     body.editor .stage:has(.feed:not([hidden])) canvas{ max-height:100%; }
     body.editor .readout{ flex:none; padding-top:10px; }
+    body.editor .checks{ flex:none; }
     body.editor .howto{ flex:none; margin-top:2px; max-width:none; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     body.editor .howto p{ display:inline; }
     body.editor .howto p + p::before{ content:" "; }

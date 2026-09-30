@@ -757,6 +757,8 @@
     var px1 = l1 ? fitWith(c, l1, maxW, start, 24*k, function(px){ return px*1.1; }) : 0;
     var px2 = l2 ? fitWith(c, l2, maxW, start, 24*k, none) : 0;
     var tagH = pillText() ? 56*k*state.pillSize : 0;
+    // the bar measures the bigger of the two lines
+    if (opts.report && (px1 || px2)) opts.report.headCap = capOf(c, Math.max(px1, px2)) / H;
     var blockH = (tagH ? tagH + 0.035*H : 0) + (px1 ? px1*0.74 : 0) + (px1 && px2 ? px2*1.02 : px2*0.74);
 
     // Wide: the words in the left column, centred in the height below the
@@ -1757,12 +1759,18 @@
 
   // ---- renderer ---------------------------------------------------------
   // ---- the quality bar, measured (docs/quality-bar.md) ------------------
-  // On a local server only: renders the current template at the current
-  // size, off screen, and returns rules 1-3 of the bar with pass or fail.
-  function measure(p){
+  // Renders the current template at a size, off screen, and returns rules
+  // 1-3 of the bar with pass or fail. A scale below 1 renders a smaller
+  // copy - everything is drawn in proportion, so the fractions hold - for
+  // checks cheap enough to run as the person works.
+  function measure(p, scale){
+    if (scale && scale < 1) p = { id:p.id, w:Math.max(64, Math.round(p.w*scale)), h:Math.max(36, Math.round(p.h*scale)), safe:p.safe, play:p.play, label:p.label };
     var oc = document.createElement('canvas'); oc.width = p.w; oc.height = p.h;
-    var c = oc.getContext('2d', { willReadFrequently:true }), rep = {};
+    var c = oc.getContext('2d', { willReadFrequently:true }), rep = {}, keepShown = JSON.stringify(shown);
     render(c, p, { guides:false, report:rep });
+    shown = JSON.parse(keepShown);
+    // a headline resized by hand is measured at the size it shows
+    if (rep.headCap != null) rep.headCap *= (moveOf('headline', p.w, p.h)[5] || 1);
     var tall = (p.w / p.h) < 1.2, dead = 0, cw = p.w/4, ch = p.h/4;
     for (var gy = 0; gy < 4; gy++) for (var gx = 0; gx < 4; gx++) {
       var d = c.getImageData(Math.round(gx*cw), Math.round(gy*ch), Math.round(cw), Math.round(ch)).data;
@@ -1780,9 +1788,12 @@
   if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
     window.TF = {
       quality:function(){ return measure(current()); },
-      qualityAll:function(){ return PRESETS.filter(function(p){ return p.id !== 'custom'; }).map(measure); },
+      qualityAll:function(scale){ return PRESETS.filter(function(p){ return p.id !== 'custom'; }).map(function(p){ return measure(p, scale); }); },
       // the movable elements on the preview, with the box each one paints
       layers:function(){ draw(); return layerMasks().map(function(m){ return { el:m.L.el, slot:m.L.slot, box:m.box, placed:placedBox(m) }; }); },
+      // each likely fix for a rule, and what it would measure
+      fixes:function(rule){ var p = current(), s = scaleFor(p, 480);
+        return { before:failing(measure(p, s)), tried:candidates(rule, p).map(function(c){ var r = tryPatch(c, p, s); return { label:c.label, fails:failing(r), headline:r.headline }; }) }; },
       frames:function(){ return Object.keys(framesFound).map(function(k){ var r = framesFound[k]; return { t:r.t, face:r.face, score:r.score }; }); },
       handle:function(){ var q = selGeom(); return q && { x:q.handle.x, y:q.handle.y, corners:q.corners.map(function(c){ return { x:c.x, y:c.y }; }) }; }
     };
@@ -1821,6 +1832,7 @@
     var pre = state.layout + '.' + frameShape(p.w, p.h) + '.', resetBtn = document.getElementById('movesReset');
     if (resetBtn) resetBtn.hidden = !Object.keys(state.moves).some(function(key){ return key.indexOf(pre) === 0; });
     if (ideas && ideas.length) redrawIdeas();   // undefined until the video part of the script has run
+    if (typeof scheduleChecks === 'function') scheduleChecks();
     tintWell();
     document.getElementById('what').textContent = p.label;
     document.getElementById('dims').innerHTML = p.w + ' &times; ' + p.h;
@@ -3645,6 +3657,132 @@
       persist(); syncControls(); draw();
     }
   });
+  // ---- the quality bar, live ---------------------------------------------
+  // The bar's first three rules (docs/quality-bar.md) - a loud headline, the
+  // pictures carrying the image, no dead zones - checked as the person works:
+  // the size being made after each pause, on a 640-pixel copy, and every
+  // other size one at a time when the page is idle, on a 480-pixel copy, so
+  // a size that fails gets a dot in the size list. A failing rule offers a
+  // fix, found by trying likely changes off screen and keeping the first
+  // that passes without breaking another rule.
+  var checksEl = document.getElementById('checks'), checkTimer = 0, allTimer = 0, allQueue = [], sizeFails = {};
+  var RULES = {
+    headline:{ name:'Headline small', pass:'headlinePass', why:function(q, p){ var tall = p.w/p.h < 1.2;
+      return 'capitals are ' + (q.headline*100).toFixed(1) + '% of the height; ' + (tall ? '6' : '9') + '% reads at feed size.'; } },
+    pictures:{ name:'Pictures small', pass:'picturesPass', why:function(q){
+      return 'they cover ' + Math.round(q.pictures*100) + '% of the frame; a third carries a thumbnail.'; } },
+    dead:{ name:'Bare areas', pass:'deadPass', why:function(q){
+      return q.deadCells + ' of 16 areas are flat colour; 2 at most keeps it busy enough to stop a scroll.'; } }
+  };
+  function scaleFor(p, long){ return Math.min(1, long / Math.max(p.w, p.h)); }
+  function scheduleChecks(){
+    clearTimeout(checkTimer); checkTimer = setTimeout(runChecks, 450);
+    clearTimeout(allTimer); allTimer = setTimeout(startAllChecks, 1500);
+  }
+  function failing(q){ return Object.keys(RULES).filter(function(r){ return q[RULES[r].pass] === false; }); }
+  // A change tried off screen: state and placements borrowed, the size
+  // measured, everything put back.
+  function tryPatch(patch, p, s){
+    var keep = {}, keepMoves = JSON.stringify(state.moves);
+    Object.keys(patch.state || {}).forEach(function(k){ keep[k] = state[k]; state[k] = patch.state[k]; });
+    if (patch.moves) patch.moves(state.moves);
+    try { return measure(p, s); }
+    finally { Object.keys(keep).forEach(function(k){ state[k] = keep[k]; }); state.moves = JSON.parse(keepMoves); }
+  }
+  function applyPatch(patch){
+    if (patch.moves) { patch.moves(state.moves); persist(); }
+    Object.keys(patch.state || {}).forEach(function(k){ setControl(k, patch.state[k]); });
+    if (patch.after) patch.after();
+    draw();
+  }
+  // Likely fixes for a rule, most specific first.
+  function candidates(rule, p){
+    var out = [], t = state.layout, pre = t + '.' + frameShape(p.w, p.h) + '.', hk = pre + 'headline';
+    function headScaleReset(m){ if (m[hk]) m[hk][5] = 1; }
+    if (rule === 'headline') {
+      if (state.moves[hk] && (state.moves[hk][5] || 1) < 1) out.push({ label:'Headline back to full size', moves:headScaleReset });
+      // loudest first, the order Shorter takes shows them in
+      takes(sourceText()).map(function(tk){ tk.cap = loudness(tk); return tk; })
+        .sort(function(a, b){ return b.cap - a.cap; }).forEach(function(tk){
+        if (tk.main.toUpperCase() === state.line1.trim().toUpperCase() && tk.accent.toUpperCase() === state.line2.trim().toUpperCase()) return;
+        out.push({ label:'Shorter: ' + (tk.main ? tk.main + ' ' : '') + tk.accent, state:{ line1:tk.main, line2:tk.accent },
+                   after:function(){ if (typeof showTakes === 'function') showTakes(); } });
+      });
+      if (state.headFont !== 'auto') out.push({ label:'The template\'s own font', state:{ headFont:'auto' } });
+      if (state.headScale < 1.4) out.push({ label:'Headline size to 140%', state:{ headScale:1.4 } });
+    }
+    if (rule === 'pictures') {
+      if (t === 'talking') ['circle', 'frame'].forEach(function(v){ if (state.tpShape !== v) out.push({ label:'Picture shape: ' + v, state:{ tpShape:v } }); });
+      if (t === 'versus') ['card', 'circle'].forEach(function(v){ if (state.vsShape !== v) out.push({ label:'Picture shape: ' + v, state:{ vsShape:v } }); });
+      if (t === 'collage' && !state.strip) out.push({ label:'Turn the strip on', state:{ strip:true } });
+    }
+    if (rule === 'dead') {
+      if (t === 'launch' && !state.dotGrid) out.push({ label:'Turn the dot grid on', state:{ dotGrid:true } });
+      if (t === 'collage' && !state.brush) out.push({ label:'Turn the brush bands on', state:{ brush:true } });
+      if (t === 'collage' && !state.strip) out.push({ label:'Turn the strip on', state:{ strip:true } });
+    }
+    // moved things can leave a gap anywhere
+    if (Object.keys(state.moves).some(function(k){ return k.indexOf(pre) === 0; }))
+      out.push({ label:'Reset positions', moves:function(m){ Object.keys(m).forEach(function(k){ if (k.indexOf(pre) === 0) delete m[k]; }); },
+                 after:function(){ selected = null; } });
+    return out;
+  }
+  function findFix(rule, q, p){
+    // trials and the baseline they're held to are measured at the same size
+    var s = scaleFor(p, 480), before = failing(measure(p, s)), list = candidates(rule, p);
+    // A fix may trade a failure for a less important one - a headline that
+    // reads matters more than a bare corner - but never adds failures.
+    var rank = { headline:0, pictures:1, dead:2 }, fallback = null;
+    for (var i = 0; i < list.length && i < 6; i++) {
+      var r = tryPatch(list[i], p, s), now = failing(r);
+      if (now.indexOf(rule) >= 0 || now.length > before.length) continue;
+      if (now.every(function(x){ return before.indexOf(x) >= 0; })) return list[i];
+      if (!fallback && now.every(function(x){ return before.indexOf(x) >= 0 || rank[x] > rank[rule]; })) fallback = list[i];
+    }
+    return fallback;
+  }
+  function runChecks(){
+    var p = current(), s = scaleFor(p, 640), q = measure(p, s), fails = failing(q);
+    checksEl.textContent = '';
+    if (!fails.length) { checksEl.appendChild(el('span', 'ok', 'Passes the quality bar at this size.')); return; }
+    fails.forEach(function(rule){
+      var row = el('div', 'check');
+      row.appendChild(el('span', 'what', RULES[rule].name));
+      row.appendChild(el('span', 'why', RULES[rule].why(q, p)));
+      var fix = findFix(rule, q, p);
+      if (fix) {
+        var b = el('button', 'btn btn-sm', fix.label); b.type = 'button';
+        b.addEventListener('click', function(){ applyPatch(fix); });
+        row.appendChild(b);
+      }
+      var also = Object.keys(sizeFails).filter(function(id){ return id !== p.id && sizeFails[id].indexOf(rule) >= 0; })
+        .map(function(id){ return presetById(id).short; });
+      if (also.length) row.appendChild(el('span', 'also', 'Also at ' + also.slice(0, 4).join(', ') + (also.length > 4 ? ' and ' + (also.length - 4) + ' more' : '') + '.'));
+      checksEl.appendChild(row);
+    });
+  }
+  // Every other size, one per idle moment, so a long pass never stalls typing.
+  function startAllChecks(){
+    allQueue = PRESETS.filter(function(p){ return p.id !== 'custom'; }).slice();
+    stepAllChecks();
+  }
+  function stepAllChecks(){
+    if (!allQueue.length) { markSizes(); return; }
+    var p = allQueue.shift();
+    sizeFails[p.id] = failing(measure(p, scaleFor(p, 480)));
+    (window.requestIdleCallback || function(f){ return setTimeout(f, 16); })(stepAllChecks);
+  }
+  function markSizes(){
+    tileInputs.forEach(function(inp){
+      var f = sizeFails[inp.value] || [], tile = inp.closest('.tile');
+      if (!tile) return;
+      tile.classList.toggle('warn', f.length > 0);
+      var base = tile.title.replace(/ - .*$/, '');
+      tile.title = f.length ? base + ' - ' + f.map(function(r){ return RULES[r].name.toLowerCase(); }).join(', ') : base;
+    });
+    runChecks();   // the "also at" lines now know the other sizes
+  }
+
   // The same file input the slot's Choose button opens, so a picture
   // chosen either way loads the same way.
   function pickFor(slot){

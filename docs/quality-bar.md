@@ -41,6 +41,12 @@ shortfall is recorded here rather than hidden.
 
 ## How it is checked
 
+In the editor, rules 1-3 are checked live on a scaled copy - 640 pixels on the
+long side for the size being made, 480 for the rest - which agrees with the
+full-size measure on the headline everywhere and on dead cells within two cells
+at the few borderline sizes. A failing size is marked in the size list, and a
+fix is offered when one is found.
+
 On a local server (`localhost`), the page exposes `window.TF.quality()`, which
 renders the current template at the current size and returns the numbers for
 rules 1–3 alongside pass or fail. `window.TF.qualityAll()` runs it for every

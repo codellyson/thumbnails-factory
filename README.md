@@ -145,6 +145,25 @@ the picture it lands on. The frame is taken again at the video's full size when
 it is used. Videos Chrome can't decode - iPhone `.mov` files in HEVC, often - get
 a message suggesting an MP4 export or a screenshot.
 
+## The quality bar, live
+
+The bar's first three rules (`docs/quality-bar.md`) are checked as you work: a
+line under the preview says whether the size being made passes, and names what
+fails - **Headline small**, **Pictures small**, **Bare areas** - with the number
+behind it. The size being made is measured on a 640-pixel copy after each pause;
+every other size is measured one at a time when the page is idle, on a 480-pixel
+copy (the fractions hold at any size), and a size that fails gets a coral dot in
+the size list, its tooltip naming the rule. A headline resized by hand is measured
+at the size it shows, and Launch now reports its headline too.
+
+A failing rule offers a fix when one exists, found by trying likely changes off
+screen - a shorter take (loudest first), the template's own font, a bigger
+headline size, another picture shape, the strip, the dot grid or brush bands, or
+resetting moved elements - and keeping the first that passes. A fix may trade a
+failure for a less important one (headline, then pictures, then bare areas) but
+never adds failures. On localhost, `TF.fixes('headline')` lists every candidate
+and what it measured.
+
 ## Moving things
 
 Everything a template draws on top of its background can be dragged on the

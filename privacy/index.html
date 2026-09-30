@@ -201,6 +201,31 @@
   .feedtext span{ display:block; height:9px; border-radius:3px; background:#3a3a3a; }
   .feedtext span + span{ width:60%; background:#2a2a2a; }
 
+  /* ---- frames from a video ---- */
+  .readout .btn{ width:auto; }
+  .frames{ margin:12px 0 0; padding:12px 14px 14px; background:var(--cream); border-radius:var(--r-well); }
+  .frames[hidden]{ display:none; }
+  .frameshead{ display:flex; align-items:center; gap:10px; }
+  .frameshead h3{ margin:0; font-size:14px; font-weight:600; letter-spacing:-.01em; flex:1; }
+  .frameshead .btn{ width:auto; }
+  .titlerow{ display:flex; align-items:center; gap:8px; margin-top:10px; }
+  .titlerow label{ font-size:13px; font-weight:500; white-space:nowrap; }
+  .titlerow input{ flex:1; min-width:0; padding:7px 10px; font-size:14px; }
+  .titlerow .btn{ width:auto; white-space:nowrap; flex:none; }
+  .frames .hint{ margin:8px 0 0; min-height:1.3em; }
+  .framerow{ display:grid; grid-template-columns:repeat(6, minmax(0, 1fr)); gap:8px; margin-top:8px; }
+  .framerow:empty{ display:none; }
+  .frametile{ position:relative; padding:0; border:0; border-radius:8px; overflow:hidden; cursor:pointer; background:var(--well);
+    box-shadow:0 0 0 1px oklch(0 0 0 / 0.1); transition:box-shadow .14s linear, transform .14s cubic-bezier(0.2, 0, 0, 1); }
+  .frametile img{ display:block; width:100%; height:auto; aspect-ratio:16 / 9; object-fit:cover; }
+  .frametile span{ position:absolute; left:5px; bottom:4px; font-size:11px; font-weight:600; color:#fff;
+    background:rgb(0 0 0 / .55); padding:1px 5px; border-radius:4px; }
+  @media (hover: hover){ .frametile:hover{ box-shadow:0 0 0 2px var(--ink); } }
+  .frametile:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .frametile.used{ box-shadow:0 0 0 2px var(--canvas), 0 0 0 3.5px var(--accent); }
+  .frametile:active{ transform:scale(0.97); }
+  @media (max-width:560px){ .framerow{ grid-template-columns:repeat(3, minmax(0, 1fr)); } .titlerow{ flex-wrap:wrap; } }
+
   /* ---- control panel ---- */
   .bench{
     background:var(--cream); border-radius:var(--r-panel);
@@ -580,6 +605,8 @@
     body.editor .howto p + p::before{ content:" "; }
     body.editor .feed{ flex:none; margin-top:12px; padding:12px 14px; }
     body.editor .stage:has(.feed:not([hidden])) .howto{ display:none; }
+    body.editor .frames{ flex:none; }
+    body.editor .stage:has(.frames:not([hidden])) .howto{ display:none; }
 
     /* the options scroll inside their column; Download stays at its foot */
     body.editor .bench{ overflow-y:auto; overscroll-behavior:contain; border-radius:0; padding:16px 18px 0; gap:18px; }
@@ -653,7 +680,9 @@
       HTML file served as a static page. When you choose a picture, the browser reads it
       off your own disk and draws it onto a canvas in the page. The finished thumbnail is
       produced by that same canvas and handed straight to your downloads folder. At no
-      point does the image travel anywhere.</p>
+      point does the image travel anywhere. The same goes for a video you start from:
+      the frames are picked by playing it inside the page, and the video itself is never
+      sent anywhere.</p>
       <p>There is no account, no sign-in, no cookie and no tracking pixel. The page does
       send a few anonymous counts, described below, and none of them carries your picture
       or anything you typed.</p>

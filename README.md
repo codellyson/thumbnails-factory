@@ -83,6 +83,27 @@ Esc is pressed. Where a template
 offers a shape (Before → After: circle or card; Talking point: auto, circle or
 frame), **Picture shape** sits right under its pictures.
 
+## Starting from a video
+
+**From a video…** under the preview, or dropping a video file on it, opens a strip
+of frames picked from the video. It asks for the video's title first - filled in
+from the file name unless that is a camera's `IMG_4471` - and **Use as headline**
+sets the headline from it, its last word the accent.
+
+The video is played inside the page and never sent anywhere. The tool looks at 48
+moments spread across it, skipping the first and last 3% where titles and end
+cards sit, and scores each on a 256-pixel copy: sharpness (the variance of its
+Laplacian, which motion blur flattens), exposure and contrast; black frames,
+fades and blown-out cards are left out. Sharpness is judged within a scene, so a
+busy scene can't take every place: the samples are split into scenes where the
+picture jumps, and each scene's best frame is offered before any scene's second.
+Six frames are shown, in time order.
+
+A click puts a frame in the main picture; dragging it onto the preview puts it in
+the picture it lands on. The frame is taken again at the video's full size when
+it is used. Videos Chrome can't decode - iPhone `.mov` files in HEVC, often - get
+a message suggesting an MP4 export or a screenshot.
+
 ## Moving things
 
 Everything a template draws on top of its background can be dragged on the

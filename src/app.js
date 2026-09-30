@@ -2606,10 +2606,226 @@
   }
   function dropSlot(e){ var h = hitAt(e); return h ? h.slot : 'main'; }
   wrap.addEventListener('drop', function(e){
+    // a frame dragged from the video strip goes into the picture it lands on
+    var ft = e.dataTransfer && e.dataTransfer.getData('application/x-tf-frame');
+    if (ft && vid) { useFrame(+ft, dropSlot(e)); return; }
     var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
     if (!f) return;
+    if (isVideo(f)) { startVideo(f); return; }
     SLOTS[dropSlot(e)].load(f);
   });
+
+  // ---- frames from a video -----------------------------------------------
+  // A video chosen or dropped here is played inside the page and never sent
+  // anywhere. The tool asks for its title, then scans 48 moments spread
+  // across it - skipping the first and last 3%, where titles and end cards
+  // sit - scoring each on a small copy for sharpness (the variance of its
+  // Laplacian, which motion blur flattens), exposure and contrast. It offers
+  // the six best that differ from each other, in time order. A frame is
+  // grabbed again at the video's full size only when it is used: a click
+  // puts it in the main picture, a drag onto the preview puts it in the
+  // picture it lands on.
+  var framesEl = document.getElementById('frames'), frameRow = document.getElementById('frameRow');
+  var framesStatus = document.getElementById('framesStatus'), titleEl = document.getElementById('videoTitle');
+  var videoFile = document.getElementById('videoFile');
+  var vid = null, vidUrl = null, scanId = 0, grabChain = Promise.resolve();
+  var SAMPLES = 48, SMALL = 256, PICKS = 6;
+  function isVideo(f){ return /^video\//.test(f.type || '') || /\.(mp4|m4v|mov|webm|mkv)$/i.test(f.name || ''); }
+  document.getElementById('videoPick').addEventListener('click', function(){ videoFile.click(); });
+  videoFile.addEventListener('change', function(){ if (videoFile.files[0]) startVideo(videoFile.files[0]); videoFile.value = ''; });
+  document.getElementById('framesClose').addEventListener('click', function(){ closeFrames(); draw(); });
+  document.getElementById('titleUse').addEventListener('click', useTitle);
+  titleEl.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); useTitle(); } });
+  function closeFrames(){
+    scanId++;
+    framesEl.hidden = true; frameRow.textContent = ''; framesStatus.textContent = '';
+    if (vidUrl) URL.revokeObjectURL(vidUrl);
+    vid = null; vidUrl = null;
+  }
+  // Camera and screen-recorder names say nothing about the video, so they
+  // leave the title empty for the person to fill in.
+  function titleFromName(name){
+    var t = name.replace(/\.[^.]+$/, '').replace(/[_\-.]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (/^(img|vid|mov|mvi|pxl|dsc|dji|gopr|gh\d|screen ?recording|screenshot|video|clip|untitled)\b/i.test(t)) return '';
+    if (!/[a-z]{3}/i.test(t)) return '';
+    return t;
+  }
+  // The title becomes the headline: its last word the accent, the rest the
+  // main line, within each line's length.
+  function useTitle(){
+    var words = titleEl.value.trim().split(/\s+/).filter(Boolean);
+    if (!words.length) { titleEl.focus(); return; }
+    var l2 = words.length > 1 ? words[words.length - 1] : '';
+    var l1 = (words.length > 1 ? words.slice(0, -1) : words).join(' ');
+    setControl('line1', l1.slice(0, 32)); setControl('line2', l2.slice(0, 24));
+    framesStatus.textContent = 'The title is the headline now. Shorten it under Headline if it runs small.';
+  }
+  function clock(t){ var m = Math.floor(t / 60), s = Math.floor(t % 60); return m + ':' + (s < 10 ? '0' : '') + s; }
+
+  function startVideo(file){
+    closeFrames();
+    var my = ++scanId;
+    framesEl.hidden = false;
+    titleEl.value = titleFromName(file.name || '');
+    framesStatus.textContent = 'Opening the video…';
+    draw();
+    titleEl.focus();
+    vid = document.createElement('video');
+    vid.muted = true; vid.preload = 'auto'; vid.playsInline = true;
+    vidUrl = URL.createObjectURL(file);
+    vid.addEventListener('error', function(){
+      if (my !== scanId) return;
+      framesStatus.textContent = "This browser can't play that file. iPhone videos (.mov in HEVC) often can't be read in Chrome: export it as MP4, or drop a screenshot instead.";
+    });
+    vid.addEventListener('loadeddata', function(){ if (my === scanId) scan(my); }, { once:true });
+    vid.src = vidUrl;
+  }
+  // Seeking settles on 'seeked'; a seek to where the video already is may
+  // not fire it, so a timer lets the scan go on regardless.
+  function seekTo(t){
+    return new Promise(function(done){
+      var timer = setTimeout(finish, 3000);
+      function finish(){ clearTimeout(timer); vid.removeEventListener('seeked', finish); done(); }
+      vid.addEventListener('seeked', finish);
+      vid.currentTime = t;
+    });
+  }
+  function scoreFrame(c, w, h, t){
+    var d = c.getImageData(0, 0, w, h).data, n = w*h, g = new Float32Array(n), sum = 0, sq = 0;
+    for (var i = 0; i < n; i++) {
+      var y = (0.299*d[i*4] + 0.587*d[i*4 + 1] + 0.114*d[i*4 + 2]) / 255;
+      g[i] = y; sum += y; sq += y*y;
+    }
+    var mean = sum/n, std = Math.sqrt(Math.max(0, sq/n - mean*mean));
+    var ls = 0, ls2 = 0, m = 0;
+    for (var yy = 1; yy < h - 1; yy++) for (var x = 1; x < w - 1; x++) {
+      var k = yy*w + x, L = 4*g[k] - g[k - 1] - g[k + 1] - g[k - w] - g[k + w];
+      ls += L; ls2 += L*L; m++;
+    }
+    // a 16 x 9 grid of average brightness, for telling frames apart
+    var sig = new Float32Array(144);
+    for (var gy = 0; gy < 9; gy++) for (var gx = 0; gx < 16; gx++) {
+      var a = 0, cnt = 0;
+      for (var py = Math.floor(gy*h/9); py < Math.floor((gy + 1)*h/9); py++)
+        for (var px = Math.floor(gx*w/16); px < Math.floor((gx + 1)*w/16); px++) { a += g[py*w + px]; cnt++; }
+      sig[gy*16 + gx] = cnt ? a/cnt : 0;
+    }
+    return { t:t, mean:mean, std:std, sharp:ls2/m - (ls/m)*(ls/m), sig:sig, thumb:c.canvas.toDataURL('image/jpeg', 0.82) };
+  }
+  function sigDist(a, b){ var s = 0; for (var i = 0; i < 144; i++) s += Math.abs(a[i] - b[i]); return s/144; }
+  // Good frames: sharp, neither dark nor blown out, with some contrast.
+  // Flat frames - black, a fade, a plain title card - are left out.
+  // Sharpness is judged within a scene, not across the video: a busy scene
+  // would otherwise outscore every calm one and take all six places. So the
+  // samples are split into scenes where the picture jumps, each scene's best
+  // frame is offered first, best scenes first, then the next best of each,
+  // skipping any frame too like one already offered.
+  function choose(results, d){
+    var scenes = [], cur = null;
+    results.forEach(function(r, i){
+      if (!cur || sigDist(results[i - 1].sig, r.sig) > 0.1) { cur = []; scenes.push(cur); }
+      cur.push(r);
+    });
+    var good = function(r){ return r.std > 0.04 && r.mean > 0.06 && r.mean < 0.94; };
+    scenes = scenes.map(function(sc){
+      var pool = sc.filter(good);
+      var maxSharp = Math.max.apply(null, pool.map(function(r){ return r.sharp; }).concat([1e-9]));
+      pool.forEach(function(r){
+        var expo = Math.max(0, 1 - Math.abs(r.mean - 0.48) / 0.42), con = Math.min(1, r.std / 0.22);
+        r.local = Math.pow(r.sharp / maxSharp, 0.7);   // against its own scene
+        r.score = (0.35 + 0.65*expo) * (0.4 + 0.6*con);
+      });
+      return pool.sort(function(a, b){ return b.local*b.score - a.local*a.score; });
+    }).filter(function(sc){ return sc.length; });
+    if (!scenes.length) scenes = [results.slice()];
+    // a scene's standing: its best frame, less for a blurred stretch
+    var globalSharp = Math.max.apply(null, results.map(function(r){ return r.sharp; })) || 1;
+    scenes.sort(function(a, b){
+      var sa = (a[0].score || 0) * Math.pow(a[0].sharp / globalSharp, 0.25), sb = (b[0].score || 0) * Math.pow(b[0].sharp / globalSharp, 0.25);
+      return sb - sa;
+    });
+    var out = [], need = 0.05, gap = d/40;
+    for (var round = 0; out.length < PICKS && round < SAMPLES; round++) {
+      var any = false;
+      scenes.forEach(function(sc){
+        if (out.length >= PICKS) return;
+        for (var j = 0; j < sc.length; j++) {
+          var r = sc[j];
+          if (out.indexOf(r) >= 0) continue;
+          if (out.every(function(o){ return sigDist(o.sig, r.sig) > need && Math.abs(o.t - r.t) > gap; })) { out.push(r); any = true; return; }
+        }
+      });
+      if (!any) { need /= 2; gap /= 2; if (need < 0.002) break; }   // a short or static video: relax
+    }
+    return out.sort(function(a, b){ return a.t - b.t; });
+  }
+  function scan(my){
+    var d = vid.duration, vw = vid.videoWidth, vh = vid.videoHeight;
+    if (!isFinite(d) || d <= 0 || !vw) {
+      framesStatus.textContent = "The browser can't read this video's length or picture. Try it as an MP4.";
+      return;
+    }
+    var sw = SMALL, sh = Math.max(1, Math.round(SMALL * vh / vw));
+    var c = document.createElement('canvas'); c.width = sw; c.height = sh;
+    var cx = c.getContext('2d', { willReadFrequently:true });
+    var n = Math.max(PICKS, Math.min(SAMPLES, Math.floor(d * 4))), t0 = d*0.03, t1 = d*0.97, results = [], i = 0;
+    (function next(){
+      if (my !== scanId) return;
+      if (i >= n) {
+        var best = choose(results, d);
+        framesStatus.textContent = 'Click a frame to use it as the ' + labelFor(controlByKey('main'), state.layout).toLowerCase() +
+          ', or drag it onto any picture in the preview.';
+        best.forEach(addTile);
+        draw();
+        return;
+      }
+      var t = t0 + (t1 - t0) * (n === 1 ? 0.5 : i / (n - 1));
+      framesStatus.textContent = 'Looking through the video… ' + Math.round(i / n * 100) + '%';
+      seekTo(t).then(function(){
+        if (my !== scanId) return;
+        cx.drawImage(vid, 0, 0, sw, sh);
+        results.push(scoreFrame(cx, sw, sh, t));
+        i++; next();
+      });
+    })();
+  }
+  function addTile(r){
+    var b = el('button', 'frametile'); b.type = 'button'; b.draggable = true;
+    b.setAttribute('aria-label', 'Use the frame at ' + clock(r.t));
+    var im = el('img'); im.src = r.thumb; im.alt = ''; b.appendChild(im);
+    b.appendChild(el('span', null, clock(r.t)));
+    b.addEventListener('click', function(){ useFrame(r.t, 'main', b); });
+    b.addEventListener('dragstart', function(e){
+      e.dataTransfer.setData('application/x-tf-frame', String(r.t));
+      e.dataTransfer.effectAllowed = 'copy';
+    });
+    b.dataset.t = r.t;
+    frameRow.appendChild(b);
+  }
+  // The frame at its full size, into a picture slot, through the same path a
+  // chosen file takes. Grabs queue, so quick clicks land in order.
+  function useFrame(t, slot, tile){
+    var v = vid, my = scanId;
+    grabChain = grabChain.then(function(){
+      if (!v || my !== scanId) return;
+      return seekTo(t).then(function(){
+        if (my !== scanId) return;
+        var big = document.createElement('canvas'); big.width = v.videoWidth; big.height = v.videoHeight;
+        big.getContext('2d').drawImage(v, 0, 0);
+        return new Promise(function(done){
+          big.toBlob(function(blob){
+            if (blob && my === scanId) {
+              SLOTS[slot].load(blob);
+              var ctl = CONTROLS.filter(function(q){ return q.type === 'image' && q.slot === slot; })[0];
+              framesStatus.textContent = 'The frame at ' + clock(t) + ' is the ' + (ctl ? labelFor(ctl, state.layout).toLowerCase() : 'picture') + ' now.';
+              Array.prototype.forEach.call(frameRow.children, function(x){ if (+x.dataset.t === t) x.classList.add('used'); });
+            }
+            done();
+          }, 'image/jpeg', 0.92);
+        });
+      });
+    });
+  }
   document.addEventListener('paste', function(e){
     var items = e.clipboardData && e.clipboardData.items;
     if (!items) return;

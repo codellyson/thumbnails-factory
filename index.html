@@ -1593,20 +1593,50 @@
     c.restore();
   }
 
-  function drawLaunch(c, p, opts){
-    var g = box(p), W = g.W, H = g.H, k = g.k;
+  // Launch's backdrop, built to rule 4 of the bar: never one flat colour.
+  // The window lights the dark it sits on - a wide glow in the accent,
+  // centred on the window wherever it has been moved - and a counter-light
+  // in the palette's first colour rises from the far corner; the edges fall
+  // away into shadow. The dot grid sits on top, catching the light.
+  function launchBackdrop(c, g, st, light){
+    var W = g.W, H = g.H, k = g.k, big = Math.max(W, H);
     c.fillStyle = baseTone('#0f0e12'); c.fillRect(0, 0, W, H);
+    // A light is the palette's colour, made vivid where it has a colour at
+    // all - a pale palette would light the dark with mud - and left alone
+    // where it is white or grey.
+    function glow(x, y, rad, hex, a){
+      var n = parseInt(hex.slice(1), 16), hsl = rgbToHsl(n>>16&255, n>>8&255, n&255);
+      if (hsl[1] > 0.15) { n = parseInt(hslToHex(hsl[0], Math.max(0.6, hsl[1]), Math.max(0.55, hsl[2])).slice(1), 16); }
+      var rgb = (n>>16&255) + ',' + (n>>8&255) + ',' + (n&255);
+      var gr = c.createRadialGradient(x, y, 0, x, y, rad);
+      gr.addColorStop(0, 'rgba(' + rgb + ',' + a + ')');
+      gr.addColorStop(0.45, 'rgba(' + rgb + ',' + (a*0.4).toFixed(3) + ')');
+      gr.addColorStop(1, 'rgba(' + rgb + ',0)');
+      c.fillStyle = gr; c.fillRect(0, 0, W, H);
+    }
+    glow(light.x, light.y, big*0.85, st[2], 0.5);
+    // the counter-light comes from the corner farthest from the window
+    var cx = light.x > W/2 ? 0 : W, cy = light.y > H/2 ? 0 : H;
+    glow(cx, cy, big*0.75, st[0], 0.4);
+    var vg = c.createRadialGradient(W/2, H/2, big*0.15, W/2, H/2, big*0.72);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.6)');
+    c.fillStyle = vg; c.fillRect(0, 0, W, H);
     // The dot grid, all in one path: at podcast size it is a couple of
     // thousand dots, and one fill keeps that cheap.
     if (state.dotGrid) {
-      var step = 32*k, dr = Math.max(0.8, 1.6*k);
+      var step = 32*k, dr = Math.max(1, 2*k);
       c.beginPath();
       for (var y = step/2; y < H; y += step) for (var x = step/2; x < W; x += step) { c.moveTo(x + dr, y); c.arc(x, y, dr, 0, Math.PI*2); }
-      c.fillStyle = 'rgba(255,255,255,.07)'; c.fill();
+      c.fillStyle = 'rgba(255,255,255,.13)'; c.fill();
     }
+  }
 
+  function drawLaunch(c, p, opts){
+    var g = box(p), W = g.W, H = g.H, k = g.k, st = activeStops();
+
+    // The layout first - kicker, words, window - so the backdrop can be lit
+    // from where the window ends up; then the backdrop; then the pieces.
     var kh = kickerHeight(k);
-    if (kh) place(c, g, opts, 'kicker', function(c){ drawKicker(c, g.left, g.top, k); });
     var textTop = g.top + (kh ? kh + 0.06*H : 0);
     var colR = g.wide ? g.left + (g.right - g.left)*0.5 : g.right;
     var maxW = colR - g.left;
@@ -1618,19 +1648,24 @@
     // the bar measures the bigger of the two lines
     if (opts.report && (px1 || px2)) opts.report.headCap = capOf(c, Math.max(px1, px2)) / H;
     var blockH = (tagH ? tagH + 0.035*H : 0) + (px1 ? px1*0.74 : 0) + (px1 && px2 ? px2*1.02 : px2*0.74);
-
-    // Wide: the words in the left column, centred in the height below the
-    // kicker. Otherwise the words sit at the bottom and the window takes the
-    // room between them and the kicker.
     // Wide: the words centre on the same band as the window - the full safe
-    // height - and only drop when the kicker is in the way.
-    var capTop = g.wide ? Math.max(textTop, g.top + (g.bottom - g.top - blockH)/2) : g.bottom - blockH;
-    if (tagH) {
-      var tagY = capTop;
-      place(c, g, opts, 'tag', function(c){ drawTag(c, g.left, tagY, tagH); });
-      capTop += tagH + 0.035*H;
-    }
+    // height - and only drop when the kicker is in the way. Otherwise the
+    // words sit at the bottom and the window takes the room above them.
+    var blockTop = g.wide ? Math.max(textTop, g.top + (g.bottom - g.top - blockH)/2) : g.bottom - blockH;
+    var tagY = blockTop, capTop = blockTop + (tagH ? tagH + 0.035*H : 0);
     var base1 = capTop + (l1 ? px1*0.74 : 0), base2 = base1 + (l2 ? (l1 ? px2*1.02 : px2*0.74) : 0);
+    var a = shotAspect(frame);
+    var winAspect = 1 / (1/a + LAUNCH_BAR + 2*LAUNCH_EDGE);
+    var r = g.wide
+      ? fitBox(g, g.left + (g.right - g.left)*0.54, g.top, g.right, g.bottom, winAspect, 0.94)
+      : fitBox(g, g.left, textTop, g.right, blockTop - 0.05*H, winAspect, 0.94);
+    if (!g.wide) r.x = g.left;   // stacked: on the words' edge, not centred
+
+    var light = xformOf('pic.main', W, H).transformPoint({ x:r.x + r.w/2, y:r.y + r.h/2 });
+    launchBackdrop(c, g, st, r.w > 0 ? light : { x:W*0.75, y:H*0.4 });
+
+    if (kh) place(c, g, opts, 'kicker', function(c){ drawKicker(c, g.left, g.top, k); });
+    if (tagH) place(c, g, opts, 'tag', function(c){ drawTag(c, g.left, tagY, tagH); });
     if (l1 || l2) place(c, g, opts, 'headline', function(c){
       if (l1) {
         tightFont(c, px1); c.fillStyle = state.line1Color;
@@ -1641,19 +1676,12 @@
       }
       if (l2) {
         tightFont(c, px2);
-        var st = activeStops(), lg = c.createLinearGradient(g.left, 0, g.left + Math.min(c.measureText(l2).width, maxW), 0);
+        var lg = c.createLinearGradient(g.left, 0, g.left + Math.min(c.measureText(l2).width, maxW), 0);
         lg.addColorStop(0, st[0]); lg.addColorStop(0.45, st[1]); lg.addColorStop(1, st[2]);
         c.fillStyle = lg; c.fillText(l2, g.left, base2);
         looseFont(c);
       }
     });
-
-    var a = shotAspect(frame);
-    var winAspect = 1 / (1/a + LAUNCH_BAR + 2*LAUNCH_EDGE);
-    var r = g.wide
-      ? fitBox(g, g.left + (g.right - g.left)*0.54, g.top, g.right, g.bottom, winAspect, 0.94)
-      : fitBox(g, g.left, textTop, g.right, capTop - (tagH ? tagH + 0.035*H : 0) - 0.05*H, winAspect, 0.94);
-    if (!g.wide) r.x = g.left;   // stacked: on the words' edge, not centred
     if (r.w > 0) {
       place(c, g, opts, 'pic.main', function(c){ drawLaunchWindow(c, r.x, r.y, r.w, r.h, state.launchTilt, state.panX*W, state.panY*H, 'window'); },
             { slot:'main', hit:r });
@@ -4576,6 +4604,8 @@
     }
     if (rule === 'dead') {
       if (t === 'launch' && !state.dotGrid) out.push({ label:'Turn the dot grid on', state:{ dotGrid:true } });
+      // a near-black background gives pale lights little to work with
+      if ((t === 'launch' || t === 'versus') && state.tone !== 'palette') out.push({ label:'Background from the palette', state:{ tone:'palette' } });
       if (t === 'collage' && !state.brush) out.push({ label:'Turn the brush bands on', state:{ brush:true } });
       if (t === 'collage' && !state.strip) out.push({ label:'Turn the strip on', state:{ strip:true } });
     }

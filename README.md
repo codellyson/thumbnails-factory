@@ -113,6 +113,19 @@ of the picture's height (never below 100%) and moved so it sits centred, a littl
 above the middle. It stays framed on the face through changes of template, shape
 or size, until the picture is reframed by hand.
 
+Under the title the strip offers short **headline takes**: four words at most, in
+the title's own order, with the key word as the accent - a number with the word it
+counts ("10 TIPS"), else a word that carries the story (quit, never, truth...), else
+the longest. Filler is trimmed from both ends, so "Why I quit my job" gives
+"I QUIT / MY JOB" and "WHY I / QUIT". The takes are sorted by how big they
+actually set in the template and size being made, loudest first, and one click
+applies one. **Use as headline** still puts the whole title in.
+
+In Chrome with its built-in language model, **More with Chrome's on-device AI** asks
+it for four more takes, in a fixed JSON shape, and adds them marked **AI**. The model
+runs on the device; the first use has Chrome download it, which only that button
+starts. Browsers without it don't show the button.
+
 After the scan the strip offers up to six **ideas**: finished thumbnails, each a
 template with its pictures, shape and palette, built from the frames found. With
 a face, Talking point on the best face leads, then a Collage of different

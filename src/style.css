@@ -187,6 +187,18 @@
     background:rgb(0 0 0 / .55); padding:1px 5px; border-radius:4px; }
   @media (hover: hover){ .frametile:hover{ box-shadow:0 0 0 2px var(--ink); } }
   .frametile:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .heads{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .heads:empty{ display:none; }
+  .headidea{ font-family:var(--ui); font-size:12.5px; font-weight:700; letter-spacing:.01em; text-transform:uppercase;
+    background:var(--surface); color:var(--ink); border:0; box-shadow:0 0 0 1px var(--line-strong); border-radius:var(--pill);
+    padding:5px 11px; cursor:pointer; transition:box-shadow .14s linear; }
+  .headidea b{ color:var(--accent); font-weight:800; }
+  .headidea.ai::before{ content:"AI"; font-size:9.5px; font-weight:700; color:var(--muted); margin-inline-end:5px; letter-spacing:.04em; }
+  @media (hover: hover){ .headidea:hover{ box-shadow:0 0 0 1px var(--ink); } }
+  .headidea.on{ box-shadow:0 0 0 2px var(--ink); }
+  .headidea:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .frames .aibtn{ width:auto; margin-top:8px; }
+  .frames .aibtn[hidden]{ display:none; }
   .frames .subhead{ margin:10px 0 0; font-size:12.5px; font-weight:600; color:var(--muted); }
   .frames .subhead[hidden]{ display:none; }
   .idearow{ display:grid; grid-template-columns:repeat(var(--idea-cols, 3), minmax(0, 1fr)); gap:10px; margin-top:6px; }

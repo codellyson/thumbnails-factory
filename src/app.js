@@ -2651,6 +2651,7 @@
     scanId++;
     framesEl.hidden = true; frameRow.textContent = ''; framesStatus.textContent = ''; framesFound = {};
     ideaRow.textContent = ''; ideasHead.hidden = framesHead.hidden = true; ideas = [];
+    headIdeas.textContent = '';
     if (vidUrl) URL.revokeObjectURL(vidUrl);
     vid = null; vidUrl = null;
   }
@@ -2662,23 +2663,170 @@
     if (!/[a-z]{3}/i.test(t)) return '';
     return t;
   }
-  // The title becomes the headline: its last word the accent, the rest the
-  // main line, within each line's length.
+  // ---- headline help ---------------------------------------------------
+  // A title is rarely a headline: it runs long, and a thumbnail's words have
+  // to read at feed size. From the title the tool offers a few short takes -
+  // four words at most, in the title's own order, the key word last as the
+  // accent - and sorts them by how big they actually set in the template
+  // and size being made, loudest first. The key word is a number, else a
+  // word that carries the story (quit, never, secret...), else the longest.
+  var STOP = ('a an the and or but of to in on at for with from by about into over after before as is are was were be been ' +
+    'being i me my we our you your it its this that these those so just very really do does did have has had can will would ' +
+    'should could get got here there than then').split(' ');
+  var HOOK = ('why how what stop never dont don\'t') .split(' ');
+  var STRONG = ('quit never secret secrets truth mistake mistakes fail failed failure best worst free fast easy hard stop broke ' +
+    'rich million billion insane crazy wrong right banned hidden real fake finally first last only ultimate everything nothing ' +
+    'tried built made grew lost won beat').split(' ');
+  function titleWords(t){ return t.replace(/[“”"]/g, '').split(/\s+/).map(function(w){ return w.replace(/^[^\w$£€#]+|[^\w%!?]+$/g, ''); }).filter(Boolean); }
+  function isStop(w){ return STOP.indexOf(w.toLowerCase()) >= 0; }
+  function keyIndex(words){
+    var i;
+    for (i = 0; i < words.length; i++) if (/\d/.test(words[i])) return i;
+    for (i = 0; i < words.length; i++) if (STRONG.indexOf(words[i].toLowerCase()) >= 0) return i;
+    var best = -1;
+    words.forEach(function(w, j){ if (!isStop(w) && (best < 0 || w.length > words[best].length)) best = j; });
+    return best < 0 ? words.length - 1 : best;
+  }
+  // Words that can't start or end a take - except a few that carry the
+  // voice of a title (I quit, my job, you, vs).
+  var KEEP = ['i', 'you', 'my', 'your', 'we', 'our'];
+  function edgeStop(x){ return isStop(x) && KEEP.indexOf(x.toLowerCase()) < 0; }
+  function trimEdges(a){
+    a = a.slice();
+    while (a.length && edgeStop(a[0])) a.shift();
+    while (a.length && edgeStop(a[a.length - 1])) a.pop();
+    return a;
+  }
+  // the words right after the key: filler skipped, then up to two that
+  // aren't filler (a voice word counts), stopping at the next filler
+  function after(w, from){
+    var i = from; while (i < w.length && edgeStop(w[i])) i++;
+    var out = [];
+    for (; i < w.length && out.length < 2; i++) { if (edgeStop(w[i])) break; out.push(w[i]); }
+    return out;
+  }
+  function takes(title){
+    var w = titleWords(title); if (!w.length) return [];
+    var k = keyIndex(w), out = [];
+    function add(main, acc){
+      main = trimEdges(main).join(' '); acc = trimEdges(acc).join(' ');
+      if (!acc || (!main && w.length > 2)) return;   // a key word alone loses the story
+      if (main.length > 32 || acc.length > 24) return;
+      if (out.some(function(o){ return o.main.toLowerCase() === main.toLowerCase() && o.accent.toLowerCase() === acc.toLowerCase(); })) return;
+      out.push({ main:main, accent:acc });
+    }
+    // a number takes the word it counts: 10 tips, 3 mistakes
+    var keyPhrase = /\d/.test(w[k]) && k + 1 < w.length && !isStop(w[k + 1]) ? [w[k], w[k + 1]] : [w[k]];
+    var next = k + keyPhrase.length;
+    // the whole title, when it is already short
+    if (w.length <= 4) add(w.slice(0, -1), w.slice(-1));
+    // the key phrase, then what follows as the accent
+    add(w.slice(Math.max(0, k - 1), k).concat(keyPhrase), after(w, next));
+    // the words leading up to the key, the key as the accent
+    add(w.slice(Math.max(0, k - 3), k), keyPhrase);
+    return out;
+  }
+  // How big a take sets here: the headline's capital height from a small
+  // render of the current template and size, with the take borrowed in.
+  function loudness(take){
+    var p = current(), small = { id:p.id, w:320, h:Math.round(320 * p.h / p.w), safe:p.safe, play:p.play };
+    var oc = document.createElement('canvas'); oc.width = small.w; oc.height = small.h;
+    var k1 = state.line1, k2 = state.line2, keepShown = JSON.stringify(shown), rep = {};
+    try { state.line1 = take.main; state.line2 = take.accent; render(oc.getContext('2d'), small, { guides:false, report:rep }); }
+    finally { state.line1 = k1; state.line2 = k2; shown = JSON.parse(keepShown); }
+    return rep.headCap || 0;
+  }
+  var headIdeas = document.getElementById('headIdeas'), aiBtn = document.getElementById('aiHeads'), aiTakes = [];
+  function showTakes(){
+    var list = takes(titleEl.value).concat(aiTakes);
+    list.forEach(function(t){ t.cap = loudness(t); });
+    list.sort(function(a, b){ return b.cap - a.cap; });
+    headIdeas.textContent = '';
+    list.slice(0, 6).forEach(function(t){
+      var b = el('button', 'headidea' + (t.ai ? ' ai' : '')); b.type = 'button';
+      b.appendChild(document.createTextNode(t.main ? t.main + ' ' : '')); b.appendChild(el('b', null, t.accent));
+      b.title = t.ai ? 'Suggested by Chrome\'s on-device AI' : 'Made from the title';
+      if (state.line1.trim().toUpperCase() === t.main.toUpperCase() && state.line2.trim().toUpperCase() === t.accent.toUpperCase()) b.classList.add('on');
+      b.addEventListener('click', function(){
+        setControl('line1', t.main); setControl('line2', t.accent);
+        Array.prototype.forEach.call(headIdeas.children, function(x){ x.classList.remove('on'); }); b.classList.add('on');
+        framesStatus.textContent = 'Headline set. Edit it under Headline any time.';
+        if (ideas && ideas.length) { ideaSize = ''; redrawIdeas(); }
+      });
+      headIdeas.appendChild(b);
+    });
+  }
+  var takesTimer = 0;
+  titleEl.addEventListener('input', function(){ aiTakes = []; clearTimeout(takesTimer); takesTimer = setTimeout(showTakes, 200); });
+  // The title as a whole still goes in with one click, its last word the accent.
   function useTitle(){
     var words = titleEl.value.trim().split(/\s+/).filter(Boolean);
     if (!words.length) { titleEl.focus({ preventScroll:true }); return; }
     var l2 = words.length > 1 ? words[words.length - 1] : '';
     var l1 = (words.length > 1 ? words.slice(0, -1) : words).join(' ');
     setControl('line1', l1.slice(0, 32)); setControl('line2', l2.slice(0, 24));
-    framesStatus.textContent = 'The title is the headline now. Shorten it under Headline if it runs small.';
+    framesStatus.textContent = 'The whole title is the headline now; a shorter take above sets bigger.';
+    showTakes();
   }
+
+  // Chrome's built-in model, where the browser has one: it runs on this
+  // device, so the title goes nowhere. The first use downloads the model -
+  // Chrome's own download, a few gigabytes, started only by this button -
+  // and later uses are immediate. Browsers without it never show the button.
+  var aiSession = null;
+  function aiAvailable(){
+    if (!window.LanguageModel || !LanguageModel.availability) return Promise.resolve('unavailable');
+    return LanguageModel.availability({ expectedInputs:[{ type:'text', languages:['en'] }], expectedOutputs:[{ type:'text', languages:['en'] }] })
+      .catch(function(){ return 'unavailable'; });
+  }
+  function checkAi(){
+    aiAvailable().then(function(a){
+      aiBtn.hidden = a === 'unavailable';
+      aiBtn.dataset.state = a;
+      aiBtn.textContent = a === 'available' ? 'More with Chrome\'s on-device AI' : 'More with Chrome\'s on-device AI (downloads the model once)';
+    });
+  }
+  var AI_SYSTEM = 'You write headlines for video thumbnails. Given a video title, write four different headlines. ' +
+    'Each is at most four words, punchy, readable at a glance, true to the title, with no emoji, hashtags or quotation marks. ' +
+    'Split each into "main", the lead-in words, and "accent", the one or two words to highlight; main may be empty.';
+  var AI_SCHEMA = { type:'array', minItems:1, maxItems:4, items:{ type:'object', required:['main', 'accent'],
+    properties:{ main:{ type:'string', maxLength:32 }, accent:{ type:'string', maxLength:24 } } } };
+  aiBtn.addEventListener('click', function(){
+    var title = titleEl.value.trim();
+    if (!title) { framesStatus.textContent = 'Type the video title first.'; titleEl.focus({ preventScroll:true }); return; }
+    aiBtn.disabled = true;
+    framesStatus.textContent = 'Asking Chrome\'s on-device model…';
+    var ready = aiSession ? Promise.resolve(aiSession) : LanguageModel.create({
+      initialPrompts:[{ role:'system', content:AI_SYSTEM }],
+      expectedInputs:[{ type:'text', languages:['en'] }], expectedOutputs:[{ type:'text', languages:['en'] }],
+      monitor:function(m){ m.addEventListener('downloadprogress', function(e){
+        framesStatus.textContent = 'Chrome is downloading its on-device model, once… ' + Math.round((e.loaded || 0) * 100) + '%';
+      }); }
+    }).then(function(sn){ aiSession = sn; return sn; });
+    ready.then(function(sn){
+      return sn.clone ? sn.clone() : sn;
+    }).then(function(sn){
+      return sn.prompt('Title: ' + title, { responseConstraint:AI_SCHEMA });
+    }).then(function(text){
+      var got = [];
+      try { got = JSON.parse(text); } catch(e){}
+      aiTakes = (Array.isArray(got) ? got : []).map(function(o){
+        return { main:String(o.main || '').trim().slice(0, 32), accent:String(o.accent || '').trim().slice(0, 24), ai:true };
+      }).filter(function(o){ return o.accent; });
+      showTakes();
+      framesStatus.textContent = aiTakes.length ? 'Added ' + aiTakes.length + ' from Chrome\'s on-device model, marked AI.' : 'The model gave nothing usable; try again.';
+    }).catch(function(err){
+      framesStatus.textContent = 'Chrome\'s on-device model could not answer' + (err && err.name === 'NotAllowedError' ? ' - it needs a click to start its download.' : '.');
+    }).then(function(){ aiBtn.disabled = false; checkAi(); });
+  });
   function clock(t){ var m = Math.floor(t / 60), s = Math.floor(t % 60); return m + ':' + (s < 10 ? '0' : '') + s; }
 
   function startVideo(file){
     closeFrames();
     var my = ++scanId;
     framesEl.hidden = false;
-    titleEl.value = titleFromName(file.name || '');
+    titleEl.value = titleFromName(file.name || ''); aiTakes = [];
+    showTakes(); checkAi();
     framesStatus.textContent = 'Opening the video…';
     draw();
     // the editor fits the window; focusing mustn't scroll the page under it

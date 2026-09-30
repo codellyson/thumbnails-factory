@@ -83,6 +83,87 @@ Esc is pressed. Where a template
 offers a shape (Before → After: circle or card; Talking point: auto, circle or
 frame), **Picture shape** sits right under its pictures.
 
+## Starting from a video
+
+**From a video…** under the preview, or dropping a video file on it, opens a strip
+of frames picked from the video. It asks for the video's title first - filled in
+from the file name unless that is a camera's `IMG_4471` - and **Use as headline**
+sets the headline from it, its last word the accent.
+
+The video is played inside the page and never sent anywhere. The tool looks at 48
+moments spread across it, skipping the first and last 3% where titles and end
+cards sit, and scores each on a 256-pixel copy: sharpness (the variance of its
+Laplacian, which motion blur flattens), exposure and contrast; black frames,
+fades and blown-out cards are left out. Sharpness is judged within a scene, so a
+busy scene can't take every place: the samples are split into scenes where the
+picture jumps, and each scene's best frame is offered before any scene's second.
+Six frames are shown, in time order.
+
+Faces count too. The first scan loads Google's MediaPipe face detector - its code
+from jsDelivr, its 224 KB model from `models/` - and runs it on a 640-pixel copy of
+each sample, in the page. A frame with a clear face, whole within the frame,
+ranks higher, more for a bigger face up to about a tenth of the frame, and its
+tile is marked **Face**. A detection counts when it is confident, or when the
+sample before or after finds a face in the same place, which weeds out patterns
+that look like a face for one frame. If the detector can't load, frames are
+picked without it and the strip says so.
+
+A frame with a face is framed on it when used: zoomed until the face is about 40%
+of the picture's height (never below 100%) and moved so it sits centred, a little
+above the middle. It stays framed on the face through changes of template, shape
+or size, until the picture is reframed by hand.
+
+**Shorter takes**, under the headline fields in the panel, offers short **headline takes** - made from the video title while the strip is open, else from the headline as typed: four words at most, in
+the title's own order, with the key word as the accent - a number with the word it
+counts ("10 TIPS"), else a word that carries the story (quit, never, truth...), else
+the longest; a title with both a number and such a word gets takes around each.
+Filler is trimmed from both ends, so "Why I quit my job after 10 years" gives
+"I QUIT / MY JOB", "WHY I / QUIT" and "MY JOB / 10 YEARS". Picking a take doesn't
+count as typing, so the list stays put. The takes are sorted by how big they
+actually set in the template and size being made, loudest first, and one click
+applies one. **Use as headline** still puts the whole title in.
+
+In Chrome with its built-in language model, **Ask Chrome's on-device AI**, under the takes, asks
+it for four more takes, in a fixed JSON shape, and adds them marked **AI**. The model
+runs on the device; the first use has Chrome download it, which only that button
+starts. Browsers without it don't show the button.
+
+After the scan the strip offers up to six **ideas**: finished thumbnails, each a
+template with its pictures, shape and palette, built from the frames found. With
+a face, Talking point on the best face leads, then a Collage of different
+moments, Before → After from the start and the end of the video, Launch, and
+two more; without one - a screen recording, say - Launch leads. Each is drawn
+from the scan's small copies, with its faces framed, so nothing more is read from
+the video until one is applied; applying one sets its template, shape and palette
+the ordinary way, takes its frames at full size and frames them on their faces,
+and everything stays editable. Ideas are drawn at the size being made, redraw
+when it changes, and sit three, four or six across for wide, square and tall
+sizes; the strip takes at most half the column and scrolls inside itself.
+
+A click on a single frame puts it in the main picture; dragging it onto the preview puts it in
+the picture it lands on. The frame is taken again at the video's full size when
+it is used. Videos Chrome can't decode - iPhone `.mov` files in HEVC, often - get
+a message suggesting an MP4 export or a screenshot.
+
+## The quality bar, live
+
+The bar's first three rules (`docs/quality-bar.md`) are checked as you work: a
+line under the preview says whether the size being made passes, and names what
+fails - **Headline small**, **Pictures small**, **Bare areas** - with the number
+behind it. The size being made is measured on a 640-pixel copy after each pause;
+every other size is measured one at a time when the page is idle, on a 480-pixel
+copy (the fractions hold at any size), and a size that fails gets a coral dot in
+the size list, its tooltip naming the rule. A headline resized by hand is measured
+at the size it shows, and Launch now reports its headline too.
+
+A failing rule offers a fix when one exists, found by trying likely changes off
+screen - a shorter take (loudest first), the template's own font, a bigger
+headline size, another picture shape, the strip, the dot grid or brush bands, or
+resetting moved elements - and keeping the first that passes. A fix may trade a
+failure for a less important one (headline, then pictures, then bare areas) but
+never adds failures. On localhost, `TF.fixes('headline')` lists every candidate
+and what it measured.
+
 ## Moving things
 
 Everything a template draws on top of its background can be dragged on the

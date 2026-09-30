@@ -222,6 +222,77 @@
   .feedtext span{ display:block; height:9px; border-radius:3px; background:#3a3a3a; }
   .feedtext span + span{ width:60%; background:#2a2a2a; }
 
+  /* ---- the quality bar, live ---- */
+  .checks{ display:flex; flex-direction:column; gap:6px; margin:6px 4px 0; font-size:13px; }
+  .checks:empty{ display:none; }
+  .checks .ok{ color:var(--muted); }
+  .checks .ok::before{ content:"✓ "; color:var(--ok); font-weight:700; }
+  .check{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .check .what{ font-weight:600; }
+  .check .what::before{ content:""; display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--accent);
+    margin-inline-end:7px; vertical-align:1px; }
+  .check .why{ color:var(--muted); }
+  .check .btn{ width:auto; min-height:28px; padding:4px 11px; font-size:12.5px; }
+  .check .also{ color:var(--muted); font-size:12px; }
+  /* a size that fails the bar gets a coral dot on its tile */
+  .tile.warn .chipbox{ position:relative; }
+  .tile.warn .chipbox::after{ content:""; position:absolute; top:-3px; right:-3px; width:8px; height:8px; border-radius:50%;
+    background:var(--accent); box-shadow:0 0 0 2px var(--canvas); }
+
+  /* ---- frames from a video ---- */
+  .readout .btn{ width:auto; }
+  .frames{ margin:12px 0 0; padding:12px 14px 14px; background:var(--cream); border-radius:var(--r-well); }
+  .frames[hidden]{ display:none; }
+  .frameshead{ display:flex; align-items:center; gap:10px; }
+  .frameshead h3{ margin:0; font-size:14px; font-weight:600; letter-spacing:-.01em; flex:1; }
+  .frameshead .btn{ width:auto; }
+  .titlerow{ display:flex; align-items:center; gap:8px; margin-top:10px; }
+  .titlerow label{ font-size:13px; font-weight:500; white-space:nowrap; }
+  .titlerow input{ flex:1; min-width:0; padding:7px 10px; font-size:14px; }
+  .titlerow .btn{ width:auto; white-space:nowrap; flex:none; }
+  .frames .hint{ margin:8px 0 0; min-height:1.3em; }
+  .framerow{ display:grid; grid-template-columns:repeat(6, minmax(0, 1fr)); gap:8px; margin-top:8px; }
+  .framerow:empty{ display:none; }
+  .frametile{ position:relative; padding:0; border:0; border-radius:8px; overflow:hidden; cursor:pointer; background:var(--well);
+    box-shadow:0 0 0 1px oklch(0 0 0 / 0.1); transition:box-shadow .14s linear, transform .14s cubic-bezier(0.2, 0, 0, 1); }
+  .frametile img{ display:block; width:100%; height:auto; aspect-ratio:16 / 9; object-fit:cover; }
+  .frametile span{ position:absolute; left:5px; bottom:4px; font-size:11px; font-weight:600; color:#fff;
+    background:rgb(0 0 0 / .55); padding:1px 5px; border-radius:4px; }
+  @media (hover: hover){ .frametile:hover{ box-shadow:0 0 0 2px var(--ink); } }
+  .frametile:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .heads{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .heads:empty{ display:none; }
+  .headidea{ font-family:var(--ui); font-size:12.5px; font-weight:700; letter-spacing:.01em; text-transform:uppercase;
+    background:var(--surface); color:var(--ink); border:0; box-shadow:0 0 0 1px var(--line-strong); border-radius:var(--pill);
+    padding:5px 11px; cursor:pointer; transition:box-shadow .14s linear; }
+  .headidea b{ color:var(--accent); font-weight:800; }
+  .headidea.ai::before{ content:"AI"; font-size:9.5px; font-weight:700; color:var(--muted); margin-inline-end:5px; letter-spacing:.04em; }
+  @media (hover: hover){ .headidea:hover{ box-shadow:0 0 0 1px var(--ink); } }
+  .headidea.on{ box-shadow:0 0 0 2px var(--ink); }
+  .headidea:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .aibtn{ width:auto; align-self:flex-start; }
+  .aibtn[hidden]{ display:none; }
+  .headhelp .heads{ margin-top:0; }
+  .frames .subhead{ margin:10px 0 0; font-size:12.5px; font-weight:600; color:var(--muted); }
+  .frames .subhead[hidden]{ display:none; }
+  .idearow{ display:grid; grid-template-columns:repeat(var(--idea-cols, 3), minmax(0, 1fr)); gap:10px; margin-top:6px; }
+  .idearow:empty{ display:none; }
+  .idea{ display:flex; flex-direction:column; gap:4px; padding:0; border:0; background:none; cursor:pointer; text-align:start;
+    font:inherit; font-size:12px; color:var(--muted); }
+  .idea canvas{ display:block; width:100%; height:auto; max-height:none; border-radius:8px; background:var(--well); cursor:pointer;
+    box-shadow:0 0 0 1px oklch(0 0 0 / 0.1); transition:box-shadow .14s linear, transform .14s cubic-bezier(0.2, 0, 0, 1); }
+  @media (hover: hover){ .idea:hover canvas{ box-shadow:0 0 0 2px var(--ink); } }
+  .idea:focus-visible{ outline:none; }
+  .idea:focus-visible canvas{ outline:2px solid var(--ink); outline-offset:2px; }
+  .idea:active canvas{ transform:scale(0.98); }
+  .idea.on{ color:var(--ink); }
+  .idea.on canvas{ box-shadow:0 0 0 2px var(--canvas), 0 0 0 3.5px var(--accent); }
+  .frametile.hasface::after{ content:"Face"; position:absolute; top:4px; right:4px; font-size:10px; font-weight:600;
+    color:#fff; background:rgb(238 123 88 / .9); padding:1px 5px; border-radius:4px; }
+  .frametile.used{ box-shadow:0 0 0 2px var(--canvas), 0 0 0 3.5px var(--accent); }
+  .frametile:active{ transform:scale(0.97); }
+  @media (max-width:560px){ .framerow{ grid-template-columns:repeat(3, minmax(0, 1fr)); } .titlerow{ flex-wrap:wrap; } }
+
   /* ---- control panel ---- */
   .bench{
     background:var(--cream); border-radius:var(--r-panel);
@@ -596,11 +667,15 @@
     body.editor canvas#cv{ max-width:100%; max-height:100%; }
     body.editor .stage:has(.feed:not([hidden])) canvas{ max-height:100%; }
     body.editor .readout{ flex:none; padding-top:10px; }
+    body.editor .checks{ flex:none; }
     body.editor .howto{ flex:none; margin-top:2px; max-width:none; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     body.editor .howto p{ display:inline; }
     body.editor .howto p + p::before{ content:" "; }
     body.editor .feed{ flex:none; margin-top:12px; padding:12px 14px; }
     body.editor .stage:has(.feed:not([hidden])) .howto{ display:none; }
+    /* the strip never takes more than half the column, so the preview stays */
+    body.editor .frames{ flex:none; max-height:50%; overflow-y:auto; overscroll-behavior:contain; }
+    body.editor .stage:has(.frames:not([hidden])) .howto{ display:none; }
 
     /* the options scroll inside their column; Download stays at its foot */
     body.editor .bench{ overflow-y:auto; overscroll-behavior:contain; border-radius:0; padding:16px 18px 0; gap:18px; }
@@ -685,15 +760,36 @@
       </div>
       <p class="readout">
         <span class="what" id="what">YouTube thumbnail</span>
+        <button class="btn btn-sm" id="videoPick" type="button">From a video&hellip;</button>
         <span class="dims" id="dims">1280 &times; 720</span>
       </p>
+      <!-- The quality bar (docs/quality-bar.md), checked as you work. -->
+      <div class="checks" id="checks" role="status" aria-live="polite"></div>
+      <input type="file" id="videoFile" accept="video/*" hidden>
+      <!-- Frames picked out of a video, all on this device: nothing is uploaded. -->
+      <section class="frames" id="frames" aria-labelledby="framesTitle" hidden>
+        <div class="frameshead">
+          <h3 id="framesTitle">From your video</h3>
+          <button class="btn btn-sm framesclose" id="framesClose" type="button" aria-label="Close the frames">Close</button>
+        </div>
+        <div class="titlerow">
+          <label for="videoTitle">Video title</label>
+          <input type="text" id="videoTitle" autocomplete="off" placeholder="What is the video called?">
+          <button class="btn btn-sm" id="titleUse" type="button">Use as headline</button>
+        </div>
+        <p class="hint" id="framesStatus" role="status"></p>
+        <h4 class="subhead" id="ideasHead" hidden>Ideas</h4>
+        <div class="idearow" id="ideaRow"></div>
+        <h4 class="subhead" id="framesHead" hidden>Frames</h4>
+        <div class="framerow" id="frameRow"></div>
+      </section>
       <section class="feed" id="feed" aria-labelledby="feedTitle" hidden>
         <h3 id="feedTitle">At feed size</h3>
         <p class="hint">Shown at the size people scroll past it. If the words are hard to read here, make them fewer or bigger.</p>
         <div class="feedrow" id="feedRow"></div>
       </section>
       <div class="howto" id="howto">
-        <p>Drag anything to move it. Click a picture to replace it; double-click to adjust the photo inside.</p>
+        <p>Drop a video file to pick a frame from it. Drag anything to move it. Click a picture to replace it; double-click to adjust the photo inside.</p>
         <p>Paste with &#8984;V. With the preview focused, arrow keys nudge what is selected, [ and ] turn it, - and = resize it, Enter picks the main picture, Esc lets go.</p>
       </div>
     </div>
@@ -992,6 +1088,7 @@
     { key:'line1Color', type:'color', def:'#ffffff', paired:true },
     { key:'line2', type:'text', label:{ _:'Bottom line', versus:'Accent words', collage:'Accent words', talking:'Key word' }, def:'HEADLINE HERE', maxlength:24 },
     { id:'palette', type:'custom', build:buildPaletteSlot, join:true },
+    { id:'headHelp', type:'custom', build:buildHeadHelp },
 
     // Launch's own label above its headline
     { key:'badge', type:'text', group:'Project tag', for:['launch'], label:'Text', def:'', maxlength:32,
@@ -1518,6 +1615,8 @@
     var px1 = l1 ? fitWith(c, l1, maxW, start, 24*k, function(px){ return px*1.1; }) : 0;
     var px2 = l2 ? fitWith(c, l2, maxW, start, 24*k, none) : 0;
     var tagH = pillText() ? 56*k*state.pillSize : 0;
+    // the bar measures the bigger of the two lines
+    if (opts.report && (px1 || px2)) opts.report.headCap = capOf(c, Math.max(px1, px2)) / H;
     var blockH = (tagH ? tagH + 0.035*H : 0) + (px1 ? px1*0.74 : 0) + (px1 && px2 ? px2*1.02 : px2*0.74);
 
     // Wide: the words in the left column, centred in the height below the
@@ -1982,6 +2081,8 @@
     // a locked element is part of the template's layout: it stays put
     var m = o.locked ? new DOMMatrix() : xformOf(el, g.W, g.H, o.parent);
     c.save(); applyM(c, m); draw(c); c.restore();
+    // an off-screen render can ask where its pictures went, for framing
+    if (opts.hits && o.hit) opts.hits.push({ slot:o.slot, bw:o.hit.w, bh:o.hit.h });
     if (opts.preview) {
       // a picture keeps its frame's own shape, for an outline that hugs it
       var shape = o.hit ? (o.hit.poly || [[o.hit.x, o.hit.y], [o.hit.x + o.hit.w, o.hit.y], [o.hit.x + o.hit.w, o.hit.y + o.hit.h], [o.hit.x, o.hit.y + o.hit.h]]) : null;
@@ -1994,7 +2095,7 @@
         var xs = poly.map(function(q){ return q[0]; }), ys = poly.map(function(q){ return q[1]; });
         var x0 = Math.min.apply(null, xs), y0 = Math.min.apply(null, ys);
         dropHits.push({ slot:o.slot, x:x0, y:y0, w:Math.max.apply(null, xs) - x0, h:Math.max.apply(null, ys) - y0,
-                        bw:h.w, poly:poly, angle:Math.atan2(m.b, m.a), scale:Math.hypot(m.a, m.b) });
+                        bw:h.w, bh:h.h, poly:poly, angle:Math.atan2(m.b, m.a), scale:Math.hypot(m.a, m.b) });
       }
     }
   }
@@ -2516,12 +2617,18 @@
 
   // ---- renderer ---------------------------------------------------------
   // ---- the quality bar, measured (docs/quality-bar.md) ------------------
-  // On a local server only: renders the current template at the current
-  // size, off screen, and returns rules 1-3 of the bar with pass or fail.
-  function measure(p){
+  // Renders the current template at a size, off screen, and returns rules
+  // 1-3 of the bar with pass or fail. A scale below 1 renders a smaller
+  // copy - everything is drawn in proportion, so the fractions hold - for
+  // checks cheap enough to run as the person works.
+  function measure(p, scale){
+    if (scale && scale < 1) p = { id:p.id, w:Math.max(64, Math.round(p.w*scale)), h:Math.max(36, Math.round(p.h*scale)), safe:p.safe, play:p.play, label:p.label };
     var oc = document.createElement('canvas'); oc.width = p.w; oc.height = p.h;
-    var c = oc.getContext('2d', { willReadFrequently:true }), rep = {};
+    var c = oc.getContext('2d', { willReadFrequently:true }), rep = {}, keepShown = JSON.stringify(shown);
     render(c, p, { guides:false, report:rep });
+    shown = JSON.parse(keepShown);
+    // a headline resized by hand is measured at the size it shows
+    if (rep.headCap != null) rep.headCap *= (moveOf('headline', p.w, p.h)[5] || 1);
     var tall = (p.w / p.h) < 1.2, dead = 0, cw = p.w/4, ch = p.h/4;
     for (var gy = 0; gy < 4; gy++) for (var gx = 0; gx < 4; gx++) {
       var d = c.getImageData(Math.round(gx*cw), Math.round(gy*ch), Math.round(cw), Math.round(ch)).data;
@@ -2539,9 +2646,13 @@
   if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
     window.TF = {
       quality:function(){ return measure(current()); },
-      qualityAll:function(){ return PRESETS.filter(function(p){ return p.id !== 'custom'; }).map(measure); },
+      qualityAll:function(scale){ return PRESETS.filter(function(p){ return p.id !== 'custom'; }).map(function(p){ return measure(p, scale); }); },
       // the movable elements on the preview, with the box each one paints
       layers:function(){ draw(); return layerMasks().map(function(m){ return { el:m.L.el, slot:m.L.slot, box:m.box, placed:placedBox(m) }; }); },
+      // each likely fix for a rule, and what it would measure
+      fixes:function(rule){ var p = current(), s = scaleFor(p, 480);
+        return { before:failing(measure(p, s)), tried:candidates(rule, p).map(function(c){ var r = tryPatch(c, p, s); return { label:c.label, fails:failing(r), headline:r.headline }; }) }; },
+      frames:function(){ return Object.keys(framesFound).map(function(k){ var r = framesFound[k]; return { t:r.t, face:r.face, score:r.score }; }); },
       handle:function(){ var q = selGeom(); return q && { x:q.handle.x, y:q.handle.y, corners:q.corners.map(function(c){ return { x:c.x, y:c.y }; }) }; }
     };
   }
@@ -2555,7 +2666,7 @@
   }
 
 
-  var firstDraw = true, lastScene = '';
+  var firstDraw = true, lastScene = '', reframing = false;
   function draw(){
     var p = current();
     if (cv.width !== p.w || cv.height !== p.h) {
@@ -2574,9 +2685,12 @@
     var scene = state.layout + '|' + p.w + 'x' + p.h;
     if (scene !== lastScene) { selected = null; stopAdjusting(); lastScene = scene; }
     render(ctx, p, { guides: state.safe, preview: true });
+    if (!reframing) { reframing = true; keepFaceFraming(); reframing = false; }
     drawSelection();
     var pre = state.layout + '.' + frameShape(p.w, p.h) + '.', resetBtn = document.getElementById('movesReset');
     if (resetBtn) resetBtn.hidden = !Object.keys(state.moves).some(function(key){ return key.indexOf(pre) === 0; });
+    if (ideas && ideas.length) redrawIdeas();   // undefined until the video part of the script has run
+    if (typeof scheduleChecks === 'function') scheduleChecks();
     tintWell();
     document.getElementById('what').textContent = p.label;
     document.getElementById('dims').innerHTML = p.w + ' &times; ' + p.h;
@@ -2796,6 +2910,8 @@
   // extra step, bring every copy of the control up to date, save, redraw.
   function setControl(key, value){
     state[key] = value;
+    // a zoom slider moved by hand ends that picture's face framing
+    Object.keys(FRAMING).forEach(function(slot){ if (FRAMING[slot].zoom === key) handFramed(slot); });
     CONTROLS.forEach(function(ctl){ if (ctl.key === key && ctl.change) ctl.change(value); });
     syncControls();
     persist(); draw();
@@ -2988,6 +3104,17 @@
   }
 
   // ---- custom widgets the schema places ---------------------------------
+  // Shorter takes on the headline, and Chrome's on-device AI where there is
+  // one; filled in by the headline help further down.
+  function buildHeadHelp(){
+    var w = el('div', 'field headhelp');
+    var lg = el('span', 'legend', 'Shorter takes'); lg.id = 'headHelpLabel'; w.appendChild(lg);
+    var heads = el('div', 'heads'); heads.id = 'headIdeas'; heads.setAttribute('aria-labelledby', 'headHelpLabel'); w.appendChild(heads);
+    var ai = el('button', 'btn btn-sm aibtn', 'Ask Chrome\'s on-device AI'); ai.id = 'aiHeads'; ai.type = 'button'; ai.hidden = true;
+    w.appendChild(ai);
+    var hint = hintEl(''); hint.id = 'headHelpHint'; w.appendChild(hint);
+    return w;
+  }
   function buildPictureHint(){
     var p = hintEl('Click a picture on the preview to replace it; double-click to move the photo inside. Under 100% zoom shows it whole.');
     return p;
@@ -3248,35 +3375,37 @@
   // phone's, or the before card's), and the backdrop's glow. Image controls
   // in the schema name a slot; the slot knows how to fill and empty it.
   var SLOTS = {
-    main:     { load:function(b){ loadBlob(b); },     clear:function(){ frame = paintedFrame; state.panX = state.panY = 0; syncControls(); draw(); setStatus('Picture removed.', 'ok'); },
+    main:     { load:function(b, done){ loadBlob(b, done); },     clear:function(){ frame = paintedFrame; state.panX = state.panY = 0; handFramed('main'); syncControls(); draw(); setStatus('Picture removed.', 'ok'); },
                 has:function(){ return frame !== paintedFrame; } },
-    second:   { load:function(b){ loadPhone(b); },    clear:clearSecond,    has:function(){ return !!phoneImg; } },
+    second:   { load:function(b, done){ loadPhone(b, done); },    clear:clearSecond,    has:function(){ return !!phoneImg; } },
     backdrop: { load:function(b){ loadBackdrop(b); }, clear:clearBackdrop,  has:function(){ return !!bgImg; } },
-    third:    { load:function(b){ loadInto('img3', b); }, clear:function(){ img3 = null; syncControls(); draw(); }, has:function(){ return !!img3; } },
-    fourth:   { load:function(b){ loadInto('img4', b); }, clear:function(){ img4 = null; syncControls(); draw(); }, has:function(){ return !!img4; } }
+    third:    { load:function(b, done){ loadInto('img3', b, done); }, clear:function(){ img3 = null; handFramed('third'); syncControls(); draw(); }, has:function(){ return !!img3; } },
+    fourth:   { load:function(b, done){ loadInto('img4', b, done); }, clear:function(){ img4 = null; handFramed('fourth'); syncControls(); draw(); }, has:function(){ return !!img4; } }
   };
   // The Collage strip's other two panels: plain pictures, no framing of
   // their own to remember.
-  function loadInto(which, blob){
+  function loadInto(which, blob, done){
     var img = new Image();
     img.onload = function(){
-      if (which === 'img3') { img3 = img; state.pan3X = state.pan3Y = 0; } else { img4 = img; state.pan4X = state.pan4Y = 0; }
+      if (which === 'img3') { img3 = img; state.pan3X = state.pan3Y = 0; handFramed('third'); } else { img4 = img; state.pan4X = state.pan4Y = 0; handFramed('fourth'); }
       syncControls(); draw(); setStatus('Picture loaded.', 'ok');
+      if (done) done();
     };
     img.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
     img.src = URL.createObjectURL(blob);
   }
   function clearSecond(){
-    phoneImg = null; syncControls(); draw();
+    phoneImg = null; handFramed('second'); syncControls(); draw();
     setStatus('Picture removed.', 'ok');
   }
-  function loadPhone(blob){
+  function loadPhone(blob, done){
     var img = new Image();
     img.onload = function(){
-      phoneImg = img; state.phonePanX = 0; state.phonePanY = 0;
+      phoneImg = img; state.phonePanX = 0; state.phonePanY = 0; handFramed('second');
       syncControls(); draw();
       setStatus(state.layout === 'versus' ? 'Before picture loaded. Drag it on the before picture to reframe it.'
                                           : 'Picture loaded.', 'ok');
+      if (done) done();
     };
     img.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
     img.src = URL.createObjectURL(blob);
@@ -3328,13 +3457,14 @@
 
   // ---- image loading ----------------------------------------------------
   // The main picture's button and file input come from the schema (slot 'main').
-  function loadBlob(blob){
+  function loadBlob(blob, done){
     var url = URL.createObjectURL(blob);
     var img = new Image();
     img.onload = function(){
-      frame = img; ready.frame = true; state.panX = 0; state.panY = 0;
+      frame = img; ready.frame = true; state.panX = 0; state.panY = 0; handFramed('main');
       refreshDerived('frame', img); draw();
-      setStatus('Image loaded. Its colours are in the swatches under Bottom line.', 'ok');
+      setStatus('Image loaded. Its colours are in the palette swatches.', 'ok');
+      if (done) done();
     };
     img.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
     img.src = url;
@@ -3368,10 +3498,652 @@
   }
   function dropSlot(e){ var h = hitAt(e); return h ? h.slot : 'main'; }
   wrap.addEventListener('drop', function(e){
+    // a frame dragged from the video strip goes into the picture it lands on
+    var ft = e.dataTransfer && e.dataTransfer.getData('application/x-tf-frame');
+    if (ft && vid) { useFrame(+ft, dropSlot(e)); return; }
     var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
     if (!f) return;
+    if (isVideo(f)) { startVideo(f); return; }
     SLOTS[dropSlot(e)].load(f);
   });
+
+  // ---- frames from a video -----------------------------------------------
+  // A video chosen or dropped here is played inside the page and never sent
+  // anywhere. The tool asks for its title, then scans 48 moments spread
+  // across it - skipping the first and last 3%, where titles and end cards
+  // sit - scoring each on a small copy for sharpness (the variance of its
+  // Laplacian, which motion blur flattens), exposure and contrast. It offers
+  // the six best that differ from each other, in time order. A frame is
+  // grabbed again at the video's full size only when it is used: a click
+  // puts it in the main picture, a drag onto the preview puts it in the
+  // picture it lands on.
+  var framesEl = document.getElementById('frames'), frameRow = document.getElementById('frameRow');
+  var framesStatus = document.getElementById('framesStatus'), titleEl = document.getElementById('videoTitle');
+  var videoFile = document.getElementById('videoFile');
+  var vid = null, vidUrl = null, scanId = 0, grabChain = Promise.resolve(), framesFound = {};
+  var ideaRow = document.getElementById('ideaRow'), ideasHead = document.getElementById('ideasHead'), framesHead = document.getElementById('framesHead'), ideas = [];
+  var SAMPLES = 48, SMALL = 256, PICKS = 6;
+  function isVideo(f){ return /^video\//.test(f.type || '') || /\.(mp4|m4v|mov|webm|mkv)$/i.test(f.name || ''); }
+  document.getElementById('videoPick').addEventListener('click', function(){ videoFile.click(); });
+  videoFile.addEventListener('change', function(){ if (videoFile.files[0]) startVideo(videoFile.files[0]); videoFile.value = ''; });
+  document.getElementById('framesClose').addEventListener('click', function(){ closeFrames(); draw(); });
+  document.getElementById('titleUse').addEventListener('click', useTitle);
+  titleEl.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); useTitle(); } });
+  function closeFrames(){
+    scanId++;
+    framesEl.hidden = true; frameRow.textContent = ''; framesStatus.textContent = ''; framesFound = {};
+    ideaRow.textContent = ''; ideasHead.hidden = framesHead.hidden = true; ideas = [];
+    aiTakes = []; if (headIdeas) setTimeout(showTakes, 0);
+    if (vidUrl) URL.revokeObjectURL(vidUrl);
+    vid = null; vidUrl = null;
+  }
+  // Camera and screen-recorder names say nothing about the video, so they
+  // leave the title empty for the person to fill in.
+  function titleFromName(name){
+    var t = name.replace(/\.[^.]+$/, '').replace(/[_\-.]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (/^(img|vid|mov|mvi|pxl|dsc|dji|gopr|gh\d|screen ?recording|screenshot|video|clip|untitled)\b/i.test(t)) return '';
+    if (!/[a-z]{3}/i.test(t)) return '';
+    return t;
+  }
+  // ---- headline help ---------------------------------------------------
+  // A title is rarely a headline: it runs long, and a thumbnail's words have
+  // to read at feed size. From the title the tool offers a few short takes -
+  // four words at most, in the title's own order, the key word last as the
+  // accent - and sorts them by how big they actually set in the template
+  // and size being made, loudest first. The key word is a number, else a
+  // word that carries the story (quit, never, secret...), else the longest.
+  var STOP = ('a an the and or but of to in on at for with from by about into over after before as is are was were be been ' +
+    'being i me my we our you your it its this that these those so just very really do does did have has had can will would ' +
+    'should could get got here there than then').split(' ');
+  var HOOK = ('why how what stop never dont don\'t') .split(' ');
+  var STRONG = ('quit never secret secrets truth mistake mistakes fail failed failure best worst free fast easy hard stop broke ' +
+    'rich million billion insane crazy wrong right banned hidden real fake finally first last only ultimate everything nothing ' +
+    'tried built made grew lost won beat').split(' ');
+  function titleWords(t){ return t.replace(/[“”"]/g, '').split(/\s+/).map(function(w){ return w.replace(/^[^\w$£€#]+|[^\w%!?]+$/g, ''); }).filter(Boolean); }
+  function isStop(w){ return STOP.indexOf(w.toLowerCase()) >= 0; }
+  // Up to two key words - the first number and the first word that carries
+  // the story - each with its own takes; with neither, the longest word.
+  function keyIndices(words){
+    var out = [], i;
+    for (i = 0; i < words.length; i++) if (/\d/.test(words[i])) { out.push(i); break; }
+    for (i = 0; i < words.length; i++) if (STRONG.indexOf(words[i].toLowerCase()) >= 0) { out.push(i); break; }
+    if (!out.length) {
+      var best = -1;
+      words.forEach(function(w, j){ if (!isStop(w) && (best < 0 || w.length > words[best].length)) best = j; });
+      out.push(best < 0 ? words.length - 1 : best);
+    }
+    return out;
+  }
+  // Words that can't start or end a take - except a few that carry the
+  // voice of a title (I quit, my job, you, vs).
+  var KEEP = ['i', 'you', 'my', 'your', 'we', 'our'];
+  function edgeStop(x){ return isStop(x) && KEEP.indexOf(x.toLowerCase()) < 0; }
+  function trimEdges(a){
+    a = a.slice();
+    while (a.length && edgeStop(a[0])) a.shift();
+    while (a.length && edgeStop(a[a.length - 1])) a.pop();
+    return a;
+  }
+  // the words right after the key: filler skipped, then up to two that
+  // aren't filler (a voice word counts), stopping at the next filler
+  function after(w, from){
+    var i = from; while (i < w.length && edgeStop(w[i])) i++;
+    var out = [];
+    for (; i < w.length && out.length < 2; i++) { if (edgeStop(w[i])) break; out.push(w[i]); }
+    return out;
+  }
+  function takes(title){
+    var w = titleWords(title); if (!w.length) return [];
+    var out = [];
+    function add(main, acc){
+      main = trimEdges(main).join(' '); acc = trimEdges(acc).join(' ');
+      if (!acc || (!main && w.length > 2)) return;   // a key word alone loses the story
+      if (main.length > 32 || acc.length > 24) return;
+      if (out.some(function(o){ return o.main.toLowerCase() === main.toLowerCase() && o.accent.toLowerCase() === acc.toLowerCase(); })) return;
+      out.push({ main:main, accent:acc });
+    }
+    // the whole title, when it is already short
+    if (w.length <= 4) add(w.slice(0, -1), w.slice(-1));
+    keyIndices(w).forEach(function(k){
+      // a number takes the word it counts: 10 tips, 3 mistakes
+      var keyPhrase = /\d/.test(w[k]) && k + 1 < w.length && !isStop(w[k + 1]) ? [w[k], w[k + 1]] : [w[k]];
+      var next = k + keyPhrase.length;
+      // the key phrase, then what follows as the accent
+      add(w.slice(Math.max(0, k - 1), k).concat(keyPhrase), after(w, next));
+      // the words leading up to the key, the key as the accent
+      add(w.slice(Math.max(0, k - 3), k), keyPhrase);
+    });
+    return out;
+  }
+  // How big a take sets here: the headline's capital height from a small
+  // render of the current template and size, with the take borrowed in.
+  function loudness(take){
+    var p = current(), small = { id:p.id, w:320, h:Math.round(320 * p.h / p.w), safe:p.safe, play:p.play };
+    var oc = document.createElement('canvas'); oc.width = small.w; oc.height = small.h;
+    var k1 = state.line1, k2 = state.line2, keepShown = JSON.stringify(shown), rep = {};
+    try { state.line1 = take.main; state.line2 = take.accent; render(oc.getContext('2d'), small, { guides:false, report:rep }); }
+    finally { state.line1 = k1; state.line2 = k2; shown = JSON.parse(keepShown); }
+    return rep.headCap || 0;
+  }
+  var headIdeas = document.getElementById('headIdeas'), aiBtn = document.getElementById('aiHeads'), aiTakes = [];
+  var headHint = document.getElementById('headHelpHint');
+  // What the takes are made from: the video title while one is typed, else
+  // the headline as typed. Picking a take doesn't count as typing, so the
+  // list stays put instead of shortening its own suggestions.
+  var headSource = null, takesTimer = 0;
+  function sourceText(){
+    if (!framesEl.hidden && titleEl.value.trim()) return titleEl.value.trim();
+    if (headSource === null) headSource = (state.line1 + ' ' + state.line2).trim();
+    return headSource;
+  }
+  ['line1', 'line2'].forEach(function(id){
+    var inp = document.getElementById(id);
+    if (inp) inp.addEventListener('input', function(){
+      headSource = (state.line1 + ' ' + state.line2).trim(); aiTakes = [];
+      clearTimeout(takesTimer); takesTimer = setTimeout(showTakes, 250);
+    });
+  });
+  function showTakes(){
+    var src = sourceText();
+    headHint.textContent = src ? 'From ' + (!framesEl.hidden && titleEl.value.trim() ? 'the video title' : 'your headline') + ', sorted by how big they set here.' : '';
+    var list = takes(src).concat(aiTakes);
+    list.forEach(function(t){ t.cap = loudness(t); });
+    list.sort(function(a, b){ return b.cap - a.cap; });
+    headIdeas.textContent = '';
+    list.slice(0, 6).forEach(function(t){
+      var b = el('button', 'headidea' + (t.ai ? ' ai' : '')); b.type = 'button';
+      b.appendChild(document.createTextNode(t.main ? t.main + ' ' : '')); b.appendChild(el('b', null, t.accent));
+      b.title = t.ai ? 'Suggested by Chrome\'s on-device AI' : 'Made from the title';
+      if (state.line1.trim().toUpperCase() === t.main.toUpperCase() && state.line2.trim().toUpperCase() === t.accent.toUpperCase()) b.classList.add('on');
+      b.addEventListener('click', function(){
+        setControl('line1', t.main); setControl('line2', t.accent);
+        Array.prototype.forEach.call(headIdeas.children, function(x){ x.classList.remove('on'); }); b.classList.add('on');
+        headHint.textContent = 'Headline set. Type in it any time to start again from your own words.';
+        if (ideas && ideas.length) { ideaSize = ''; redrawIdeas(); }
+      });
+      headIdeas.appendChild(b);
+    });
+  }
+  titleEl.addEventListener('input', function(){ aiTakes = []; clearTimeout(takesTimer); takesTimer = setTimeout(showTakes, 200); });
+  // The title as a whole still goes in with one click, its last word the accent.
+  function useTitle(){
+    var words = titleEl.value.trim().split(/\s+/).filter(Boolean);
+    if (!words.length) { titleEl.focus({ preventScroll:true }); return; }
+    var l2 = words.length > 1 ? words[words.length - 1] : '';
+    var l1 = (words.length > 1 ? words.slice(0, -1) : words).join(' ');
+    setControl('line1', l1.slice(0, 32)); setControl('line2', l2.slice(0, 24));
+    framesStatus.textContent = 'The whole title is the headline now; Shorter takes, under Headline, set bigger.';
+    showTakes();
+  }
+
+  // the panel's takes start from the headline as it stands
+  setTimeout(function(){ showTakes(); checkAi(); }, 0);
+  // sizes measured before a face loads are the fallback's; measure again
+  if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', function(){ showTakes(); });
+
+  // Chrome's built-in model, where the browser has one: it runs on this
+  // device, so the title goes nowhere. The first use downloads the model -
+  // Chrome's own download, a few gigabytes, started only by this button -
+  // and later uses are immediate. Browsers without it never show the button.
+  var aiSession = null;
+  function aiAvailable(){
+    if (!window.LanguageModel || !LanguageModel.availability) return Promise.resolve('unavailable');
+    return LanguageModel.availability({ expectedInputs:[{ type:'text', languages:['en'] }], expectedOutputs:[{ type:'text', languages:['en'] }] })
+      .catch(function(){ return 'unavailable'; });
+  }
+  function checkAi(){
+    aiAvailable().then(function(a){
+      aiBtn.hidden = a === 'unavailable';
+      aiBtn.dataset.state = a;
+      aiBtn.textContent = 'Ask Chrome\'s on-device AI';
+      aiBtn.title = a === 'available' ? 'Four more takes, written on this device' : 'Four more takes, written on this device. The first time, Chrome downloads its model - a few gigabytes.';
+    });
+  }
+  var AI_SYSTEM = 'You write headlines for video thumbnails. Given a video title, write four different headlines. ' +
+    'Each is at most four words, punchy, readable at a glance, true to the title, with no emoji, hashtags or quotation marks. ' +
+    'Split each into "main", the lead-in words, and "accent", the one or two words to highlight; main may be empty.';
+  var AI_SCHEMA = { type:'array', minItems:1, maxItems:4, items:{ type:'object', required:['main', 'accent'],
+    properties:{ main:{ type:'string', maxLength:32 }, accent:{ type:'string', maxLength:24 } } } };
+  aiBtn.addEventListener('click', function(){
+    var title = sourceText();
+    if (!title) { headHint.textContent = 'Type a headline or a video title first.'; return; }
+    aiBtn.disabled = true;
+    headHint.textContent = 'Asking Chrome\'s on-device model…';
+    var ready = aiSession ? Promise.resolve(aiSession) : LanguageModel.create({
+      initialPrompts:[{ role:'system', content:AI_SYSTEM }],
+      expectedInputs:[{ type:'text', languages:['en'] }], expectedOutputs:[{ type:'text', languages:['en'] }],
+      monitor:function(m){ m.addEventListener('downloadprogress', function(e){
+        headHint.textContent = 'Chrome is downloading its on-device model, once… ' + Math.round((e.loaded || 0) * 100) + '%';
+      }); }
+    }).then(function(sn){ aiSession = sn; return sn; });
+    ready.then(function(sn){
+      return sn.clone ? sn.clone() : sn;
+    }).then(function(sn){
+      return sn.prompt('Title: ' + title, { responseConstraint:AI_SCHEMA });
+    }).then(function(text){
+      var got = [];
+      try { got = JSON.parse(text); } catch(e){}
+      aiTakes = (Array.isArray(got) ? got : []).map(function(o){
+        return { main:String(o.main || '').trim().slice(0, 32), accent:String(o.accent || '').trim().slice(0, 24), ai:true };
+      }).filter(function(o){ return o.accent; });
+      showTakes();
+      headHint.textContent = aiTakes.length ? 'Added ' + aiTakes.length + ' from Chrome\'s on-device model, marked AI.' : 'The model gave nothing usable; try again.';
+    }).catch(function(err){
+      headHint.textContent = 'Chrome\'s on-device model could not answer' + (err && err.name === 'NotAllowedError' ? ' - it needs a click to start its download.' : '.');
+    }).then(function(){ aiBtn.disabled = false; checkAi(); });
+  });
+  function clock(t){ var m = Math.floor(t / 60), s = Math.floor(t % 60); return m + ':' + (s < 10 ? '0' : '') + s; }
+
+  function startVideo(file){
+    closeFrames();
+    var my = ++scanId;
+    framesEl.hidden = false;
+    titleEl.value = titleFromName(file.name || ''); aiTakes = [];
+    showTakes(); checkAi();
+    framesStatus.textContent = 'Opening the video…';
+    draw();
+    // the editor fits the window; focusing mustn't scroll the page under it
+    titleEl.focus({ preventScroll:true });
+    vid = document.createElement('video');
+    vid.muted = true; vid.preload = 'auto'; vid.playsInline = true;
+    vidUrl = URL.createObjectURL(file);
+    vid.addEventListener('error', function(){
+      if (my !== scanId) return;
+      framesStatus.textContent = "This browser can't play that file. iPhone videos (.mov in HEVC) often can't be read in Chrome: export it as MP4, or drop a screenshot instead.";
+    });
+    vid.addEventListener('loadeddata', function(){ if (my === scanId) scan(my); }, { once:true });
+    vid.src = vidUrl;
+  }
+  // Seeking settles on 'seeked'; a seek to where the video already is may
+  // not fire it, so a timer lets the scan go on regardless.
+  function seekTo(t){
+    return new Promise(function(done){
+      var timer = setTimeout(finish, 3000);
+      function finish(){ clearTimeout(timer); vid.removeEventListener('seeked', finish); done(); }
+      vid.addEventListener('seeked', finish);
+      vid.currentTime = t;
+    });
+  }
+  function scoreFrame(c, w, h, t){
+    var d = c.getImageData(0, 0, w, h).data, n = w*h, g = new Float32Array(n), sum = 0, sq = 0;
+    for (var i = 0; i < n; i++) {
+      var y = (0.299*d[i*4] + 0.587*d[i*4 + 1] + 0.114*d[i*4 + 2]) / 255;
+      g[i] = y; sum += y; sq += y*y;
+    }
+    var mean = sum/n, std = Math.sqrt(Math.max(0, sq/n - mean*mean));
+    var ls = 0, ls2 = 0, m = 0;
+    for (var yy = 1; yy < h - 1; yy++) for (var x = 1; x < w - 1; x++) {
+      var k = yy*w + x, L = 4*g[k] - g[k - 1] - g[k + 1] - g[k - w] - g[k + w];
+      ls += L; ls2 += L*L; m++;
+    }
+    // a 16 x 9 grid of average brightness, for telling frames apart
+    var sig = new Float32Array(144);
+    for (var gy = 0; gy < 9; gy++) for (var gx = 0; gx < 16; gx++) {
+      var a = 0, cnt = 0;
+      for (var py = Math.floor(gy*h/9); py < Math.floor((gy + 1)*h/9); py++)
+        for (var px = Math.floor(gx*w/16); px < Math.floor((gx + 1)*w/16); px++) { a += g[py*w + px]; cnt++; }
+      sig[gy*16 + gx] = cnt ? a/cnt : 0;
+    }
+    return { t:t, mean:mean, std:std, sharp:ls2/m - (ls/m)*(ls/m), sig:sig, thumb:c.canvas.toDataURL('image/jpeg', 0.82) };
+  }
+  // ---- faces --------------------------------------------------------------
+  // Google's MediaPipe face detector, run on this device. Its code comes from
+  // jsDelivr and its model (224 KB) ships with the site, both fetched only
+  // the first time a video is scanned; the frames themselves never leave the
+  // page. Where it can't load, the scan goes on without faces.
+  var MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1';
+  var faceDetector = null, facePromise = null;
+  function loadFaces(){
+    if (facePromise) return facePromise;
+    facePromise = import(MP + '/vision_bundle.mjs').then(function(v){
+      return v.FilesetResolver.forVisionTasks(MP + '/wasm').then(function(files){
+        var opts = function(delegate){
+          return { baseOptions:{ modelAssetPath:'models/blaze_face_short_range.tflite', delegate:delegate },
+                   runningMode:'IMAGE', minDetectionConfidence:0.5 };
+        };
+        return v.FaceDetector.createFromOptions(files, opts('GPU')).catch(function(){
+          return v.FaceDetector.createFromOptions(files, opts('CPU'));
+        });
+      });
+    }).then(function(d){ faceDetector = d; return d; }).catch(function(){ faceDetector = null; return null; });
+    return facePromise;
+  }
+  // The best face in a frame, as fractions of the frame: its box and score.
+  // A face cut by the frame's edge is passed over - it can't be framed.
+  function findFace(canvas){
+    if (!faceDetector) return null;
+    var res; try { res = faceDetector.detect(canvas); } catch(e){ return null; }
+    var W = canvas.width, H = canvas.height, best = null;
+    (res && res.detections || []).forEach(function(d){
+      var b = d.boundingBox, sc = d.categories && d.categories[0] ? d.categories[0].score : 0;
+      if (!b) return;
+      var f = { x:b.originX / W, y:b.originY / H, w:b.width / W, h:b.height / H, score:sc };
+      if (f.x < 0.01 || f.y < 0.01 || f.x + f.w > 0.99 || f.y + f.h > 0.99) return;
+      if (!best || f.w*f.h*f.score > best.w*best.h*best.score) best = f;
+    });
+    return best;
+  }
+  // A detection is kept when it is confident, or when the sample before or
+  // after finds a face in the same place: a real face stays put for a moment,
+  // a pattern that happens to look like one for a single frame doesn't.
+  function confirmFaces(results){
+    var near = function(a, b){
+      return a && b && Math.hypot((a.x + a.w/2) - (b.x + b.w/2), (a.y + a.h/2) - (b.y + b.h/2)) < Math.max(a.w, b.w);
+    };
+    var keep = results.map(function(r, i){
+      var f = r.face; if (!f) return null;
+      if (f.score >= 0.75) return f;
+      return (near(f, results[i - 1] && results[i - 1].face) || near(f, results[i + 1] && results[i + 1].face)) ? f : null;
+    });
+    results.forEach(function(r, i){ r.face = keep[i]; });
+  }
+  // A frame with a clear face ranks up, more for a bigger face, up to about
+  // a tenth of the frame; beyond that bigger doesn't help.
+  function faceBonus(f){ return f ? 1 + 0.9 * Math.min(1, (f.w*f.h) / 0.1) * f.score : 1; }
+
+  // Frames the face inside a picture: zoomed so the face takes about 40% of
+  // the picture's height (never below 100%, so nothing new shows around the
+  // photo), and moved so it sits centred, eyes a little above the middle.
+  // The pan is worked the way cover() draws: an offset of the photo's
+  // centre, in the canvas's width and height for the main picture and in
+  // the picture's own width for the rest.
+  // A picture framed this way remembers its face, and frames itself again
+  // when its frame changes shape or size - another template, shape or size -
+  // until the person reframes it by hand; from then on their framing stands.
+  var faceFor = {};   // slot: { face, key } while the framing is automatic
+  function frameKey(h){ return Math.round(h.bw) + 'x' + Math.round(h.bh || h.h); }
+  function keepFaceFraming(){
+    if (!faceFor) return;   // a draw before this part of the script has run
+    Object.keys(faceFor).forEach(function(slot){
+      var ff = faceFor[slot], h = null;
+      for (var i = 0; i < dropHits.length; i++) if (dropHits[i].slot === slot) h = dropHits[i];
+      if (h && frameKey(h) !== ff.key) frameOnFace(slot, ff.face);
+    });
+  }
+  function handFramed(slot){ if (slot && faceFor) delete faceFor[slot]; }
+  function frameOnFace(slot, face){
+    var img = { main:frame, second:phoneImg, third:img3, fourth:img4 }[slot];
+    var h = null, p = current();
+    for (var i = 0; i < dropHits.length; i++) if (dropHits[i].slot === slot) h = dropHits[i];
+    if (!img || !h || !face) return;
+    faceFor[slot] = { face:face, key:frameKey(h) };
+    setFaceFraming(slot, face, img, h, p);
+    syncControls(); draw();
+  }
+  function setFaceFraming(slot, face, img, h, p){
+    var bw = h.bw, bh = h.bh || h.h, f = FRAMING[slot];
+    var fit = Math.max(bw / img.width, bh / img.height);
+    var z = Math.max(1, Math.min(ZOOM_MAX, 0.4 * bh / (face.h * img.height * fit)));
+    var iw = img.width * fit * z, ih = img.height * fit * z;
+    var cxF = face.x + face.w/2, cyF = face.y + face.h/2;
+    // the face's centre to the middle across and 44% of the way down
+    var dx = (0.5 - cxF) * iw, dy = (0.44 - 0.5) * bh + (0.5 - cyF) * ih;
+    state[f.zoom] = Math.round(z * 100) / 100;
+    if (slot === 'main') { state.panX = dx / p.w; state.panY = dy / p.h; }
+    else { state[f.x] = dx / bw; state[f.y] = dy / bw; }
+  }
+
+  function sigDist(a, b){ var s = 0; for (var i = 0; i < 144; i++) s += Math.abs(a[i] - b[i]); return s/144; }
+  // Good frames: sharp, neither dark nor blown out, with some contrast.
+  // Flat frames - black, a fade, a plain title card - are left out.
+  // Sharpness is judged within a scene, not across the video: a busy scene
+  // would otherwise outscore every calm one and take all six places. So the
+  // samples are split into scenes where the picture jumps, each scene's best
+  // frame is offered first, best scenes first, then the next best of each,
+  // skipping any frame too like one already offered.
+  function choose(results, d){
+    var scenes = [], cur = null;
+    results.forEach(function(r, i){
+      if (!cur || sigDist(results[i - 1].sig, r.sig) > 0.1) { cur = []; scenes.push(cur); }
+      cur.push(r);
+    });
+    var good = function(r){ return r.std > 0.04 && r.mean > 0.06 && r.mean < 0.94; };
+    scenes = scenes.map(function(sc){
+      var pool = sc.filter(good);
+      var maxSharp = Math.max.apply(null, pool.map(function(r){ return r.sharp; }).concat([1e-9]));
+      pool.forEach(function(r){
+        var expo = Math.max(0, 1 - Math.abs(r.mean - 0.48) / 0.42), con = Math.min(1, r.std / 0.22);
+        r.local = Math.pow(r.sharp / maxSharp, 0.7);   // against its own scene
+        r.score = (0.35 + 0.65*expo) * (0.4 + 0.6*con) * faceBonus(r.face);
+      });
+      return pool.sort(function(a, b){ return b.local*b.score - a.local*a.score; });
+    }).filter(function(sc){ return sc.length; });
+    if (!scenes.length) scenes = [results.slice()];
+    // a scene's standing: its best frame, less for a blurred stretch
+    var globalSharp = Math.max.apply(null, results.map(function(r){ return r.sharp; })) || 1;
+    scenes.sort(function(a, b){
+      var sa = (a[0].score || 0) * Math.pow(a[0].sharp / globalSharp, 0.25), sb = (b[0].score || 0) * Math.pow(b[0].sharp / globalSharp, 0.25);
+      return sb - sa;
+    });
+    var out = [], need = 0.05, gap = d/40;
+    for (var round = 0; out.length < PICKS && round < SAMPLES; round++) {
+      var any = false;
+      scenes.forEach(function(sc){
+        if (out.length >= PICKS) return;
+        for (var j = 0; j < sc.length; j++) {
+          var r = sc[j];
+          if (out.indexOf(r) >= 0) continue;
+          if (out.every(function(o){ return sigDist(o.sig, r.sig) > need && Math.abs(o.t - r.t) > gap; })) { out.push(r); any = true; return; }
+        }
+      });
+      if (!any) { need /= 2; gap /= 2; if (need < 0.002) break; }   // a short or static video: relax
+    }
+    return out.sort(function(a, b){ return a.t - b.t; });
+  }
+  function scan(my){
+    var d = vid.duration, vw = vid.videoWidth, vh = vid.videoHeight;
+    if (!isFinite(d) || d <= 0 || !vw) {
+      framesStatus.textContent = "The browser can't read this video's length or picture. Try it as an MP4.";
+      return;
+    }
+    var sw = SMALL, sh = Math.max(1, Math.round(SMALL * vh / vw));
+    var c = document.createElement('canvas'); c.width = sw; c.height = sh;
+    var cx = c.getContext('2d', { willReadFrequently:true });
+    // faces are looked for on a larger copy: at 256 wide a face across the
+    // room is a few pixels
+    var fc = document.createElement('canvas'); fc.width = 640; fc.height = Math.max(1, Math.round(640 * vh / vw));
+    var fcx = fc.getContext('2d');
+    var n = Math.max(PICKS, Math.min(SAMPLES, Math.floor(d * 4))), t0 = d*0.03, t1 = d*0.97, results = [], i = 0;
+    function next(){
+      if (my !== scanId) return;
+      if (i >= n) {
+        confirmFaces(results);
+        var best = choose(results, d);
+        framesStatus.textContent = 'Click a frame to use it as the ' + labelFor(controlByKey('main'), state.layout).toLowerCase() +
+          ', or drag it onto any picture in the preview.';
+        best.forEach(addTile);
+        framesHead.hidden = false;
+        showIdeas(best, my);
+        if (!faceDetector) framesStatus.textContent += ' (Face detection could not load, so frames are picked without it.)';
+        draw();
+        return;
+      }
+      var t = t0 + (t1 - t0) * (n === 1 ? 0.5 : i / (n - 1));
+      framesStatus.textContent = 'Looking through the video… ' + Math.round(i / n * 100) + '%';
+      seekTo(t).then(function(){
+        if (my !== scanId) return;
+        cx.drawImage(vid, 0, 0, sw, sh);
+        var r = scoreFrame(cx, sw, sh, t);
+        if (faceDetector) { fcx.drawImage(vid, 0, 0, fc.width, fc.height); r.face = findFace(fc); }
+        results.push(r);
+        i++; next();
+      });
+    }
+    // Face detection loads first - a few seconds the first time, cached
+    // after - and a scan without it beats waiting forever for it.
+    framesStatus.textContent = 'Getting face detection ready…';
+    Promise.race([loadFaces(), new Promise(function(done){ setTimeout(done, 20000); })]).then(function(){
+      if (my !== scanId) return;
+      next();
+    });
+  }
+  function addTile(r){
+    var b = el('button', 'frametile'); b.type = 'button'; b.draggable = true;
+    b.setAttribute('aria-label', 'Use the frame at ' + clock(r.t));
+    var im = el('img'); im.src = r.thumb; im.alt = ''; b.appendChild(im);
+    b.appendChild(el('span', null, clock(r.t)));
+    b.addEventListener('click', function(){ useFrame(r.t, 'main', b); });
+    b.addEventListener('dragstart', function(e){
+      e.dataTransfer.setData('application/x-tf-frame', String(r.t));
+      e.dataTransfer.effectAllowed = 'copy';
+    });
+    b.dataset.t = r.t;
+    if (r.face) { b.classList.add('hasface'); b.title = 'A face is in this frame; it will be framed on it.'; }
+    framesFound[r.t] = r;
+    frameRow.appendChild(b);
+  }
+  // ---- ideas: finished thumbnails built from the video --------------------
+  // Up to six, each a template with its pictures, shape and palette, chosen
+  // from what the scan found. With a face: Talking point on the best face,
+  // a Collage of different moments, Before -> After from the start and end.
+  // Without one - a screen recording, say - Launch leads. Each is drawn from
+  // the scan's small copies, so nothing more is read from the video until
+  // one is applied; then its frames are taken at full size and framed on
+  // their faces, and everything stays editable.
+  var IDEA_PALETTES = ['fromFrame', 'kk', 'ember', 'mint', 'signal', 'ice'];
+  function buildIdeas(best){
+    var byScore = best.slice().sort(function(a, b){ return b.score - a.score; });
+    var faces = best.filter(function(r){ return r.face; }).sort(function(a, b){ return b.face.w*b.face.h*b.face.score - a.face.w*a.face.h*a.face.score; });
+    var plain = byScore.filter(function(r){ return !r.face; });
+    var first = best[0], last = best[best.length - 1], top = faces[0] || byScore[0];
+    var others = function(not){ return byScore.filter(function(r){ return not.indexOf(r) < 0; }); };
+    var strip = others([top]);
+    var collage = { layout:'collage', pics:{ main:top, second:strip[0], third:strip[1], fourth:strip[2] } };
+    var talking = { layout:'talking', tpShape:'circle', pics:{ main:top } };
+    var talking2 = { layout:'talking', tpShape:'frame', pics:{ main:faces[1] || plain[0] || byScore[1] || top } };
+    var versus = { layout:'versus', vsShape:faces.length > 1 ? 'circle' : 'card', pics:{ second:first, main:last } };
+    var versus2 = { layout:'versus', vsShape:'card', pics:{ second:byScore[1] || first, main:top } };
+    var launch = { layout:'launch', pics:{ main:plain[0] || byScore[0] } };
+    var launch2 = { layout:'launch', pics:{ main:plain[1] || byScore[1] || byScore[0] } };
+    var list = faces.length ? [talking, collage, versus, launch, talking2, versus2]
+                            : [launch, collage, versus, launch2, talking2, versus2];
+    if (best.length < 2) list = list.filter(function(i){ return i.layout !== 'versus'; });
+    return list.slice(0, 6).map(function(idea, i){ idea.palette = IDEA_PALETTES[i % IDEA_PALETTES.length]; return idea; });
+  }
+  // The scan's small copies as pictures, for drawing ideas.
+  function smallImage(r){
+    if (r.img) return Promise.resolve(r.img);
+    return new Promise(function(done){ var im = new Image(); im.onload = function(){ r.img = im; done(im); }; im.onerror = function(){ done(null); }; im.src = r.thumb; });
+  }
+  var IDEA_KEYS = ['layout', 'vsShape', 'tpShape', 'palette', 'strip', 'zoom', 'panX', 'panY', 'phoneZoom', 'phonePanX', 'phonePanY', 'zoom3', 'pan3X', 'pan3Y', 'zoom4', 'pan4X', 'pan4Y'];
+  var IDEA_IMAGE = { main:'frame', second:'phoneImg', third:'img3', fourth:'img4' };
+  // Draws an idea by borrowing the state and pictures for the moment it
+  // takes, the way the template picker's previews do, then puts them back.
+  // It draws twice: once to learn where its pictures land, then framed on
+  // their faces.
+  function drawIdea(idea, cvs){
+    var p = current(), tw = cvs.width, th = cvs.height;
+    var small = { id:p.id, w:tw, h:th, safe:p.safe, play:p.play };
+    var keep = {}; IDEA_KEYS.forEach(function(k){ keep[k] = state[k]; });
+    var keepImgs = { frame:frame, phoneImg:phoneImg, img3:img3, img4:img4 }, keepShown = JSON.stringify(shown), keepDerived = state.derived.frame, keepMoves = state.moves;
+    try {
+      state.layout = idea.layout; state.strip = true;
+      if (idea.vsShape) state.vsShape = idea.vsShape;
+      if (idea.tpShape) state.tpShape = idea.tpShape;
+      state.palette = idea.palette; state.moves = {};
+      Object.keys(FRAMING).forEach(function(slot){ var f = FRAMING[slot]; state[f.zoom] = 1; state[f.x] = 0; state[f.y] = 0; });
+      frame = paintedFrame; phoneImg = img3 = img4 = null;
+      Object.keys(idea.pics).forEach(function(slot){
+        var r = idea.pics[slot]; if (!r || !r.img) return;
+        if (slot === 'main') frame = r.img; else if (slot === 'second') phoneImg = r.img; else if (slot === 'third') img3 = r.img; else img4 = r.img;
+      });
+      if (idea.palette === 'fromFrame') state.derived.frame = (idea.pics.main && idea.pics.main.img && paletteFromImage(idea.pics.main.img)) || state.derived.frame;
+      var c = cvs.getContext('2d'), hits = [];
+      render(c, small, { guides:false, hits:hits });
+      Object.keys(idea.pics).forEach(function(slot){
+        var r = idea.pics[slot], h = null;
+        hits.forEach(function(x){ if (x.slot === slot) h = x; });
+        if (r && r.face && r.img && h) setFaceFraming(slot, r.face, r.img, h, small);
+      });
+      render(c, small, { guides:false });
+    } finally {
+      IDEA_KEYS.forEach(function(k){ state[k] = keep[k]; });
+      frame = keepImgs.frame; phoneImg = keepImgs.phoneImg; img3 = keepImgs.img3; img4 = keepImgs.img4;
+      shown = JSON.parse(keepShown); state.derived.frame = keepDerived; state.moves = keepMoves;
+    }
+  }
+  // Ideas are drawn at the size being made; a new size draws them again.
+  var ideaSize = '';
+  function redrawIdeas(){
+    var p = current(), key = p.w + 'x' + p.h;
+    if (!ideas.length || key === ideaSize) return;
+    ideaSize = key;
+    var tw = 360, th = Math.round(tw * p.h / p.w), a = p.w / p.h;
+    ideaRow.style.setProperty('--idea-cols', a < 0.85 ? 6 : a < 1.2 ? 4 : 3);
+    Array.prototype.forEach.call(ideaRow.children, function(b, i){
+      var cvs = b.querySelector('canvas'); cvs.width = tw; cvs.height = th; drawIdea(ideas[i], cvs);
+    });
+  }
+  function ideaName(idea){
+    var t = templateById(idea.layout).name, sh = idea.tpShape || (idea.layout === 'versus' ? idea.vsShape : '');
+    var pal = idea.palette === 'fromFrame' ? 'picture colours' : paletteById(idea.palette).name.toLowerCase();
+    return t + (sh ? ', ' + sh : '') + ' · ' + pal;
+  }
+  function showIdeas(best, my){
+    var list = buildIdeas(best), need = [];
+    list.forEach(function(idea){ Object.keys(idea.pics).forEach(function(k){ if (idea.pics[k] && need.indexOf(idea.pics[k]) < 0) need.push(idea.pics[k]); }); });
+    Promise.all(need.map(smallImage)).then(function(){
+      if (my !== scanId) return;
+      ideas = list;
+      var p = current(), tw = 360, th = Math.round(tw * p.h / p.w), a = p.w / p.h;
+      // a row of tall ideas stays short: more of them across
+      ideaRow.style.setProperty('--idea-cols', a < 0.85 ? 6 : a < 1.2 ? 4 : 3);
+      list.forEach(function(idea){
+        var b = el('button', 'idea'); b.type = 'button';
+        var cvs = el('canvas'); cvs.width = tw; cvs.height = th; cvs.setAttribute('aria-hidden', 'true');
+        drawIdea(idea, cvs);
+        b.appendChild(cvs); b.appendChild(el('span', null, ideaName(idea)));
+        b.setAttribute('aria-label', 'Use this idea: ' + ideaName(idea));
+        b.addEventListener('click', function(){
+          Array.prototype.forEach.call(ideaRow.children, function(x){ x.classList.remove('on'); });
+          b.classList.add('on');
+          applyIdea(idea);
+        });
+        ideaRow.appendChild(b);
+      });
+      ideasHead.hidden = false; ideaSize = p.w + 'x' + p.h;
+      framesStatus.textContent = 'Pick an idea to start from, or a single frame below. Everything stays editable.';
+      draw();
+    });
+  }
+  // An idea, for real: template, shape and palette set the ordinary way,
+  // then each picture's frame taken at full size and framed on its face.
+  function applyIdea(idea){
+    if (idea.layout !== state.layout) { state.panX = state.panY = 0; state.zoom = 1; setControl('layout', idea.layout); syncLayout(); }
+    if (idea.vsShape) setControl('vsShape', idea.vsShape);
+    if (idea.tpShape) setControl('tpShape', idea.tpShape);
+    if (idea.layout === 'collage' && !state.strip) setControl('strip', true);
+    if (state.palette !== idea.palette) { state.palette = idea.palette; syncPalette(); persist(); }
+    ['main', 'second', 'third', 'fourth'].forEach(function(slot){
+      var r = idea.pics[slot]; if (r) useFrame(r.t, slot);
+    });
+  }
+
+  // The frame at its full size, into a picture slot, through the same path a
+  // chosen file takes. Grabs queue, so quick clicks land in order.
+  function useFrame(t, slot, tile){
+    var v = vid, my = scanId;
+    grabChain = grabChain.then(function(){
+      if (!v || my !== scanId) return;
+      return seekTo(t).then(function(){
+        if (my !== scanId) return;
+        var big = document.createElement('canvas'); big.width = v.videoWidth; big.height = v.videoHeight;
+        big.getContext('2d').drawImage(v, 0, 0);
+        return new Promise(function(done){
+          big.toBlob(function(blob){
+            if (blob && my === scanId) {
+              var found = framesFound[t];
+              SLOTS[slot].load(blob, function(){ if (found && found.face) frameOnFace(slot, found.face); });
+              var ctl = CONTROLS.filter(function(q){ return q.type === 'image' && q.slot === slot; })[0];
+              framesStatus.textContent = 'The frame at ' + clock(t) + ' is the ' + (ctl ? labelFor(ctl, state.layout).toLowerCase() : 'picture') + ' now.';
+              Array.prototype.forEach.call(frameRow.children, function(x){ if (+x.dataset.t === t) x.classList.add('used'); });
+            }
+            done();
+          }, 'image/jpeg', 0.92);
+        });
+      });
+    });
+  }
   document.addEventListener('paste', function(e){
     var items = e.clipboardData && e.clipboardData.items;
     if (!items) return;
@@ -3543,7 +4315,7 @@
   function startZoom(q, e){
     var f = FRAMING[q.L.slot], c4 = q.corners;
     var cx = (c4[0].x + c4[1].x + c4[2].x + c4[3].x)/4, cy = (c4[0].y + c4[1].y + c4[2].y + c4[3].y)/4;
-    return { mode:'zoom', zkey:f.zoom, z0:state[f.zoom], centre:{ x:cx, y:cy }, start:canvasPoint(e), moved:false, sx:e.clientX, sy:e.clientY };
+    return { mode:'zoom', slot:q.L.slot, zkey:f.zoom, z0:state[f.zoom], centre:{ x:cx, y:cy }, start:canvasPoint(e), moved:false, sx:e.clientX, sy:e.clientY };
   }
   var ZOOM_MIN = 0.4, ZOOM_MAX = 2.5;
   var SCALE_MIN = 0.2, SCALE_MAX = 5;
@@ -3638,6 +4410,7 @@
     if (!drag.moved && Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) > 4) drag.moved = true;
     if (!drag.moved) return false;
     if (drag.mode === 'pan') {
+      handFramed(drag.slot);
       // a turned picture's photo moves along the picture's own axes
       var ddx = (e.clientX - drag.sx) / drag.scale, ddy = (e.clientY - drag.sy) / drag.scale, ca = Math.cos(-drag.angle), sa = Math.sin(-drag.angle);
       state[drag.f.x] = drag.spx + (ddx*ca - ddy*sa) / drag.dw;
@@ -3645,6 +4418,7 @@
     } else if (drag.mode === 'scale') {
       doScale(drag, e);
     } else if (drag.mode === 'zoom') {
+      handFramed(drag.slot);
       var zp = canvasPoint(e), c0 = drag.centre;
       var z = drag.z0 * Math.hypot(zp[0] - c0.x, zp[1] - c0.y) / (Math.hypot(drag.start[0] - c0.x, drag.start[1] - c0.y) || 1);
       state[drag.zkey] = Math.round(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z)) * 100) / 100;
@@ -3709,6 +4483,7 @@
       var q2 = selGeom(), pp2 = current(); if (!q2) return;
       var f2 = e.shiftKey ? 1.2 : 1.05, grow = !(e.key === '-' || e.key === '_');
       if (q2.L.slot) {
+        handFramed(q2.L.slot);
         var zk = FRAMING[q2.L.slot].zoom;
         state[zk] = Math.round(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, grow ? state[zk] * f2 : state[zk] / f2)) * 100) / 100;
         syncControls(); draw();
@@ -3725,6 +4500,7 @@
     var panSlot = adjusting || lockedSlot;
     if (panSlot) {
       e.preventDefault();
+      handFramed(panSlot);
       var f = FRAMING[panSlot], h = null;
       if (panSlot === 'main') { state.panX = shown.win[0]/p.w + d[0]*step; state.panY = shown.win[1]/p.h + d[1]*step; }
       else {
@@ -3739,6 +4515,132 @@
       persist(); syncControls(); draw();
     }
   });
+  // ---- the quality bar, live ---------------------------------------------
+  // The bar's first three rules (docs/quality-bar.md) - a loud headline, the
+  // pictures carrying the image, no dead zones - checked as the person works:
+  // the size being made after each pause, on a 640-pixel copy, and every
+  // other size one at a time when the page is idle, on a 480-pixel copy, so
+  // a size that fails gets a dot in the size list. A failing rule offers a
+  // fix, found by trying likely changes off screen and keeping the first
+  // that passes without breaking another rule.
+  var checksEl = document.getElementById('checks'), checkTimer = 0, allTimer = 0, allQueue = [], sizeFails = {};
+  var RULES = {
+    headline:{ name:'Headline small', pass:'headlinePass', why:function(q, p){ var tall = p.w/p.h < 1.2;
+      return 'capitals are ' + (q.headline*100).toFixed(1) + '% of the height; ' + (tall ? '6' : '9') + '% reads at feed size.'; } },
+    pictures:{ name:'Pictures small', pass:'picturesPass', why:function(q){
+      return 'they cover ' + Math.round(q.pictures*100) + '% of the frame; a third carries a thumbnail.'; } },
+    dead:{ name:'Bare areas', pass:'deadPass', why:function(q){
+      return q.deadCells + ' of 16 areas are flat colour; 2 at most keeps it busy enough to stop a scroll.'; } }
+  };
+  function scaleFor(p, long){ return Math.min(1, long / Math.max(p.w, p.h)); }
+  function scheduleChecks(){
+    clearTimeout(checkTimer); checkTimer = setTimeout(runChecks, 450);
+    clearTimeout(allTimer); allTimer = setTimeout(startAllChecks, 1500);
+  }
+  function failing(q){ return Object.keys(RULES).filter(function(r){ return q[RULES[r].pass] === false; }); }
+  // A change tried off screen: state and placements borrowed, the size
+  // measured, everything put back.
+  function tryPatch(patch, p, s){
+    var keep = {}, keepMoves = JSON.stringify(state.moves);
+    Object.keys(patch.state || {}).forEach(function(k){ keep[k] = state[k]; state[k] = patch.state[k]; });
+    if (patch.moves) patch.moves(state.moves);
+    try { return measure(p, s); }
+    finally { Object.keys(keep).forEach(function(k){ state[k] = keep[k]; }); state.moves = JSON.parse(keepMoves); }
+  }
+  function applyPatch(patch){
+    if (patch.moves) { patch.moves(state.moves); persist(); }
+    Object.keys(patch.state || {}).forEach(function(k){ setControl(k, patch.state[k]); });
+    if (patch.after) patch.after();
+    draw();
+  }
+  // Likely fixes for a rule, most specific first.
+  function candidates(rule, p){
+    var out = [], t = state.layout, pre = t + '.' + frameShape(p.w, p.h) + '.', hk = pre + 'headline';
+    function headScaleReset(m){ if (m[hk]) m[hk][5] = 1; }
+    if (rule === 'headline') {
+      if (state.moves[hk] && (state.moves[hk][5] || 1) < 1) out.push({ label:'Headline back to full size', moves:headScaleReset });
+      // loudest first, the order Shorter takes shows them in
+      takes(sourceText()).map(function(tk){ tk.cap = loudness(tk); return tk; })
+        .sort(function(a, b){ return b.cap - a.cap; }).forEach(function(tk){
+        if (tk.main.toUpperCase() === state.line1.trim().toUpperCase() && tk.accent.toUpperCase() === state.line2.trim().toUpperCase()) return;
+        out.push({ label:'Shorter: ' + (tk.main ? tk.main + ' ' : '') + tk.accent, state:{ line1:tk.main, line2:tk.accent },
+                   after:function(){ if (typeof showTakes === 'function') showTakes(); } });
+      });
+      if (state.headFont !== 'auto') out.push({ label:'The template\'s own font', state:{ headFont:'auto' } });
+      if (state.headScale < 1.4) out.push({ label:'Headline size to 140%', state:{ headScale:1.4 } });
+    }
+    if (rule === 'pictures') {
+      if (t === 'talking') ['circle', 'frame'].forEach(function(v){ if (state.tpShape !== v) out.push({ label:'Picture shape: ' + v, state:{ tpShape:v } }); });
+      if (t === 'versus') ['card', 'circle'].forEach(function(v){ if (state.vsShape !== v) out.push({ label:'Picture shape: ' + v, state:{ vsShape:v } }); });
+      if (t === 'collage' && !state.strip) out.push({ label:'Turn the strip on', state:{ strip:true } });
+    }
+    if (rule === 'dead') {
+      if (t === 'launch' && !state.dotGrid) out.push({ label:'Turn the dot grid on', state:{ dotGrid:true } });
+      if (t === 'collage' && !state.brush) out.push({ label:'Turn the brush bands on', state:{ brush:true } });
+      if (t === 'collage' && !state.strip) out.push({ label:'Turn the strip on', state:{ strip:true } });
+    }
+    // moved things can leave a gap anywhere
+    if (Object.keys(state.moves).some(function(k){ return k.indexOf(pre) === 0; }))
+      out.push({ label:'Reset positions', moves:function(m){ Object.keys(m).forEach(function(k){ if (k.indexOf(pre) === 0) delete m[k]; }); },
+                 after:function(){ selected = null; } });
+    return out;
+  }
+  function findFix(rule, q, p){
+    // trials and the baseline they're held to are measured at the same size
+    var s = scaleFor(p, 480), before = failing(measure(p, s)), list = candidates(rule, p);
+    // A fix may trade a failure for a less important one - a headline that
+    // reads matters more than a bare corner - but never adds failures.
+    var rank = { headline:0, pictures:1, dead:2 }, fallback = null;
+    for (var i = 0; i < list.length && i < 6; i++) {
+      var r = tryPatch(list[i], p, s), now = failing(r);
+      if (now.indexOf(rule) >= 0 || now.length > before.length) continue;
+      if (now.every(function(x){ return before.indexOf(x) >= 0; })) return list[i];
+      if (!fallback && now.every(function(x){ return before.indexOf(x) >= 0 || rank[x] > rank[rule]; })) fallback = list[i];
+    }
+    return fallback;
+  }
+  function runChecks(){
+    var p = current(), s = scaleFor(p, 640), q = measure(p, s), fails = failing(q);
+    checksEl.textContent = '';
+    if (!fails.length) { checksEl.appendChild(el('span', 'ok', 'Passes the quality bar at this size.')); return; }
+    fails.forEach(function(rule){
+      var row = el('div', 'check');
+      row.appendChild(el('span', 'what', RULES[rule].name));
+      row.appendChild(el('span', 'why', RULES[rule].why(q, p)));
+      var fix = findFix(rule, q, p);
+      if (fix) {
+        var b = el('button', 'btn btn-sm', fix.label); b.type = 'button';
+        b.addEventListener('click', function(){ applyPatch(fix); });
+        row.appendChild(b);
+      }
+      var also = Object.keys(sizeFails).filter(function(id){ return id !== p.id && sizeFails[id].indexOf(rule) >= 0; })
+        .map(function(id){ return presetById(id).short; });
+      if (also.length) row.appendChild(el('span', 'also', 'Also at ' + also.slice(0, 4).join(', ') + (also.length > 4 ? ' and ' + (also.length - 4) + ' more' : '') + '.'));
+      checksEl.appendChild(row);
+    });
+  }
+  // Every other size, one per idle moment, so a long pass never stalls typing.
+  function startAllChecks(){
+    allQueue = PRESETS.filter(function(p){ return p.id !== 'custom'; }).slice();
+    stepAllChecks();
+  }
+  function stepAllChecks(){
+    if (!allQueue.length) { markSizes(); return; }
+    var p = allQueue.shift();
+    sizeFails[p.id] = failing(measure(p, scaleFor(p, 480)));
+    (window.requestIdleCallback || function(f){ return setTimeout(f, 16); })(stepAllChecks);
+  }
+  function markSizes(){
+    tileInputs.forEach(function(inp){
+      var f = sizeFails[inp.value] || [], tile = inp.closest('.tile');
+      if (!tile) return;
+      tile.classList.toggle('warn', f.length > 0);
+      var base = tile.title.replace(/ - .*$/, '');
+      tile.title = f.length ? base + ' - ' + f.map(function(r){ return RULES[r].name.toLowerCase(); }).join(', ') : base;
+    });
+    runChecks();   // the "also at" lines now know the other sizes
+  }
+
   // The same file input the slot's Choose button opens, so a picture
   // chosen either way loads the same way.
   function pickFor(slot){

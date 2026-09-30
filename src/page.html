@@ -20,15 +20,36 @@
       </div>
       <p class="readout">
         <span class="what" id="what">YouTube thumbnail</span>
+        <button class="btn btn-sm" id="videoPick" type="button">From a video&hellip;</button>
         <span class="dims" id="dims">1280 &times; 720</span>
       </p>
+      <!-- The quality bar (docs/quality-bar.md), checked as you work. -->
+      <div class="checks" id="checks" role="status" aria-live="polite"></div>
+      <input type="file" id="videoFile" accept="video/*" hidden>
+      <!-- Frames picked out of a video, all on this device: nothing is uploaded. -->
+      <section class="frames" id="frames" aria-labelledby="framesTitle" hidden>
+        <div class="frameshead">
+          <h3 id="framesTitle">From your video</h3>
+          <button class="btn btn-sm framesclose" id="framesClose" type="button" aria-label="Close the frames">Close</button>
+        </div>
+        <div class="titlerow">
+          <label for="videoTitle">Video title</label>
+          <input type="text" id="videoTitle" autocomplete="off" placeholder="What is the video called?">
+          <button class="btn btn-sm" id="titleUse" type="button">Use as headline</button>
+        </div>
+        <p class="hint" id="framesStatus" role="status"></p>
+        <h4 class="subhead" id="ideasHead" hidden>Ideas</h4>
+        <div class="idearow" id="ideaRow"></div>
+        <h4 class="subhead" id="framesHead" hidden>Frames</h4>
+        <div class="framerow" id="frameRow"></div>
+      </section>
       <section class="feed" id="feed" aria-labelledby="feedTitle" hidden>
         <h3 id="feedTitle">At feed size</h3>
         <p class="hint">Shown at the size people scroll past it. If the words are hard to read here, make them fewer or bigger.</p>
         <div class="feedrow" id="feedRow"></div>
       </section>
       <div class="howto" id="howto">
-        <p>Drag anything to move it. Click a picture to replace it; double-click to adjust the photo inside.</p>
+        <p>Drop a video file to pick a frame from it. Drag anything to move it. Click a picture to replace it; double-click to adjust the photo inside.</p>
         <p>Paste with &#8984;V. With the preview focused, arrow keys nudge what is selected, [ and ] turn it, - and = resize it, Enter picks the main picture, Esc lets go.</p>
       </div>
     </div>

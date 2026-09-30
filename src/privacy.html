@@ -9,7 +9,9 @@
       HTML file served as a static page. When you choose a picture, the browser reads it
       off your own disk and draws it onto a canvas in the page. The finished thumbnail is
       produced by that same canvas and handed straight to your downloads folder. At no
-      point does the image travel anywhere.</p>
+      point does the image travel anywhere. The same goes for a video you start from:
+      the frames are picked by playing it inside the page, and the video itself is never
+      sent anywhere.</p>
       <p>There is no account, no sign-in, no cookie and no tracking pixel. The page does
       send a few anonymous counts, described below, and none of them carries your picture
       or anything you typed.</p>
@@ -67,6 +69,17 @@
       web font does. It carries nothing about your image or your text. If you would
       rather avoid it, the page still works with those requests blocked; the headline
       simply falls back to a system typeface.</p>
+      <p>Starting from a video, the first time only, loads Google's MediaPipe face
+      detector: its code from <code>cdn.jsdelivr.net</code>, about 12 MB, and a small
+      model file from this site. The detector runs in the page, on your device, and looks
+      at frames of your video there; the requests only fetch the detector and carry
+      nothing about the video. With them blocked, frames are still picked, just without
+      noticing faces.</p>
+      <p>Headline suggestions are worked out in the page from what you type. In
+      Chrome, <b>Ask Chrome's on-device AI</b> asks the language model built into
+      Chrome, which runs on your device: the title is handed to it inside the browser and
+      goes nowhere else. The first time, Chrome downloads that model itself; the button
+      is the only thing that starts it.</p>
       <p>A font file of your own is read in the browser, used in the open tab, and not
       sent anywhere.</p>
 

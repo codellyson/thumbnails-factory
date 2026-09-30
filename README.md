@@ -359,6 +359,26 @@ Your logo and colours are remembered in `localStorage` along with the text and
 the chosen size. A logo large enough to exceed the storage quota still works for
 the session, it just is not saved between visits.
 
+### What each colour does
+
+A palette is three colours, and each template gives them jobs. Under the palette
+a key names them for the template in use - in Before → After, for instance,
+**1** glow & BEFORE tag, **2** split, first half, **3** split, AFTER tag & accent
+words - and a custom palette's three pickers carry the same names. Pointing at
+a colour in the key, or at a picker, dims the preview except for what that
+colour paints: the template is drawn twice off screen with that colour swapped
+for two test colours, and the pixels that differ are shown, so the highlight is
+always true to the template rather than to a list. Where the Background panel's
+**Base colour** takes over a colour's job, a note under the key says so, and
+while a picture is still empty another note says its stand-in uses all three.
+
+| Template | Colour 1 | Colour 2 | Colour 3 |
+|---|---|---|---|
+| Collage | brush bands & accent words | not used | not used |
+| Talking point | bow-tie & key word, one end | bow-tie & key word, middle | bow-tie & key word, other end |
+| Before → After | background (unless Base colour is set), glow & BEFORE tag | split, first half | split, AFTER tag & accent words |
+| Launch | counter-light & accent words, start (and background with Base colour From colours) | accent words, middle | window, kicker, tag, light & accent words, end |
+
 ### Colours read from an image
 
 `paletteFromImage()` scales the source to 72x72, converts each pixel to HSL, and

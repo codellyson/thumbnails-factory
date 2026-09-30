@@ -75,11 +75,11 @@ function that reads `state`.
 Every picture a template uses is listed at the top of the panel, in the order the
 template shows it, and each gets the same controls: **Choose**, **Remove**, and a
 **Zoom** from 40% to 250% inside its own block. Below 100% the whole picture
-shows, with a blurred copy filling the room around it. Clicking a picture on the
-preview opens the file picker for it, and dropping a file on a picture replaces
-that picture. Double-clicking a picture that holds a photo switches to adjusting
-it: drags then move the photo inside its frame, until a click lands elsewhere or
-Esc is pressed. Where a template
+shows, with a blurred copy filling the room around it. Double-clicking a picture
+on the preview opens the file picker for it, and dropping a file on a picture
+replaces that picture. Alt (Option) works on the photo inside a picture rather
+than its frame: Alt-drag moves the photo in its frame, and Alt on a corner zooms
+it. Where a template
 offers a shape (Before → After: circle or card; Talking point: auto, circle or
 frame), **Picture shape** sits right under its pictures.
 
@@ -176,11 +176,13 @@ steps, and within 1.5° of straight it settles straight. `[` and `]` turn the
 selection a degree at a time (with Shift, 15°).
 
 On a picture, the outline is the picture's own frame - the slanted Collage
-panel, the card, the half - and its corner handles scale the photo inside the
-frame, the same setting as its Zoom slider (40% to 250%); the frame stays where
-it is, and `-` and `=` step the same zoom.
+panel, the card, the half. Its corner handles resize the frame like anything
+else, the photo scaling with it so its crop holds; with Alt (Option) they zoom
+the photo inside instead, the same setting as its Zoom slider (40% to 250%).
+Pictures fixed in the layout keep their frames, so there the corners, `-` and
+`=` zoom the photo.
 
-On anything else, the four corner handles resize it, evenly, holding the opposite corner still;
+Everywhere else, the four corner handles resize it, evenly, holding the opposite corner still;
 with Alt (Option) it resizes about its centre instead. `-` and `=` resize it
 about its centre, 5% a step (with Shift, 20%). Sizes run from 20% to 500%.
 Resizing scales the element as drawn: a resized headline keeps its breaks and
@@ -197,7 +199,7 @@ Pictures that make up a template's layout are fixed in place: Collage's three
 strip panels and its main photo, and Before → After's full-bleed halves on tall
 and square sizes. Moving one would break the layout, so a drag on it moves the
 photo inside instead, the arrow keys do the same, and it has no turn handle; its
-corners still zoom the photo, and a click still picks a file. Pictures that float
+corners still zoom the photo, and a double-click still picks a file. Pictures that float
 on the layout - Talking point's circle or frame, Before → After's cards, Launch's
 window - move, turn and zoom like everything else.
 
@@ -450,8 +452,8 @@ the target dimensions, so nothing else needs changing.
   so the shape tells you what you are about to make
 - Choose an image, drag one onto the canvas, or paste a screenshot with ⌘V
 - Drag anything on the preview to move it, its round handle to turn it, or a
-  corner to resize it;
-  double-click a picture to move the photo inside its frame. Positions are stored as fractions, so they survive a
+  corner to resize it; double-click a picture to change it, or a piece of text
+  to edit it in the panel; Alt-drag moves a photo inside its frame. Positions are stored as fractions, so they survive a
   switch between presets
 - Zoom adjusts the crop of each picture
 - Headline text, colours, your logo, the selected platform, and any custom size

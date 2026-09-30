@@ -789,7 +789,7 @@
         <div class="feedrow" id="feedRow"></div>
       </section>
       <div class="howto" id="howto">
-        <p>Drop a video file to pick a frame from it. Drag anything to move it. Click a picture to replace it; double-click to adjust the photo inside.</p>
+        <p>Drop a video file to pick a frame from it. Drag anything to move it; double-click a picture to change it, or text to edit it. Alt-drag moves a photo inside its frame.</p>
         <p>Paste with &#8984;V. With the preview focused, arrow keys nudge what is selected, [ and ] turn it, - and = resize it, Enter picks the main picture, Esc lets go.</p>
       </div>
     </div>
@@ -3144,7 +3144,7 @@
     return w;
   }
   function buildPictureHint(){
-    var p = hintEl('Click a picture on the preview to replace it; double-click to move the photo inside. Under 100% zoom shows it whole.');
+    var p = hintEl('Double-click a picture on the preview to change it. Alt-drag moves the photo inside its frame; Alt on a corner zooms it. Under 100% zoom shows it whole.');
     return p;
   }
   function buildTemplatePicker(){
@@ -3154,7 +3154,7 @@
     var hint = hintEl(''); hint.id = 'layoutHint'; f.appendChild(hint);
     // moving things is done on the preview; this only takes it back
     var row = el('div', 'moverow');
-    row.appendChild(hintEl('On the preview: drag to move, handle to turn, corners to resize - on a picture, to zoom the photo inside.'));
+    row.appendChild(hintEl('On the preview: drag to move, corners to resize, the handle to turn, double-click to change.'));
     var reset = el('button', 'btn btn-sm', 'Reset positions'); reset.id = 'movesReset'; reset.type = 'button'; reset.hidden = true;
     reset.addEventListener('click', function(){
       var p = current(), pre = state.layout + '.' + frameShape(p.w, p.h) + '.';
@@ -4239,16 +4239,18 @@
     return null;
   }
 
-  // ---- moving elements, and adjusting a photo inside its frame ----------
-  // A drag moves whatever it starts on. A double-click on a picture that
-  // holds a photo switches to adjusting the photo instead: drags then move
-  // the photo inside its frame until a click lands elsewhere or Esc is
-  // pressed. A click that doesn't move on a picture opens its file picker -
-  // after a moment, when the picture holds a photo, so a double-click can
-  // claim it first. Positions are fractions of the frame, so they survive a
-  // change of size. A full redraw costs ~22ms at 3000x3000 and pointermove
-  // fires faster than that, so redraws are coalesced to one per frame.
-  var drag = null, selected = null, adjusting = null, panRaf = 0, hoverRaf = 0, pickTimer = 0;
+  // ---- moving elements, and the photo inside a picture -------------------
+  // A click selects. A drag moves whatever it starts on, the corners resize
+  // it and the round handle turns it - a picture's frame included. Alt
+  // (Option) works on the photo inside a picture instead: Alt-drag moves the
+  // photo in its frame, Alt on a corner zooms it. Pictures that tile the
+  // layout are fixed, so there a plain drag or corner works on the photo.
+  // A double-click changes things: a picture's image through the file
+  // picker, a piece of text by jumping to its field in the panel.
+  // Positions are fractions of the frame, so they survive a change of size.
+  // A full redraw costs ~22ms at 3000x3000 and pointermove fires faster
+  // than that, so redraws are coalesced to one per frame.
+  var drag = null, selected = null, adjusting = null, panRaf = 0, hoverRaf = 0;
   function redrawSoon(){ if (!panRaf) panRaf = requestAnimationFrame(function(){ panRaf = 0; draw(); }); }
   function stopAdjusting(){
     if (!adjusting) return;
@@ -4389,17 +4391,19 @@
     // the current selection's handles come first
     var q = !adjusting && selGeom(), hd = q ? handleAt(q, canvasPoint(e)) : null;
     if (hd !== null) {
-      drag = hd === 'turn' ? startTurn(q, e, p) : q.L.slot ? startZoom(q, e) : startScale(q, hd, e, p);
+      drag = hd === 'turn' ? startTurn(q, e, p)
+           : (q.L.slot && (q.L.locked || e.altKey)) ? startZoom(q, e)   // the photo inside
+           : startScale(q, hd, e, p);                                 // the frame, or the piece
       cv.setPointerCapture(e.pointerId); cv.classList.add('dragging');
       return;
     }
     select(m);
-    if (m && m.L.locked) {
-      // a locked picture stays put: a drag moves its photo, a click picks a file
+    if (m && m.L.slot && (m.L.locked || e.altKey)) {
+      // the photo inside: a fixed picture's drag, or any picture's Alt-drag
       var hl = null;
       for (var i = 0; i < dropHits.length; i++) if (dropHits[i].slot === m.L.slot) hl = dropHits[i];
       if (hl) {
-        drag = startPan(m.L.slot, hl); drag.click = true;
+        drag = startPan(m.L.slot, hl);
         cv.setPointerCapture(e.pointerId); cv.classList.add('dragging');
       }
       draw();
@@ -4424,7 +4428,7 @@
         // a corner's resize cursor follows the diagonal it sits on, as turned
         var diag = hd !== null && hd !== 'turn' && ((((hd % 2) ? -45 : 45) + q.ang*180/Math.PI) % 180 + 180) % 180;
         cv.style.cursor = hd === 'turn' ? 'alias' : hd !== null ? (diag < 90 ? 'nwse-resize' : 'nesw-resize')
-          : (h && h.slot === adjusting) ? 'grab' : (lm = layerAt(ev)) ? (lm.L.locked ? 'grab' : 'move') : 'default';
+          : (h && h.slot === adjusting) ? 'grab' : (lm = layerAt(ev)) ? ((lm.L.locked || (ev.altKey && lm.L.slot)) ? 'grab' : 'move') : 'default';
       });
       return;
     }
@@ -4472,21 +4476,22 @@
       if (panRaf) { cancelAnimationFrame(panRaf); panRaf = 0; }
       if (d.moved && d.mode !== 'pan') { persist(); syncControls(); }
       draw();   // land on the exact final position
-      // a click that didn't move on a picture opens its file picker
-      if (evName === 'pointerup' && !d.moved && (d.mode === 'move' || d.click) && d.slot) {
-        clearTimeout(pickTimer);
-        if (!SLOTS[d.slot].has()) pickFor(d.slot);
-        else pickTimer = setTimeout(function(){ pickFor(d.slot); }, 300);
-      }
     });
   });
+  // Double-click to change: a picture's image, or a piece of text in its
+  // field - its folded panel opened, the field scrolled into view in the
+  // panel (not the page) and its text selected.
+  var TEXT_FIELDS = { headline:'line1', tag:'badge', sticker:'sticker', kicker:'kick1', 'label.before':'beforeLabel', 'label.after':'afterLabel' };
   cv.addEventListener('dblclick', function(e){
-    var m = layerAt(e);
-    if (!m || !m.L.slot || !SLOTS[m.L.slot].has()) return;
-    clearTimeout(pickTimer);
-    adjusting = m.L.slot; select(m);
-    setStatus('Adjusting the photo: drag it inside its frame, or use Zoom. Click outside or press Esc when done.');
-    draw();
+    var m = layerAt(e); if (!m) return;
+    e.preventDefault();
+    if (m.L.slot) { pickFor(m.L.slot); return; }
+    var inp = TEXT_FIELDS[m.L.el] && document.getElementById(TEXT_FIELDS[m.L.el]);
+    if (!inp) return;
+    var d = inp.closest('details'); if (d && !d.open) d.open = true;
+    var bench = inp.closest('.bench');
+    if (bench) bench.scrollTop += inp.getBoundingClientRect().top - bench.getBoundingClientRect().top - 80;
+    inp.focus({ preventScroll:true }); if (inp.select) inp.select();
   });
 
   // The keyboard path for all of it. Arrows nudge the selected element, or
@@ -4510,7 +4515,7 @@
       e.preventDefault();
       var q2 = selGeom(), pp2 = current(); if (!q2) return;
       var f2 = e.shiftKey ? 1.2 : 1.05, grow = !(e.key === '-' || e.key === '_');
-      if (q2.L.slot) {
+      if (q2.L.slot && q2.L.locked) {
         handFramed(q2.L.slot);
         var zk = FRAMING[q2.L.slot].zoom;
         state[zk] = Math.round(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, grow ? state[zk] * f2 : state[zk] / f2)) * 100) / 100;

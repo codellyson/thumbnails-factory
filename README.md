@@ -265,6 +265,11 @@ it shows, filling the room around it with a blurred copy of the same picture.
 
 **Launch** sets a big two-line headline, with an arrow after the first line, beside
 the screenshot in a window framed in the accent. It adds an outlined project tag, a sticker in the window's title bar, and a dot-grid backdrop.
+The backdrop is lit rather than flat, to rule 4 of the quality bar: the window
+casts a wide glow in the accent, centred on the window wherever it is moved; a
+counter-light in the palette's first colour rises from the far corner; the edges
+fall into a vignette; and the dot grid sits on top. Lights take the palette's
+colour made vivid where it has one, and stay white where it is white.
 
 **Before → After** is built to the quality bar in `docs/quality-bar.md`. Wide sizes
 set two big pictures - circles or cards - on a textured field in the palette's

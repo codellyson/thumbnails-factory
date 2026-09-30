@@ -854,7 +854,9 @@
       c.fillStyle = base; c.fillRect(0, 0, W, H);
       var R = Math.max(W, H);
       var lit = c.createRadialGradient(W*0.5, -H*0.1, 0, W*0.5, -H*0.1, R*0.9);
-      lit.addColorStop(0, deepShade(st[0], 0.42)); lit.addColorStop(1, 'rgba(0,0,0,0)');
+      // the glow in colour 1's own hue, not only a deep shade of it
+      var n0 = parseInt(st[0].slice(1), 16);
+      lit.addColorStop(0, 'rgba(' + (n0>>16&255) + ',' + (n0>>8&255) + ',' + (n0&255) + ',.55)'); lit.addColorStop(1, 'rgba(0,0,0,0)');
       c.fillStyle = lit; c.fillRect(0, 0, W, H);
       // marbling: long soft curves, drawn wide and faint
       c.save();
@@ -935,7 +937,7 @@
     return { x:x, y:y, w:w, h:h };
   }
 
-  // A small label centred on a picture's top edge: dark for before, the
+  // A small label centred on a picture's top edge: colour 1 for before, the
   // accent for after, set straight so it reads at feed size.
   function drawLabel(c, text, cx, edgeY, h, after, st, fromLeft){
     text = text.trim().toUpperCase(); if (!text) return;
@@ -943,9 +945,10 @@
     var w = c.measureText(text).width + h*0.9, x = fromLeft ? cx : cx - w/2, y = fromLeft ? edgeY : edgeY - h*0.55;
     c.save();
     c.shadowColor = 'rgba(0,0,0,.4)'; c.shadowBlur = h*0.4; c.shadowOffsetY = h*0.1;
-    roundRect(c, x, y, w, h, h*0.22); c.fillStyle = after ? st[2] : '#16151a'; c.fill();
+    // before wears colour 1, after colour 3
+    roundRect(c, x, y, w, h, h*0.22); c.fillStyle = after ? st[2] : st[0]; c.fill();
     c.restore();
-    c.fillStyle = after ? inkOn(st[2]) : '#ffffff'; c.textBaseline = 'middle';
+    c.fillStyle = inkOn(after ? st[2] : st[0]); c.textBaseline = 'middle';
     c.fillText(text, x + h*0.45, y + h*0.55);
     c.textBaseline = 'alphabetic'; looseFont(c);
   }
@@ -1532,7 +1535,7 @@
     paperGrain(c, W, H, k, paper);
     var ink = contrast(state.line1Color, paper) >= 3 ? state.line1Color : '#2a292e';
     var tall = (W/H) < 0.85, square = !tall && (W/H) < 1.2;
-    var g0 = deepShade(st[0], 0.46), g1 = deepShade(st[2], 0.5);
+    var g0 = deepShade(st[0], 0.46), gm = deepShade(st[1], 0.48), g1 = deepShade(st[2], 0.5);
 
     // The photo is a circle for a photo and a frame in its own proportions
     // for a screenshot, so a wide picture is shown whole rather than cropped
@@ -1573,7 +1576,7 @@
 
     // the bow-tie behind it, pointing at the circle's centre
     var grad = c.createLinearGradient(cx - d/2, 0, cx + d/2, H);
-    grad.addColorStop(0, g0); grad.addColorStop(1, g1);
+    grad.addColorStop(0, g0); grad.addColorStop(0.5, gm); grad.addColorStop(1, g1);
     c.fillStyle = grad;
     var bw = d*0.62;
     c.beginPath();
@@ -1715,7 +1718,7 @@
         tightFont(c, apx); var aw = c.measureText(accent).width; looseFont(c);
         var ax = tb.x0 + Math.min(best.capM*0.8, Math.max(0, colW - aw));
         var ag = c.createLinearGradient(ax, 0, ax + aw, 0);
-        ag.addColorStop(0, g0); ag.addColorStop(1, g1);
+        ag.addColorStop(0, g0); ag.addColorStop(0.5, gm); ag.addColorStop(1, g1);
         slant(c, accent, ax + best.capA*0.2, y + best.h, apx, ag);
       }
     });
@@ -1758,6 +1761,28 @@
     { id:'launch', name:'Launch', hint:'A big two-line headline with an arrow, and the screenshot in a framed window.',
       labels:{}, draw:drawLaunch }
   ];
+  // What each of the palette's three colours does in each template - shown
+  // under the palette, and under the three pickers of a custom palette. It
+  // depends on the base colour where that setting takes over colour 1.
+  var COLOUR_ROLES = {
+    collage: function(){ return ['Brush bands & accent words', 'Not used by Collage', 'Not used by Collage']; },
+    talking: function(){ return ['Bow-tie & key word, one end', 'Bow-tie & key word, middle', 'Bow-tie & key word, other end']; },
+    versus:  function(){ return [(state.tone === 'custom' ? 'Glow & BEFORE tag' : 'Background, glow & BEFORE tag'),
+                                 'Split, first half', 'Split, AFTER tag & accent words']; },
+    launch:  function(){ return ['Counter-light & accent words, start' + (state.tone === 'palette' ? ', background' : ''),
+                                 'Accent words, middle', 'Window, kicker, tag, light & accent words, end']; }
+  };
+  function colourRoles(){ return (COLOUR_ROLES[state.layout] || COLOUR_ROLES.launch)(); }
+  // Where the Background panel's base colour takes a colour's job, say so.
+  function colourNote(){
+    var notes = [];
+    if (state.layout === 'versus' && state.tone === 'custom') notes.push('Base colour (under Background) is set, so colour 1 no longer sets the background.');
+    if (state.layout === 'launch' && state.tone === 'palette') notes.push('Base colour is From colours, so colour 1 also sets the background.');
+    // a picture still empty shows a stand-in painted in all three
+    var empty = dropHits.some(function(h){ return SLOTS[h.slot] && !SLOTS[h.slot].has(); });
+    if (empty) notes.push('Empty pictures use all three colours until a photo goes in.');
+    return notes.join(' ');
+  }
   function templateById(id){
     for (var i = 0; i < TEMPLATES.length; i++) if (TEMPLATES[i].id === id) return TEMPLATES[i];
     return TEMPLATES[0];
@@ -1851,12 +1876,14 @@
         });
       }
     }
-    // a selection belongs to one template at one size
+    // a selection, and a colour's highlight, belong to one template at one size
     var scene = state.layout + '|' + p.w + 'x' + p.h;
-    if (scene !== lastScene) { selected = null; stopAdjusting(); lastScene = scene; }
+    if (scene !== lastScene) { selected = null; stopAdjusting(); probe = null; lastScene = scene; }
     render(ctx, p, { guides: state.safe, preview: true });
     if (!reframing) { reframing = true; keepFaceFraming(); reframing = false; }
     drawSelection();
+    if (probe) drawProbe();
+    if (typeof updateRoles === 'function' && stopRoleEls) updateRoles();
     var pre = state.layout + '.' + frameShape(p.w, p.h) + '.', resetBtn = document.getElementById('movesReset');
     if (resetBtn) resetBtn.hidden = !Object.keys(state.moves).some(function(key){ return key.indexOf(pre) === 0; });
     if (ideas && ideas.length) redrawIdeas();   // undefined until the video part of the script has run
@@ -2309,9 +2336,11 @@
   function buildPaletteSlot(){
     var w = el('div');
     var pals = el('div', 'palettes'); pals.id = 'palettes';
-    pals.setAttribute('role', 'radiogroup'); pals.setAttribute('aria-label', 'Bottom line colour');
+    pals.setAttribute('role', 'radiogroup'); pals.setAttribute('aria-label', 'Colours');
     var stops = el('div', 'stops'); stops.id = 'stops'; stops.hidden = true;
-    w.appendChild(pals); w.appendChild(stops);
+    // what each colour does in this template; hover one to see it on the preview
+    var roles = el('div', 'roles'); roles.id = 'colourRoles';
+    w.appendChild(pals); w.appendChild(stops); w.appendChild(roles);
     return w;
   }
   function buildFontUpload(){
@@ -2363,15 +2392,38 @@
     wrap.appendChild(input); wrap.appendChild(chip);
     palettesEl.appendChild(wrap);
   });
+  var stopRoleEls = [];
   state.customStops.forEach(function(hex, i){
+    var lab = document.createElement('label'); lab.className = 'stop';
     var inp = document.createElement('input');
     inp.type = 'color'; inp.value = hex;
-    inp.setAttribute('aria-label', ['First','Middle','Last'][i] + ' colour');
     inp.addEventListener('input', function(){
       state.customStops[i] = inp.value; syncPalette(); persist(); draw();
     });
-    stopInputs.push(inp); stopsEl.appendChild(inp);
+    var role = document.createElement('span'); role.className = 'stoprole';
+    lab.appendChild(inp); lab.appendChild(role);
+    probeOn(lab, i); probeOn(inp, i);
+    stopInputs.push(inp); stopRoleEls.push(role); stopsEl.appendChild(lab);
   });
+  // A key under the palette: the three colours and what each does here.
+  var rolesEl = document.getElementById('colourRoles'), roleKey = '';
+  function updateRoles(){
+    var roles = colourRoles(), note = colourNote(), st = activeStops(), key = roles.join('|') + st.join('|') + note;
+    if (key === roleKey) return;
+    roleKey = key;
+    rolesEl.textContent = '';
+    roles.forEach(function(r, i){
+      var item = document.createElement('span'); item.className = 'role' + (/^Not used/.test(r) ? ' unused' : '');
+      item.tabIndex = 0;
+      var dot = document.createElement('i'); dot.style.background = st[i];
+      item.appendChild(dot); item.appendChild(document.createTextNode((i + 1) + '  ' + r));
+      probeOn(item, i);
+      rolesEl.appendChild(item);
+      stopRoleEls[i].textContent = r;
+      stopInputs[i].setAttribute('aria-label', 'Colour ' + (i + 1) + ': ' + r);
+    });
+    if (note) rolesEl.appendChild(el('p', 'hint rolenote', note));
+  }
   function syncPalette(){
     var custom = (state.palette === 'custom');
     stopsEl.hidden = !custom;
@@ -2380,6 +2432,53 @@
       chip.textContent = custom ? '' : '+';
       chip.style.background = custom ? cssGradient(state.customStops) : '';
     }
+  }
+
+  // ---- showing what a colour drives -------------------------------------
+  // Hovering or focusing a colour's key or picker highlights, on the
+  // preview, everything that colour paints. The template is drawn twice off
+  // screen with that one colour swapped for two test colours; the pixels
+  // that differ are what it drives, whatever the template does with it. The
+  // rest of the preview is dimmed while the pointer stays.
+  var probe = null;   // { i, mask } while a colour is pointed at
+  function probeOn(elm, i){
+    elm.addEventListener('pointerenter', function(){ showProbe(i); });
+    elm.addEventListener('pointerleave', function(){ if (document.activeElement !== elm) clearProbe(); });
+    elm.addEventListener('focus', function(){ showProbe(i); });
+    elm.addEventListener('blur', clearProbe);
+  }
+  function probeRender(i, hex, p){
+    var st = activeStops().slice(); st[i] = hex;
+    var keepPal = state.palette, keepStops = state.customStops, keepShown = JSON.stringify(shown);
+    var oc = document.createElement('canvas'); oc.width = p.w; oc.height = p.h;
+    var c = oc.getContext('2d', { willReadFrequently:true });
+    try { state.palette = 'custom'; state.customStops = st; render(c, p, { guides:false }); }
+    finally { state.palette = keepPal; state.customStops = keepStops; shown = JSON.parse(keepShown); }
+    return c.getImageData(0, 0, p.w, p.h).data;
+  }
+  function showProbe(i){
+    var p = current(), s = Math.min(1, 480 / Math.max(p.w, p.h));
+    var small = { id:p.id, w:Math.round(p.w*s), h:Math.round(p.h*s), safe:p.safe, play:p.play };
+    var a = probeRender(i, '#ff00ff', small), b = probeRender(i, '#00ff00', small);
+    var m = document.createElement('canvas'); m.width = small.w; m.height = small.h;
+    var mc = m.getContext('2d'), img = mc.createImageData(small.w, small.h), n = 0;
+    for (var j = 0; j < a.length; j += 4) {
+      if (Math.abs(a[j] - b[j]) + Math.abs(a[j+1] - b[j+1]) + Math.abs(a[j+2] - b[j+2]) > 24) { img.data[j+3] = 255; n++; }
+    }
+    mc.putImageData(img, 0, 0);
+    probe = { i:i, mask:m, empty:n === 0 };
+    draw();
+  }
+  function clearProbe(){ if (probe) { probe = null; draw(); } }
+  // the veil: the preview dimmed except where the colour reaches
+  function drawProbe(){
+    if (!probe) return;
+    var W = cv.width, H = cv.height, v = document.createElement('canvas'); v.width = W; v.height = H;
+    var vc = v.getContext('2d');
+    vc.fillStyle = 'rgba(20,18,16,.72)'; vc.fillRect(0, 0, W, H);
+    vc.globalCompositeOperation = 'destination-out';
+    vc.imageSmoothingEnabled = true; vc.drawImage(probe.mask, 0, 0, W, H);
+    ctx.drawImage(v, 0, 0);
   }
 
   // A swatch per uploaded asset, showing the colours read out of it.

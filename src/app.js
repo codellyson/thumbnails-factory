@@ -223,7 +223,7 @@
       options:[['circle','Circle'], ['card','Card']] },
     { key:'tpShape', type:'choice', for:['talking'], label:'Picture shape', def:'auto',
       options:[['auto','Auto'], ['circle','Circle'], ['frame','Frame']],
-      hint:'Auto uses a circle for a photo and a frame in the picture\u2019s own shape for a screenshot, so none of it is cropped away.' },
+      hint:'Auto: circle for a photo, uncropped frame for a screenshot.' },
     { id:'pictureHint', type:'custom', build:buildPictureHint },
     { key:'line1', type:'text', label:{ _:'Top line', versus:'Headline', collage:'Headline', talking:'Headline' }, def:'TYPE YOUR', maxlength:32,
       pair:{ key:'line1Color', aria:'Headline colour' } },
@@ -234,12 +234,12 @@
 
     // Launch's own label above its headline
     { key:'badge', type:'text', group:'Project tag', for:['launch'], label:'Text', def:'', maxlength:32,
-      placeholder:'JUSTDB', hint:'An outlined label above the headline. Leave it empty for none.' },
+      placeholder:'JUSTDB', hint:'Outlined label above the headline. Empty for none.' },
     { key:'pillSize', type:'range', group:'Project tag', for:['launch'], label:'Size', min:70, max:160, unit:'%', def:1 },
 
     { key:'kick1', type:'text', group:'Kicker', for:['launch'], label:'First line', def:'YOUR CHANNEL', maxlength:32, placeholder:'YOUR CHANNEL' },
     { key:'kick2', type:'text', group:'Kicker', for:['launch'], label:'Accent line', def:'EPISODE 01', maxlength:24, placeholder:'EPISODE 01',
-      hint:'Two short lines in a corner bracket. Leave both empty to show the logo instead.' },
+      hint:'Two lines in a corner bracket. Empty shows the logo.' },
 
     // Collage: the strip of three pictures between the words and the photo
     { key:'strip', type:'toggle', group:'Strip', for:['collage'], label:'Strip of three pictures', def:true },
@@ -247,21 +247,21 @@
     { key:'headFont', type:'font', group:'Text', label:'Headline font', def:'auto', list:function(){ return HEAD_FONTS; },
       change:function(){ ensureFont(headFace()); } },
     { key:'headScale', type:'range', group:'Text', label:'Headline size', min:60, max:140, unit:'%', def:1,
-      hint:'The headline still shrinks to fit its space; this sets how big it starts.' },
+      hint:'Starting size; the headline still shrinks to fit.' },
     { key:'monoFont', type:'font', group:'Text', for:['launch'], label:'Kicker and labels font', def:'jetbrains',
       list:function(){ return MONO_FONTS; }, change:function(){ ensureFont(monoFace()); } },
     { id:'fontUpload', type:'custom', group:'Text', build:buildFontUpload },
 
     { key:'winTitle', type:'text', group:'Window', for:['launch'], label:'Title', def:'', maxlength:40, placeholder:'index.html' },
     { key:'sticker', type:'text', group:'Window', for:['launch'], label:'Sticker', def:'', maxlength:28,
-      placeholder:'IT BROKE. I LEFT IT IN.', hint:'A label in the title bar. It takes the title’s place.',
+      placeholder:'IT BROKE. I LEFT IT IN.', hint:'Replaces the title in the title bar.',
       pair:{ key:'stickerColor', aria:'Sticker colour' } },
     { key:'stickerColor', type:'color', def:'#ff5b3a', paired:true },
     { key:'launchTilt', type:'range', group:'Window', for:['launch'], label:'Tilt', min:-12, max:12, unit:'°', def:-2 },
 
     { key:'tone', type:'choice', group:'Background', for:['launch', 'versus'], label:'Base colour', def:'neutral',
       options:[['neutral','Neutral'], ['palette','From colours'], ['custom','Custom']],
-      hint:'The dark behind everything. From colours takes a deep shade of the palette.' },
+      hint:'Dark behind everything. From colours uses a deep palette shade.' },
     { key:'toneColor', type:'color', group:'Background', for:['launch', 'versus'], when:function(){ return state.tone === 'custom'; },
       label:'Colour', def:'#18171d' },
     { key:'dotGrid', type:'toggle', group:'Background', for:['launch'], label:'Dot grid', def:true },
@@ -282,7 +282,7 @@
     { key:'arrow', type:'toggle', group:'Details', for:['versus'], label:'Curved arrow from one to the other', def:true },
     { key:'backdrop', type:'image', slot:'backdrop', persist:false, group:'Background', for:['versus'], label:'Background picture',
       button:'Choose background picture', reset:'Remove', id:'vsBackdrop',
-      hint:'Replaces the textured field, darkened so the pictures stay in front.' },
+      hint:'Replaces the texture, darkened to keep pictures in front.' },
 
     { id:'logoSlot', type:'custom', group:'Logo', build:buildLogoSlot },
     { key:'logo', type:'toggle', group:'Logo', label:'Show it on the thumbnail', def:true, persist:false },
@@ -1752,13 +1752,13 @@
   }
 
   var TEMPLATES = [
-    { id:'collage', name:'Collage', hint:'A stacked headline on paper, a leaning strip of three pictures, and one big photo to the edge.',
+    { id:'collage', name:'Collage', hint:'Stacked headline, a strip of three pictures, one big photo.',
       labels:{}, font:'league-gothic', draw:drawCollage },
-    { id:'talking', name:'Talking point', hint:'A stacked headline with one big key word, an arrow at the words, and a circular photo over a bow-tie of colour.',
+    { id:'talking', name:'Talking point', hint:'Stacked headline with a key word, an arrow, a circular photo.',
       labels:{}, font:'anton', draw:drawTalking },
-    { id:'versus', name:'Before → After', hint:'Two big pictures, a slash and an arrow between them, and one loud headline across the bottom.',
+    { id:'versus', name:'Before → After', hint:'Two pictures, an arrow between, a loud headline below.',
       labels:{}, font:'anton', draw:drawVersus },
-    { id:'launch', name:'Launch', hint:'A big two-line headline with an arrow, and the screenshot in a framed window.',
+    { id:'launch', name:'Launch', hint:'Two-line headline, an arrow, a screenshot in a window.',
       labels:{}, draw:drawLaunch }
   ];
   // What each of the palette's three colours does in each template - shown
@@ -1780,7 +1780,7 @@
     if (state.layout === 'launch' && state.tone === 'palette') notes.push('Base colour is From colours, so colour 1 also sets the background.');
     // a picture still empty shows a stand-in painted in all three
     var empty = dropHits.some(function(h){ return SLOTS[h.slot] && !SLOTS[h.slot].has(); });
-    if (empty) notes.push('Empty pictures use all three colours until a photo goes in.');
+    if (empty) notes.push('Empty pictures show all three colours.');
     return notes.join(' ');
   }
   function templateById(id){
@@ -2313,7 +2313,8 @@
     return w;
   }
   function buildPictureHint(){
-    var p = hintEl('Double-click a picture on the preview to change it. Alt-drag moves the photo inside its frame; Alt on a corner zooms it. Under 100% zoom shows it whole.');
+    var p = hintEl('Alt-drag pans a photo in its frame; Alt on a corner zooms it.');
+    p.classList.add('pichint');
     return p;
   }
   function buildTemplatePicker(){
@@ -2323,7 +2324,7 @@
     var hint = hintEl(''); hint.id = 'layoutHint'; f.appendChild(hint);
     // moving things is done on the preview; this only takes it back
     var row = el('div', 'moverow');
-    row.appendChild(hintEl('On the preview: drag to move, corners to resize, the handle to turn, double-click to change.'));
+    row.appendChild(hintEl('Drag, turn, resize; double-click to change.'));
     var reset = el('button', 'btn btn-sm', 'Reset positions'); reset.id = 'movesReset'; reset.type = 'button'; reset.hidden = true;
     reset.addEventListener('click', function(){
       var p = current(), pre = state.layout + '.' + frameShape(p.w, p.h) + '.';
@@ -2349,7 +2350,7 @@
     var b = el('button', 'btn btn-sm', 'Use your own font file'); b.id = 'fontPick';
     var f = el('input'); f.type = 'file'; f.id = 'fontFile'; f.hidden = true; f.accept = '.ttf,.otf,.woff,.woff2,font/*';
     btns.appendChild(b); w.appendChild(btns); w.appendChild(f);
-    w.appendChild(hintEl('Stock fonts load from Google Fonts when you pick them. Your own file stays in this tab and is gone when you close it.'));
+    w.appendChild(hintEl('Stock fonts load from Google Fonts. Your own file stays in this tab.'));
     return w;
   }
   function buildLogoSlot(){
@@ -2419,7 +2420,7 @@
       item.appendChild(dot); item.appendChild(document.createTextNode((i + 1) + '  ' + r));
       probeOn(item, i);
       rolesEl.appendChild(item);
-      stopRoleEls[i].textContent = r;
+      stopRoleEls[i].textContent = String(i + 1);   // the key below names it
       stopInputs[i].setAttribute('aria-label', 'Colour ' + (i + 1) + ': ' + r);
     });
     if (note) rolesEl.appendChild(el('p', 'hint rolenote', note));
@@ -2914,7 +2915,7 @@
   });
   function showTakes(){
     var src = sourceText();
-    headHint.textContent = src ? 'From ' + (!framesEl.hidden && titleEl.value.trim() ? 'the video title' : 'your headline') + ', sorted by how big they set here.' : '';
+    headHint.textContent = src ? 'From ' + (!framesEl.hidden && titleEl.value.trim() ? 'the video title' : 'your headline') + ', biggest first.' : '';
     var list = takes(src).concat(aiTakes);
     list.forEach(function(t){ t.cap = loudness(t); });
     list.sort(function(a, b){ return b.cap - a.cap; });

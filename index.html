@@ -3657,7 +3657,7 @@
   // Laplacian, which motion blur flattens), exposure and contrast. It offers
   // the six best that differ from each other, in time order. A frame is
   // grabbed again at the video's full size only when it is used: a click
-  // puts it in the main picture, a drag onto the preview puts it in the
+  // puts it in the selected picture (the main one if none), a drag onto the preview puts it in the
   // picture it lands on.
   var framesEl = document.getElementById('frames'), frameRow = document.getElementById('frameRow');
   var framesStatus = document.getElementById('framesStatus'), titleEl = document.getElementById('videoTitle');
@@ -4124,7 +4124,7 @@
     b.setAttribute('aria-label', 'Use the frame at ' + clock(r.t));
     var im = el('img'); im.src = r.thumb; im.alt = ''; b.appendChild(im);
     b.appendChild(el('span', null, clock(r.t)));
-    b.addEventListener('click', function(){ useFrame(r.t, 'main', b); });
+    b.addEventListener('click', function(){ useFrame(r.t, selectedSlot(), b); });
     b.addEventListener('dragstart', function(e){
       e.dataTransfer.setData('application/x-tf-frame', String(r.t));
       e.dataTransfer.effectAllowed = 'copy';
@@ -4420,6 +4420,12 @@
       });
     }
     ctx.restore();
+  }
+  // The picture a click on the preview selected, for a frame tile to fill;
+  // the main one when none is.
+  function selectedSlot(){
+    var slot = selected && /^pic\./.test(selected.el) ? selected.el.slice(4) : 'main';
+    return dropHits.some(function(h){ return h.slot === slot; }) ? slot : 'main';
   }
   function select(m){
     selected = m ? { el:m.L.el, box:m.box } : null;

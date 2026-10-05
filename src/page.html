@@ -18,6 +18,14 @@
                 aria-label="Thumbnail preview" aria-describedby="howto"></canvas>
         <div class="drop-hint">Drop the image here</div>
       </div>
+      <!-- The selected element's own actions; only while one is selected. -->
+      <div class="elbar" id="elbar" hidden>
+        <span class="elname" id="elName"></span>
+        <span class="elbtns">
+          <button class="btn btn-sm" id="stackDown" type="button">Send back</button>
+          <button class="btn btn-sm" id="stackUp" type="button">Bring forward</button>
+        </span>
+      </div>
       <p class="readout">
         <span class="what" id="what">YouTube thumbnail</span>
         <button class="btn btn-sm" id="videoPick" type="button">From a video&hellip;</button>

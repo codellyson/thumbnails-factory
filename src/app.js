@@ -4037,6 +4037,30 @@
     v[0] += ddx / W; v[1] += ddy / H;
   }
 
+  // Shift + scroll over a picture zooms the picture inside its frame; the
+  // frame stays put. (With Shift held, some systems turn the wheel sideways.)
+  var wheelSave = 0;
+  cv.addEventListener('wheel', function(e){
+    if (!e.shiftKey) return;
+    var m = layerAt(e); if (!m) return;
+    var x = extraOf(m.L.el), slot = m.L.slot;
+    if (!(x && x.type === 'image') && !slot) return;
+    e.preventDefault();
+    var delta = e.deltaY || e.deltaX, f = Math.exp(-delta * 0.0015);
+    if (x && x.type === 'image') {
+      x.zoom = Math.round(Math.max(1, Math.min(ZOOM_MAX, (x.zoom || 1) * f)) * 100) / 100;
+      var zr = document.getElementById('extraZoom');
+      if (zr && extraOf(selected && selected.el) === x) { zr.value = Math.round(x.zoom*100); zr.dispatchEvent(new Event('sync')); }
+    } else {
+      var key = FRAMING[slot].zoom;
+      handFramed(slot);
+      state[key] = Math.round(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state[key] * f)) * 100) / 100;
+      syncControls();
+    }
+    redrawSoon();
+    clearTimeout(wheelSave); wheelSave = setTimeout(persist, 300);
+  }, { passive:false });
+
   cv.addEventListener('pointerdown', function(e){
     draw();   // refresh shown, dropHits and layers: an export may have drawn at another size since
     var m = layerAt(e), p = current(), rect = cv.getBoundingClientRect();

@@ -187,9 +187,12 @@
   //   type      text, color, range, choice, toggle, font, image or custom
   //   label     a string, or { _:default, <template>:override }
   //   def       the default value; its type is the type a saved value must have
-  //   group     the folding panel it sits in; none means the top of the panel,
+  //   group     the titled section it sits in; none means the top of the panel,
   //             'toggles' means the checkbox list under the panels
   //   for       the templates it belongs to; absent means every template
+  //   on        the element(s) on the preview it edits: selecting one narrows
+  //             the panel to its controls; absent (or 'page') shows it while
+  //             nothing is selected
   //   when      a further condition, e.g. the phone's parts need a phone
   //   row       controls sharing a row name sit side by side
   //   pair      a colour picker to set beside a text field
@@ -201,63 +204,71 @@
   var CONTROLS = [
     { key:'layout', type:'custom', label:'Template', def:'collage', build:buildTemplatePicker,
       change:function(){ ensureFont(headFace()); } },
+    { id:'elements', type:'custom', build:buildElementList },
     // Pictures. Every picture a template uses gets the same four things, in
     // the same place: Choose, Remove, Zoom (40-250%), and a drag on the
     // preview to move it. The template's shape choice, where it has one,
     // sits right under them.
-    { key:'main', type:'image', slot:'main', persist:false, button:'Choose', reset:'Remove',
+    { key:'main', type:'image', on:'pic.main', slot:'main', persist:false, button:'Choose', reset:'Remove',
       label:{ _:'Picture', launch:'Window picture', versus:'After picture', collage:'Main photo', talking:'Photo' },
       ids:{ pick:'pick', file:'file' } },
-    { key:'zoom', type:'range', join:true, label:'Zoom', min:40, max:250, unit:'%', def:1, persist:false },
-    { key:'second', type:'image', slot:'second', persist:false, for:['versus', 'collage'], when:secondInUse,
-      label:{ _:'Picture', versus:'Before picture', collage:'Strip, top' }, button:'Choose', reset:'Remove' },
-    { key:'phoneZoom', type:'range', join:true, label:'Zoom', min:40, max:250, unit:'%', def:1, persist:false,
-      for:['versus', 'collage'], when:secondInUse },
-    { key:'third', type:'image', slot:'third', persist:false, for:['collage'], when:hasStrip,
+    { key:'zoom', type:'range', on:'pic.main', join:true, label:'Zoom', min:40, max:250, unit:'%', def:1, persist:false },
+    { key:'second', type:'image', on:'pic.second', slot:'second', persist:false, for:['versus', 'collage', 'talking'], when:secondInUse,
+      label:{ _:'Picture', versus:'Before picture', collage:'Strip, top', talking:'Screenshot' }, button:'Choose', reset:'Remove' },
+    { key:'phoneZoom', type:'range', on:'pic.second', join:true, label:'Zoom', min:40, max:250, unit:'%', def:1, persist:false,
+      for:['versus', 'collage', 'talking'], when:secondInUse },
+    { key:'third', type:'image', on:'pic.third', slot:'third', persist:false, for:['collage'], when:hasStrip,
       label:'Strip, middle', button:'Choose', reset:'Remove' },
-    { key:'zoom3', type:'range', join:true, label:'Zoom', min:40, max:250, unit:'%', def:1, persist:false, for:['collage'], when:hasStrip },
-    { key:'fourth', type:'image', slot:'fourth', persist:false, for:['collage'], when:hasStrip,
+    { key:'zoom3', type:'range', on:'pic.third', join:true, label:'Zoom', min:40, max:250, unit:'%', def:1, persist:false, for:['collage'], when:hasStrip },
+    { key:'fourth', type:'image', on:'pic.fourth', slot:'fourth', persist:false, for:['collage'], when:hasStrip,
       label:'Strip, bottom', button:'Choose', reset:'Remove' },
-    { key:'zoom4', type:'range', join:true, label:'Zoom', min:40, max:250, unit:'%', def:1, persist:false, for:['collage'], when:hasStrip },
-    { key:'vsShape', type:'choice', for:['versus'], label:'Picture shape', def:'circle',
+    { key:'zoom4', type:'range', on:'pic.fourth', join:true, label:'Zoom', min:40, max:250, unit:'%', def:1, persist:false, for:['collage'], when:hasStrip },
+    { key:'vsShape', type:'choice', on:['pic.main', 'pic.second'], for:['versus'], label:'Picture shape', def:'circle',
       options:[['circle','Circle'], ['card','Card']] },
-    { key:'tpShape', type:'choice', for:['talking'], label:'Picture shape', def:'auto',
+    { key:'tpShape', type:'choice', on:['pic.main', 'pic.second'], for:['talking'], label:'Picture shape', def:'auto',
       options:[['auto','Auto'], ['circle','Circle'], ['frame','Frame']],
       hint:'Auto: circle for a photo, uncropped frame for a screenshot.' },
-    { id:'pictureHint', type:'custom', build:buildPictureHint },
-    { key:'line1', type:'text', label:{ _:'Top line', versus:'Headline', collage:'Headline', talking:'Headline' }, def:'TYPE YOUR', maxlength:32,
+    { key:'arrow2', type:'toggle', on:'arrow', group:'Arrow', for:['talking'], label:'Show the arrow', def:true },
+    { key:'arrowGrad', on:'arrow', group:'Arrow', type:'toggle', for:['talking'], when:function(){ return state.arrow2; }, label:'Gradient', def:false },
+    // one line: the arrow's colour, and with a gradient its other two points
+    { key:'arrowColor', on:'arrow', group:'Arrow', type:'color', for:['talking'], row:'arrow', when:function(){ return state.arrow2; }, label:'Colour', def:'#2a292e' },
+    { key:'arrowColorMid', on:'arrow', group:'Arrow', type:'color', for:['talking'], row:'arrow', when:function(){ return state.arrow2 && state.arrowGrad; }, label:'Middle', def:'#e0452a' },
+    { key:'arrowColor2', on:'arrow', group:'Arrow', type:'color', for:['talking'], row:'arrow', when:function(){ return state.arrow2 && state.arrowGrad; }, label:'End', def:'#ffc21a' },
+    { key:'arrowSize', on:'arrow', group:'Arrow', type:'range', for:['talking'], when:function(){ return state.arrow2; }, label:'Thickness', min:50, max:220, unit:'%', def:1 },
+    { id:'pictureHint', type:'custom', on:['pic.main', 'pic.second', 'pic.third', 'pic.fourth'], build:buildPictureHint },
+    { key:'line1', type:'text', on:'headline', label:{ _:'Top line', versus:'Headline', collage:'Headline', talking:'Headline' }, def:'TYPE YOUR', maxlength:32,
       pair:{ key:'line1Color', aria:'Headline colour' } },
     { key:'line1Color', type:'color', def:'#ffffff', paired:true },
-    { key:'line2', type:'text', label:{ _:'Bottom line', versus:'Accent words', collage:'Accent words', talking:'Key word' }, def:'HEADLINE HERE', maxlength:24 },
-    { id:'palette', type:'custom', build:buildPaletteSlot, join:true },
-    { id:'headHelp', type:'custom', build:buildHeadHelp },
+    { key:'line2', type:'text', on:'headline', label:{ _:'Bottom line', versus:'Accent words', collage:'Accent words', talking:'Key word' }, def:'HEADLINE HERE', maxlength:24 },
+    { id:'palette', type:'custom', on:['page', 'headline'], build:buildPaletteSlot },
+    { id:'headHelp', type:'custom', on:'headline', build:buildHeadHelp },
 
     // Launch's own label above its headline
-    { key:'badge', type:'text', group:'Project tag', for:['launch'], label:'Text', def:'', maxlength:32,
+    { key:'badge', type:'text', on:'tag', group:'Project tag', for:['launch'], label:'Text', def:'', maxlength:32,
       placeholder:'JUSTDB', hint:'Outlined label above the headline. Empty for none.' },
-    { key:'pillSize', type:'range', group:'Project tag', for:['launch'], label:'Size', min:70, max:160, unit:'%', def:1 },
+    { key:'pillSize', type:'range', on:'tag', group:'Project tag', for:['launch'], label:'Size', min:70, max:160, unit:'%', def:1 },
 
-    { key:'kick1', type:'text', group:'Kicker', for:['launch'], label:'First line', def:'YOUR CHANNEL', maxlength:32, placeholder:'YOUR CHANNEL' },
-    { key:'kick2', type:'text', group:'Kicker', for:['launch'], label:'Accent line', def:'EPISODE 01', maxlength:24, placeholder:'EPISODE 01',
+    { key:'kick1', type:'text', on:'kicker', group:'Kicker', for:['launch'], label:'First line', def:'YOUR CHANNEL', maxlength:32, placeholder:'YOUR CHANNEL' },
+    { key:'kick2', type:'text', on:'kicker', group:'Kicker', for:['launch'], label:'Accent line', def:'EPISODE 01', maxlength:24, placeholder:'EPISODE 01',
       hint:'Two lines in a corner bracket. Empty shows the logo.' },
 
     // Collage: the strip of three pictures between the words and the photo
     { key:'strip', type:'toggle', group:'Strip', for:['collage'], label:'Strip of three pictures', def:true },
 
-    { key:'headFont', type:'font', group:'Text', label:'Headline font', def:'auto', list:function(){ return HEAD_FONTS; },
+    { key:'headFont', type:'font', on:'headline', group:'Text', label:'Headline font', def:'auto', list:function(){ return HEAD_FONTS; },
       change:function(){ ensureFont(headFace()); } },
-    { key:'headScale', type:'range', group:'Text', label:'Headline size', min:60, max:140, unit:'%', def:1,
+    { key:'headScale', type:'range', on:'headline', group:'Text', label:'Headline size', min:60, max:140, unit:'%', def:1,
       hint:'Starting size; the headline still shrinks to fit.' },
-    { key:'monoFont', type:'font', group:'Text', for:['launch'], label:'Kicker and labels font', def:'jetbrains',
+    { key:'monoFont', type:'font', on:['kicker', 'tag', 'sticker'], group:'Text', for:['launch'], label:'Kicker and labels font', def:'jetbrains',
       list:function(){ return MONO_FONTS; }, change:function(){ ensureFont(monoFace()); } },
-    { id:'fontUpload', type:'custom', group:'Text', build:buildFontUpload },
+    { id:'fontUpload', type:'custom', on:['headline', 'kicker', 'tag', 'sticker'], group:'Text', build:buildFontUpload },
 
-    { key:'winTitle', type:'text', group:'Window', for:['launch'], label:'Title', def:'', maxlength:40, placeholder:'index.html' },
-    { key:'sticker', type:'text', group:'Window', for:['launch'], label:'Sticker', def:'', maxlength:28,
+    { key:'winTitle', type:'text', on:'pic.main', group:'Window', for:['launch'], label:'Title', def:'', maxlength:40, placeholder:'index.html' },
+    { key:'sticker', type:'text', on:['sticker', 'pic.main'], group:'Window', for:['launch'], label:'Sticker', def:'', maxlength:28,
       placeholder:'IT BROKE. I LEFT IT IN.', hint:'Replaces the title in the title bar.',
       pair:{ key:'stickerColor', aria:'Sticker colour' } },
     { key:'stickerColor', type:'color', def:'#ff5b3a', paired:true },
-    { key:'launchTilt', type:'range', group:'Window', for:['launch'], label:'Tilt', min:-12, max:12, unit:'°', def:-2 },
+    { key:'launchTilt', type:'range', on:'pic.main', group:'Window', for:['launch'], label:'Tilt', min:-12, max:12, unit:'°', def:-2 },
 
     { key:'tone', type:'choice', group:'Background', for:['launch', 'versus'], label:'Base colour', def:'neutral',
       options:[['neutral','Neutral'], ['palette','From colours'], ['custom','Custom']],
@@ -268,25 +279,24 @@
     { key:'paper', type:'color', group:'Background', for:['collage'], label:'Paper', def:'#f6f3ec' },
     { key:'brush', type:'toggle', group:'Background', for:['collage'], label:'Brush bands and underline', def:true },
     { key:'paper2', type:'color', group:'Background', for:['talking'], label:'Paper', def:'#ecebe8' },
-    { key:'arrow2', type:'toggle', group:'Background', for:['talking'], label:'Hand-drawn arrow', def:true },
 
-    { key:'beforeLabel', type:'text', group:'Details', for:['versus'], label:'Before label', def:'BEFORE', maxlength:16, row:'labels' },
-    { key:'afterLabel', type:'text', group:'Details', for:['versus'], label:'After label', def:'AFTER', maxlength:16, row:'labels' },
+    { key:'beforeLabel', type:'text', on:'label.before', group:'Details', for:['versus'], label:'Before label', def:'BEFORE', maxlength:16, row:'labels' },
+    { key:'afterLabel', type:'text', on:'label.after', group:'Details', for:['versus'], label:'After label', def:'AFTER', maxlength:16, row:'labels' },
     { key:'vsDivider', type:'choice', group:'Details', for:['versus'], label:'Between them', def:'slash',
       options:[['slash','Slash'], ['split','Split field']] },
     { key:'splitAngle', type:'range', group:'Details', for:['versus'], label:'Lean', min:0, max:20, unit:'°', def:8 },
     // measured off the reference: its strip and photo lean about 16 degrees
     { key:'collageLean', type:'range', group:'Strip', for:['collage'], label:'Lean', min:0, max:24, unit:'°', def:16 },
     // the reference's headline is turned too: -3.7 degrees, measured off ILLEGAL
-    { key:'collageTilt', type:'range', group:'Text', for:['collage'], label:'Headline tilt', min:-10, max:10, unit:'°', def:-4 },
-    { key:'arrow', type:'toggle', group:'Details', for:['versus'], label:'Curved arrow from one to the other', def:true },
-    { key:'backdrop', type:'image', slot:'backdrop', persist:false, group:'Background', for:['versus'], label:'Background picture',
-      button:'Choose background picture', reset:'Remove', id:'vsBackdrop',
-      hint:'Replaces the texture, darkened to keep pictures in front.' },
+    { key:'collageTilt', type:'range', on:'headline', group:'Text', for:['collage'], label:'Headline tilt', min:-10, max:10, unit:'°', def:-4 },
+    { key:'arrow', type:'toggle', on:'arrow', group:'Details', for:['versus'], label:'Curved arrow from one to the other', def:true },
+    { key:'backdrop', type:'image', slot:'backdrop', persist:false, group:'Background', label:'Background picture',
+      button:'Choose', reset:'Remove', id:'vsBackdrop',
+      hint:'Sits behind everything, toned down so the words and pictures stay in front.' },
 
-    { id:'logoSlot', type:'custom', group:'Logo', build:buildLogoSlot },
-    { key:'logo', type:'toggle', group:'Logo', label:'Show it on the thumbnail', def:true, persist:false },
-    { key:'logoSize', type:'range', group:'Logo', label:'Size', min:50, max:160, unit:'%', def:1 }
+    { id:'logoSlot', type:'custom', on:'logo', group:'Logo', build:buildLogoSlot },
+    { key:'logo', type:'toggle', on:'logo', group:'Logo', label:'Show it on the thumbnail', def:true, persist:false },
+    { key:'logoSize', type:'range', on:'logo', group:'Logo', label:'Size', min:50, max:160, unit:'%', def:1 }
   ];
   function hasStrip(){ return state.strip; }
   function secondInUse(){ return state.layout !== 'collage' || state.strip; }
@@ -743,6 +753,8 @@
   function launchBackdrop(c, g, st, light){
     var W = g.W, H = g.H, k = g.k, big = Math.max(W, H);
     c.fillStyle = baseTone('#0f0e12'); c.fillRect(0, 0, W, H);
+    // a background picture sits in the dark, dimmed, and the lights fall on it
+    if (bgImg) { c.save(); c.globalAlpha = 0.45; cover(c, bgImg, 0, 0, W, H); c.restore(); }
     // A light is the palette's colour, made vivid where it has a colour at
     // all - a pale palette would light the dark with mud - and left alone
     // where it is white or grey.
@@ -781,7 +793,7 @@
     var kh = kickerHeight(k);
     var textTop = g.top + (kh ? kh + 0.06*H : 0);
     var colR = g.wide ? g.left + (g.right - g.left)*0.5 : g.right;
-    var maxW = colR - g.left;
+    var maxW = (colR - g.left)*headStretch(W, H);
     var l1 = state.line1.toUpperCase(), l2 = state.line2.toUpperCase();
     var start = (g.wide ? 150 : 130)*k*state.headScale;
     var px1 = l1 ? fitWith(c, l1, maxW, start, 24*k, function(px){ return px*1.1; }) : 0;
@@ -825,9 +837,10 @@
       }
     });
     if (r.w > 0) {
-      place(c, g, opts, 'pic.main', function(c){ drawLaunchWindow(c, r.x, r.y, r.w, r.h, state.launchTilt, state.panX*W, state.panY*H, 'window'); },
-            { slot:'main', hit:r });
-      if (state.sticker.trim()) place(c, g, opts, 'sticker', function(c){ drawLaunchWindow(c, r.x, r.y, r.w, r.h, state.launchTilt, 0, 0, 'sticker'); },
+      var ws = stretchOf('pic.main', W, H), wr = { x:r.x, y:r.y, w:r.w*ws[0], h:r.h*ws[1] };
+      place(c, g, opts, 'pic.main', function(c){ drawLaunchWindow(c, wr.x, wr.y, wr.w, wr.h, state.launchTilt, state.panX*W, state.panY*H, 'window'); },
+            { slot:'main', stretch:true, hit:wr });
+      if (state.sticker.trim()) place(c, g, opts, 'sticker', function(c){ drawLaunchWindow(c, wr.x, wr.y, wr.w, wr.h, state.launchTilt, 0, 0, 'sticker'); },
             { parent:'pic.main' });
     }
   }
@@ -838,6 +851,13 @@
   // small BEFORE / AFTER labels, and one heavy headline across the bottom
   // with the second line as its accent. Tall frames stack the pictures and
   // give the headline two lines.
+  // A background picture on a paper template: under a wash of the paper,
+  // so the dark words keep reading on it the way they do on paper.
+  function paperOver(c, W, H, paper){
+    if (!bgImg) return;
+    cover(c, bgImg, 0, 0, W, H);
+    c.save(); c.globalAlpha = 0.72; c.fillStyle = paper; c.fillRect(0, 0, W, H); c.restore();
+  }
   function deepShade(hex, l){
     var n = parseInt(hex.slice(1), 16), hsl = rgbToHsl(n>>16&255, n>>8&255, n&255);
     return hslToHex(hsl[0], Math.min(1, hsl[1]*1.1), l);
@@ -846,7 +866,7 @@
   // The field: the palette's first colour deepened, lit from the top, with a
   // few soft marbled streaks for texture and a darker floor for the words.
   function drawField(c, W, H, k, st){
-    if (bgImg && state.layout === 'versus') {
+    if (bgImg) {
       cover(c, bgImg, 0, 0, W, H);
       c.fillStyle = 'rgba(0,0,0,.45)'; c.fillRect(0, 0, W, H);
     } else {
@@ -908,13 +928,14 @@
   // One picture, as a circle or a card, ringed in white and lifted off the
   // field. Returns its bounding box.
   // The box drawPicture fills, worked out before it draws.
-  function pictureBox(cx, cy, d){
-    var circle = state.vsShape !== 'card', w = circle ? d : d*1.18, h = circle ? d : d*0.86;
+  // sv: a card's width and height factors from its side handles
+  function pictureBox(cx, cy, d, sv){
+    var circle = state.vsShape !== 'card', w = circle ? d : d*1.18*sv[0], h = circle ? d : d*0.86*sv[1];
     return { x:cx - w/2, y:cy - h/2, w:w, h:h };
   }
-  function drawPicture(c, cx, cy, d, img, after, which, opts, k, st){
+  function drawPicture(c, cx, cy, d, img, after, which, opts, k, st, sv){
     var circle = state.vsShape !== 'card';
-    var w = circle ? d : d*1.18, h = circle ? d : d*0.86, x = cx - w/2, y = cy - h/2, r = circle ? d/2 : d*0.07;
+    var w = circle ? d : d*1.18*sv[0], h = circle ? d : d*0.86*sv[1], x = cx - w/2, y = cy - h/2, r = circle ? d/2 : d*0.07;
     var ring = Math.max(2, d*0.016);
     function shape(pad){
       if (circle) { c.beginPath(); c.arc(cx, cy, d/2 - pad, 0, Math.PI*2); }
@@ -1090,7 +1111,7 @@
     // The words, centred on the safe area, broken over as many lines as makes
     // them biggest - a narrow frame wants short lines - within a third of
     // the height. The accent words keep their own line(s).
-    var maxW = (g.right - g.left)*0.96, start = (tall ? 0.12 : 0.14)*H*state.headScale;
+    var maxW = (g.right - g.left)*0.96*headStretch(W, H), start = (tall ? 0.12 : 0.14)*H*state.headScale;
     // the block stays below the after label, which sits just under the cut
     var labelRoom = Math.max(12*k, (tall ? 0.035 : 0.06)*H) + 0.05*H;
     var room = tall ? g.bottom - (H*0.46 + lean*W/2 + labelRoom) : H*0.4;
@@ -1134,7 +1155,7 @@
     if (l1) parts.push({ t:l1, color:ink });
     if (l2) parts.push({ t:l2, color:accent });
     var text = parts.map(function(q){ return q.t; }).join(' ');
-    var maxW = (g.right - g.left) * 0.98;
+    var maxW = (g.right - g.left) * 0.98 * headStretch(W, H);
     // starts where the capitals come to about 0.12 of the height (Anton's
     // capitals are 0.86 of its size) - the bar's aim - so a short headline
     // doesn't crowd out the pictures
@@ -1179,11 +1200,12 @@
     }
 
     if (d > 0) {
-      var b1 = pictureBox(c1.x, c1.y, d), b2 = pictureBox(c2.x, c2.y, d);
-      place(c, g, opts, 'pic.second', function(c){ drawPicture(c, c1.x, c1.y, d, phoneImg, false, 'phone', opts, k, st); },
-            { slot:'second', hit:b1 });
-      place(c, g, opts, 'pic.main', function(c){ drawPicture(c, c2.x, c2.y, d, frame === paintedFrame ? null : frame, true, 'win', opts, k, st); },
-            { slot:'main', hit:b2 });
+      var sv1 = stretchOf('pic.second', W, H), sv2 = stretchOf('pic.main', W, H), cards = state.vsShape === 'card';
+      var b1 = pictureBox(c1.x, c1.y, d, sv1), b2 = pictureBox(c2.x, c2.y, d, sv2);
+      place(c, g, opts, 'pic.second', function(c){ drawPicture(c, c1.x, c1.y, d, phoneImg, false, 'phone', opts, k, st, sv1); },
+            { slot:'second', stretch:cards, hit:b1 });
+      place(c, g, opts, 'pic.main', function(c){ drawPicture(c, c2.x, c2.y, d, frame === paintedFrame ? null : frame, true, 'win', opts, k, st, sv2); },
+            { slot:'main', stretch:cards, hit:b2 });
       report.pictures = (card ? 2*b1.w*b1.h : 2*Math.PI*d*d/4) / (W*H);
       if (state.arrow) place(c, g, opts, 'arrow', function(c){
         drawCurvedArrow(c, b1.x + b1.w*0.86, b1.y + b1.h*0.9, b2.x + b2.w*0.08, b2.y + b2.h*0.8, { x:0, y:d*0.28 }, k);
@@ -1234,7 +1256,8 @@
   var layers = [];     // preview only: [{ el, parent, slot, draw, m }] in drawing order
   function frameShape(W, H){ var a = W/H; return a < 0.85 ? 'tall' : a < 1.2 ? 'square' : 'wide'; }
   function moveKey(el, W, H){ return state.layout + '.' + frameShape(W, H) + '.' + el; }
-  // A saved placement is [dx, dy, degrees, pivotX, pivotY, scale]: the
+  // A saved placement is [dx, dy, degrees, pivotX, pivotY, scale, stack,
+  // stretchX, stretchY]: the
   // offset and the pivot as fractions of the frame, the pivot in the
   // element's own coordinates - its centre when it was first turned or
   // resized. Older saves hold only the offset, or no scale.
@@ -1249,8 +1272,36 @@
     return m;
   }
   function applyM(c, m){ c.transform(m.a, m.b, m.c, m.d, m.e, m.f); }
+  // A template that lets its elements be stacked sets zq: placed elements
+  // wait in it, then paint in stacking order - the order they were placed
+  // in, moved by the forward and back steps saved as a placement's 7th number.
+  var zq = null;
+  // A picture frame's own width and height, as factors: its side handles
+  // set them, and the template sizes the frame by them.
+  function stretchOf(el, W, H){ var v = state.moves[moveKey(el, W, H)] || []; return [v[7] || 1, v[8] || 1]; }
+  // The headline's box width, as a factor of the width its template gives
+  // it: its side handles set it, and the words re-break and re-fit to it.
+  function headStretch(W, H){ return stretchOf('headline', W, H)[0]; }
+  function stackOf(el, W, H){ return (state.moves[moveKey(el, W, H)] || [])[6] || 0; }
+  function restacked(W, H){
+    var pre = state.layout + '.' + frameShape(W, H) + '.';
+    return Object.keys(state.moves).some(function(key){ return key.indexOf(pre) === 0 && state.moves[key][6]; });
+  }
+  function flushZ(){
+    var q = zq; zq = null;
+    q.sort(function(a, b){ return a.z - b.z; });
+    q.forEach(function(e){ e.go(); });
+  }
   function place(c, g, opts, el, draw, o){
     o = o || {};
+    if (zq) {
+      var st = stackOf(el, g.W, g.H);
+      zq.push({ z:zq.length*10 + st*10 + (st > 0 ? 1 : st < 0 ? -1 : 0), go:function(){ placeNow(c, g, opts, el, draw, o); } });
+      return;
+    }
+    placeNow(c, g, opts, el, draw, o);
+  }
+  function placeNow(c, g, opts, el, draw, o){
     // a locked element is part of the template's layout: it stays put
     var m = o.locked ? new DOMMatrix() : xformOf(el, g.W, g.H, o.parent);
     c.save(); applyM(c, m); draw(c); c.restore();
@@ -1259,7 +1310,9 @@
     if (opts.preview) {
       // a picture keeps its frame's own shape, for an outline that hugs it
       var shape = o.hit ? (o.hit.poly || [[o.hit.x, o.hit.y], [o.hit.x + o.hit.w, o.hit.y], [o.hit.x + o.hit.w, o.hit.y + o.hit.h], [o.hit.x, o.hit.y + o.hit.h]]) : null;
-      layers.push({ el:el, parent:o.parent || null, slot:o.slot || null, draw:draw, m:m, shape:shape, locked:!!o.locked });
+      layers.push({ el:el, parent:o.parent || null, slot:o.slot || null, draw:draw, m:m, shape:shape, locked:!!o.locked,
+                    // a frame stretches both ways; the headline's box only in width
+                    stretch:o.stretch ? 'xy' : el === 'headline' ? 'x' : '' });
       // a picture's box goes where the picture went, turned with it, for
       // drops and framing; bw keeps its own width for framing's arithmetic
       if (o.hit) {
@@ -1324,11 +1377,20 @@
   }
 
   // A picture panel as a movable element: its box is known before it draws.
-  function placeQuad(c, g, opts, quad, s, after, st){
+  // A free one (free: true) is movable like any other element and wears its
+  // own white edge and shadow, so they travel with it.
+  function placeQuad(c, g, opts, quad, s, after, st, free){
     var xs = quad.map(function(q){ return q[0]; }), ys = quad.map(function(q){ return q[1]; });
     var x0 = Math.min.apply(null, xs), y0 = Math.min.apply(null, ys);
-    place(c, g, opts, 'pic.' + s.slot, function(c){ fillQuad(c, quad, s.img, after, s.slot, opts, st, s.label); },
-          { slot:s.slot, locked:true, hit:{ x:x0, y:y0, w:Math.max.apply(null, xs) - x0, h:Math.max.apply(null, ys) - y0, poly:quad } });
+    place(c, g, opts, 'pic.' + s.slot, function(c){
+            if (free) {
+              var e = 5*g.k, x1 = Math.max.apply(null, xs), y1 = Math.max.apply(null, ys);
+              c.save(); c.shadowColor = 'rgba(0,0,0,.28)'; c.shadowBlur = 22*g.k; c.shadowOffsetY = 8*g.k;
+              c.fillStyle = '#fff'; c.fillRect(x0 - e, y0 - e, x1 - x0 + 2*e, y1 - y0 + 2*e); c.restore();
+            }
+            fillQuad(c, quad, s.img, after, s.slot, opts, st, s.label);
+          },
+          { slot:s.slot, locked:!free, stretch:free, hit:{ x:x0, y:y0, w:Math.max.apply(null, xs) - x0, h:Math.max.apply(null, ys) - y0, poly:quad } });
   }
 
   // Luminance contrast between two colours, for choosing an ink that reads.
@@ -1351,6 +1413,7 @@
     // the accent must read on paper too: the palette's first colour, deepened
     var acc = deepShade(st[0], 0.42);
     c.fillStyle = paper; c.fillRect(0, 0, W, H);
+    paperOver(c, W, H, paper);
 
     var tall = (W/H) < 0.85, gap = Math.max(3, 0.015*W);   // the reference's gutter: 1.5% of the width
     if (tall) lean *= 0.5;   // across a narrow frame the full lean reads as a tilt, not a lean
@@ -1423,7 +1486,7 @@
     var colW = textBox.x1 - textBox.x0, room = textBox.y1 - textBox.y0;
     // lines packed as tight as the reference's: 1.12 times the capital height
     var LEAD = 1.12, swooshRoom = state.brush ? room*0.08 : 0;
-    var set = bestBreak(c, state.line1, state.line2, colW*0.98, 0.3*H*state.headScale, 12*k, room - swooshRoom, LEAD);
+    var set = bestBreak(c, state.line1, state.line2, colW*0.98*headStretch(W, H), 0.3*H*state.headScale, 12*k, room - swooshRoom, LEAD);
     var px = set.px, cap = px ? capOf(c, px) : 0, lead = cap*LEAD;
     var blockH = cap + (set.lines.length - 1)*lead, top = textBox.y0 + (room - swooshRoom - blockH)/2;
     var cx = (textBox.x0 + textBox.x1)/2;
@@ -1533,6 +1596,7 @@
     var report = opts.report || {};
     var paper = state.paper2;
     paperGrain(c, W, H, k, paper);
+    paperOver(c, W, H, paper);
     var ink = contrast(state.line1Color, paper) >= 3 ? state.line1Color : '#2a292e';
     var tall = (W/H) < 0.85, square = !tall && (W/H) < 1.2;
     var g0 = deepShade(st[0], 0.46), gm = deepShade(st[1], 0.48), g1 = deepShade(st[2], 0.5);
@@ -1591,7 +1655,9 @@
 
     // the photo, in a white ring (circle) or a white-edged frame turned a
     // touch; with a circle, a thin arc and its dot just outside the ring
-    var ring = Math.max(2, Math.min(hw, hh)*0.028);
+    // a frame takes the width and height its side handles gave it
+    var pv = roundish ? [1, 1] : stretchOf('pic.main', W, H), fw = hw*pv[0], fh = hh*pv[1];
+    var ring = Math.max(2, Math.min(fw, fh)*0.028);
     place(c, g, opts, 'pic.main', function(c){
       if (roundish) {
         c.save();
@@ -1603,8 +1669,8 @@
       }
       function outline(pad){
         c.beginPath();
-        if (roundish) c.arc(cx, cy, hw - pad, 0, Math.PI*2);
-        else roundRect(c, cx - hw + pad, cy - hh + pad, 2*(hw - pad), 2*(hh - pad), Math.max(0, Math.min(hw, hh)*0.08 - pad));
+        if (roundish) c.arc(cx, cy, fw - pad, 0, Math.PI*2);
+        else roundRect(c, cx - fw + pad, cy - fh + pad, 2*(fw - pad), 2*(fh - pad), Math.max(0, Math.min(fw, fh)*0.08 - pad));
       }
       c.save();
       c.translate(cx, cy); c.rotate(tilt); c.translate(-cx, -cy);
@@ -1613,14 +1679,14 @@
       outline(0); c.fillStyle = '#ffffff'; c.fill();
       c.restore();
       c.save(); outline(ring); c.clip();
-      if (has) shown.win = cover(c, frame, cx - hw, cy - hh, 2*hw, 2*hh, state.zoom, state.panX*W, state.panY*H);
+      if (has) shown.win = cover(c, frame, cx - fw, cy - fh, 2*fw, 2*fh, state.zoom, state.panX*W, state.panY*H);
       else {
-        paintStandIn(c, cx - hw, cy - hh, 2*hw, 2*hh, true, st, state.zoom);
-        if (opts.preview) placeholderLabel(c, cx - hw, cy - hh, 2*hw, 2*hh, 'Drop the photo', 'rgba(255,255,255,.8)');
+        paintStandIn(c, cx - fw, cy - fh, 2*fw, 2*fh, true, st, state.zoom);
+        if (opts.preview) placeholderLabel(c, cx - fw, cy - fh, 2*fw, 2*fh, 'Drop the photo', 'rgba(255,255,255,.8)');
       }
       c.restore();
       c.restore();
-    }, { slot:'main', hit:{ x:cx - hw, y:cy - hh, w:2*hw, h:2*hh } });
+    }, { slot:'main', stretch:!roundish, hit:{ x:cx - fw, y:cy - fh, w:2*fw, h:2*fh } });
     report.pictures = (roundish ? Math.PI*hw*hw : 4*hw*hh) / (W*H);
 
     // the words: main lines stacked and slanted, the accent line half again
@@ -1634,8 +1700,10 @@
     // centring leaves - taking none from them.
     if (state.logo && ready.logo && !tall) tb.y0 += 52*k*state.logoSize + 0.02*H;
     var main = state.line1.toUpperCase().trim().split(/\s+/).filter(Boolean);
-    var accent = state.line2.toUpperCase().trim();
-    var colW = tb.x1 - tb.x0, room = tb.y1 - tb.y0;
+    // a screenshot takes the key word's place under the headline
+    var shot = phoneImg || null;
+    var accent = shot ? '' : state.line2.toUpperCase().trim();
+    var colW = tb.x1 - tb.x0, room = tb.y1 - tb.y0, shotGap = 0.03*H, textW = colW*headStretch(W, H);
     // For each way of breaking the main words, size them to the width, then
     // give the key word whatever height is left - up to 2.6 times the main
     // size, so it leads without swallowing the rest. The key word's size
@@ -1646,14 +1714,15 @@
     for (var n = 1; n <= Math.min(4, Math.max(1, main.length)); n++) {
       var per = Math.ceil(main.length / n), lines = [];
       for (var i = 0; i < main.length; i += per) lines.push(main.slice(i, i + per).join(' '));
-      var fits = lines.map(function(t){ return fitWith(c, t, colW, big, 10*k, function(q){ return q*0.2; }); });
+      var fits = lines.map(function(t){ return fitWith(c, t, textW, big, 10*k, function(q){ return q*0.2; }); });
       var px = fits.length ? Math.min.apply(null, fits) : big;
       var capM = lines.length ? capOf(c, px) : 0, mainH = lines.length ? capM + (lines.length - 1)*capM*1.2 : 0;
-      if (mainH > room*0.6) { px *= room*0.6 / mainH; capM = capOf(c, px); mainH = room*0.6; }
+      var mainCap = room*(shot ? 0.46 : 0.6);
+      if (mainH > mainCap) { px *= mainCap / mainH; capM = capOf(c, px); mainH = mainCap; }
       var apx = 0, capA = 0;
       if (accent) {
         var left = room - mainH - (lines.length ? capM*0.35 : 0);
-        apx = Math.min(fitWith(c, accent, colW, big*1.6, 10*k, function(q){ return q*0.2; }), px*2.6);
+        apx = Math.min(fitWith(c, accent, textW, big*1.6, 10*k, function(q){ return q*0.2; }), px*2.6);
         capA = capOf(c, apx);
         if (capA > left) { apx *= left / capA; capA = capOf(c, apx); }
       }
@@ -1662,7 +1731,7 @@
       if (accent && lines.length && capA < capM*1.25) {
         var mf = 1 + (lines.length - 1)*1.2, fitCap = room / (mf + 0.35 + 1.25);
         if (fitCap < capM) { px *= fitCap / capM; capM = capOf(c, px); mainH = capM*mf; }
-        var left2 = room - mainH - capM*0.35, want = fitWith(c, accent, colW, big*1.6, 10*k, function(q){ return q*0.2; });
+        var left2 = room - mainH - capM*0.35, want = fitWith(c, accent, textW, big*1.6, 10*k, function(q){ return q*0.2; });
         apx = want; capA = capOf(c, apx);
         if (capA > left2) { apx *= left2 / capA; capA = capOf(c, apx); }
       }
@@ -1684,7 +1753,7 @@
     function lastLineEnd(b){
       if (accent) {
         tightFont(c, b.apx); var aw = c.measureText(accent).width; looseFont(c);
-        return tb.x0 + Math.min(b.capM*0.8, Math.max(0, colW - aw)) + b.capA*0.2 + aw;
+        return tb.x0 + Math.min(b.capM*0.8, Math.max(0, textW - aw)) + b.capA*0.2 + aw;
       }
       tightFont(c, b.px); var lw0 = b.lines.length ? c.measureText(b.lines[b.lines.length - 1]).width : 0; looseFont(c);
       return tb.x0 + b.capM*0.2 + lw0;
@@ -1694,7 +1763,15 @@
       else if ((room - best.h)/2 >= llh + logoGap) logoAt = 'under';
       else { room -= llh + logoGap; best = fitWords(room); logoAt = 'under'; }
     }
-    var y = tb.y0 + (room - best.h)/2;
+    // the screenshot sits under the headline, as wide as the column allows
+    // in its own proportions, in the height the headline leaves
+    var shotBox = null;
+    if (shot) {
+      var sa = shot.width / shot.height, sh = Math.min(room - best.h - shotGap, colW / sa), sw = sh * sa;
+      if (sh > 0.05*H) shotBox = { w:sw, h:sh };
+    }
+    var textH = best.h + (shotBox ? shotGap + shotBox.h : 0);
+    var y = tb.y0 + (room - textH)/2;
     function slant(c, text, x, base, px, fill){
       c.save();
       c.translate(0, base); c.transform(1, 0, -0.2, 1, 0, 0); c.translate(0, -base);
@@ -1716,27 +1793,40 @@
       if (accent) {
         var apx = best.apx;
         tightFont(c, apx); var aw = c.measureText(accent).width; looseFont(c);
-        var ax = tb.x0 + Math.min(best.capM*0.8, Math.max(0, colW - aw));
+        var ax = tb.x0 + Math.min(best.capM*0.8, Math.max(0, textW - aw));
         var ag = c.createLinearGradient(ax, 0, ax + aw, 0);
         ag.addColorStop(0, g0); ag.addColorStop(0.5, gm); ag.addColorStop(1, g1);
         slant(c, accent, ax + best.capA*0.2, y + best.h, apx, ag);
       }
     });
     report.headCap = Math.max(best.capM, best.capA) / H;
+    if (shotBox) {
+      var qx = tb.x0 + best.capM*0.2, qy = y + best.h + shotGap, sv = stretchOf('pic.second', W, H);
+      var qw = shotBox.w*sv[0], qh = shotBox.h*sv[1];
+      placeQuad(c, g, opts, [[qx, qy], [qx + qw, qy], [qx + qw, qy + qh], [qx, qy + qh]],
+                { img:shot, slot:'second', label:'' }, false, st, true);
+    }
 
     // the arrow: from beside the circle, curling down onto the words
     if (state.arrow2 && best.lines.length) {
-      var t = Math.max(4, 0.03*H);
+      var t = Math.max(4, 0.03*H) * state.arrowSize;
+      // three points, as the key word's gradient has: tail, middle, head
+      function arrowInk(c, xa, ya, xb, yb){
+        if (!state.arrowGrad) return state.arrowColor;
+        var ag = c.createLinearGradient(xa, ya, xb, yb);
+        ag.addColorStop(0, state.arrowColor); ag.addColorStop(0.5, state.arrowColorMid); ag.addColorStop(1, state.arrowColor2);
+        return ag;
+      }
       if (!tall) {
         // down from beside the circle's top onto the end of the first line,
         // above the longer lines that follow
         var hx = firstEnd + 0.025*W, hy = firstTop + best.capM*0.45;
         var tx = Math.min(cx - hw*0.84, hx + 0.16*W), ty = Math.max(g.top*0.5, firstTop - best.capM*0.9);
-        if (tx - hx > 0.05*W) place(c, g, opts, 'arrow', function(c){ handArrow(c, tx, ty, tx - 0.01*W, hy, hx, hy, t, ink); });
+        if (tx - hx > 0.05*W) place(c, g, opts, 'arrow', function(c){ handArrow(c, tx, ty, tx - 0.01*W, hy, hx, hy, t, arrowInk(c, tx, ty, hx, hy)); });
       } else if (g.right - lastEnd > 0.16*W) {
         // only where the first line leaves room beside it
         var sx0 = g.right - 0.05*W, sy0 = firstTop + best.capM;
-        place(c, g, opts, 'arrow', function(c){ handArrow(c, sx0, sy0, sx0 + 0.03*W, cy + hh + 0.02*H, cx + hw*0.5, cy + hh - hh*0.04, t, ink); });
+        place(c, g, opts, 'arrow', function(c){ handArrow(c, sx0, sy0, sx0 + 0.03*W, cy + hh + 0.02*H, cx + hw*0.5, cy + hh - hh*0.04, t, arrowInk(c, sx0, sy0, cx + hw*0.5, cy + hh)); });
       }
     }
 
@@ -1856,7 +1946,12 @@
     opts = opts || {};
     if (opts.preview) { dropHits = []; layers = []; masks = null; }
     c.clearRect(0, 0, p.w, p.h);
-    templateById(state.layout).draw(c, p, opts);
+    // Stacking: placed elements wait, then paint in stacking order. Talking
+    // point always stacks; the others only once something has been sent back
+    // or brought forward, so until then they paint exactly as designed.
+    zq = state.layout === 'talking' || restacked(p.w, p.h) ? [] : null;
+    try { templateById(state.layout).draw(c, p, opts); }
+    finally { if (zq) flushZ(); }
     if (opts.guides) drawGuides(c, p);
   }
 
@@ -1885,6 +1980,7 @@
     if (probe) drawProbe();
     if (typeof updateRoles === 'function' && stopRoleEls) updateRoles();
     var pre = state.layout + '.' + frameShape(p.w, p.h) + '.', resetBtn = document.getElementById('movesReset');
+    syncElBar();
     if (resetBtn) resetBtn.hidden = !Object.keys(state.moves).some(function(key){ return key.indexOf(pre) === 0; });
     if (ideas && ideas.length) redrawIdeas();   // undefined until the video part of the script has run
     if (typeof scheduleChecks === 'function') scheduleChecks();
@@ -2221,11 +2317,8 @@
       else if (ctl.group === 'toggles') parent = togglesEl;
       else {
         if (!groups[ctl.group]) {
-          var d = el('details', 'group'); d.setAttribute('name', 'panel');
-          d.appendChild(el('summary', null, ctl.group));
-          // Chrome wraps a <details> element's content in its own box, which
-          // eats any gap set on the <details>; the controls go in a plain
-          // container so the spacing is ours.
+          var d = el('section', 'group');
+          d.appendChild(el('h3', 'gtitle', ctl.group));
           var body = el('div', 'gbody'); d.appendChild(body);
           groups[ctl.group] = body; order.push(d);
         }
@@ -2235,7 +2328,7 @@
       if (ctl.join && lastField) { lastField.appendChild(w); return; }
       if (ctl.row) {
         var rk = (ctl.group || '') + '/' + ctl.row;
-        if (!rows[rk]) { rows[rk] = el('div', 'row'); parent.appendChild(rows[rk]); }
+        if (!rows[rk]) { rows[rk] = el('div', 'row row-' + ctl.row); parent.appendChild(rows[rk]); }
         rows[rk].appendChild(w);
       } else if (parent === togglesEl) {
         parent.insertBefore(w, parent.firstChild);
@@ -2243,26 +2336,69 @@
       lastField = w;
     });
     order.forEach(function(d){ fieldsEl.appendChild(d); });
+    // the way into each element closes the template's column
+    fieldsEl.appendChild(document.getElementById('elementList').parentNode);
   })();
 
   // Brings every control on the page into line with state and the template:
   // visibility, labels that change per template, values, enabled state.
+  // The element the panel is narrowed to: the selected one, when it has
+  // controls in this template; otherwise none, and the panel shows the page.
+  function ownersOf(ctl){ return !ctl.on ? ['page'] : [].concat(ctl.on); }
+  function inTemplate(ctl, t){ return (!ctl.for || ctl.for.indexOf(t) >= 0) && (!ctl.when || ctl.when()); }
+  function panelElements(t){
+    var seen = [];
+    CONTROLS.forEach(function(ctl){
+      // a shared hint names every picture; only real controls make an element
+      if (!ctl.on || ctl.type === 'custom' || !inTemplate(ctl, t)) return;
+      ownersOf(ctl).forEach(function(o){ if (o !== 'page' && seen.indexOf(o) < 0) seen.push(o); });
+    });
+    return seen;
+  }
+  function focusOf(t){
+    return selected && panelElements(t).indexOf(selected.el) >= 0 ? selected.el : null;
+  }
+  function elementName(name){
+    var t = templateById(state.layout).id;
+    var img = CONTROLS.filter(function(c){ return c.type === 'image' && c.on === name; })[0];
+    return img ? labelFor(img, t) : EL_NAMES[name] || name;
+  }
+  var EL_NAMES = { headline:'Headline', arrow:'Arrow', logo:'Logo', tag:'Project tag', kicker:'Kicker',
+                   sticker:'Sticker', 'label.before':'Before label', 'label.after':'After label' };
+  var shownFocus;
   function syncControls(){
     var t = templateById(state.layout).id;
+    var focus = focusOf(t), mode = focus || 'page';
     var groupSeen = {};
+    var head = document.getElementById('focusHead');
+    head.hidden = !focus;
+    if (focus) document.getElementById('focusName').textContent = elementName(focus);
+    fieldsEl.classList.toggle('focus', !!focus);
+    var list = document.getElementById('elementList');
+    if (list && !focus) {
+      var names = panelElements(t), sig = names.join('|') + '|' + t;
+      if (list.dataset.sig !== sig) {
+        list.dataset.sig = sig; list.textContent = '';
+        names.forEach(function(n){
+          var b = el('button', 'btn btn-sm', elementName(n)); b.type = 'button';
+          b.addEventListener('click', function(){ selectElement(n); });
+          list.appendChild(b);
+        });
+      }
+    }
     built.forEach(function(b){
       var ctl = b.ctl;
       if (b.el) {
-        var show = (!ctl.for || ctl.for.indexOf(t) >= 0) && (!ctl.when || ctl.when());
+        var show = inTemplate(ctl, t) && ownersOf(ctl).indexOf(mode) >= 0;
         b.el.hidden = !show;
         if (b.el.parentNode && b.el.parentNode.classList.contains('row')) {
           // a row shows while any of its fields does
           var row = b.el.parentNode;
           row.hidden = !Array.prototype.some.call(row.children, function(c){ return !c.hidden; });
         }
-        var g = b.el.closest('details');
-        if (g) groupSeen[g.querySelector('summary').textContent] = groupSeen[g.querySelector('summary').textContent] || { d:g, any:false };
-        if (g && show) groupSeen[g.querySelector('summary').textContent].any = true;
+        var g = b.el.closest('.group');
+        if (g) groupSeen[g.firstChild.textContent] = groupSeen[g.firstChild.textContent] || { d:g, any:false };
+        if (g && show) groupSeen[g.firstChild.textContent].any = true;
         if (b.label && ctl.type !== 'custom') b.label.textContent = labelFor(ctl, t);
       }
       if (!ctl.key || b.input == null) return;
@@ -2298,6 +2434,11 @@
     });
     // a panel with nothing for this template steps aside
     Object.keys(groupSeen).forEach(function(k){ groupSeen[k].d.hidden = !groupSeen[k].any; });
+    if (focus !== shownFocus) {
+      var bench = fieldsEl.closest('.bench');
+      if (bench && shownFocus !== undefined) bench.scrollTop = 0;
+      shownFocus = focus;
+    }
   }
 
   // ---- custom widgets the schema places ---------------------------------
@@ -2310,6 +2451,17 @@
     var ai = el('button', 'btn btn-sm aibtn', 'Ask Chrome\'s on-device AI'); ai.id = 'aiHeads'; ai.type = 'button'; ai.hidden = true;
     w.appendChild(ai);
     var hint = hintEl(''); hint.id = 'headHelpHint'; w.appendChild(hint);
+    return w;
+  }
+  // While nothing is selected: every element the template has, so each one's
+  // controls are a click away - the same as clicking it on the preview, and
+  // the way back to one that is hidden.
+  function buildElementList(){
+    var w = el('div', 'field');
+    var lg = el('span', 'legend', 'On the thumbnail'); lg.id = 'elementsLabel'; w.appendChild(lg);
+    var list = el('div', 'elements'); list.id = 'elementList'; list.setAttribute('aria-labelledby', 'elementsLabel');
+    w.appendChild(list);
+    w.appendChild(hintEl('Or click one on the preview.'));
     return w;
   }
   function buildPictureHint(){
@@ -2335,7 +2487,8 @@
     return f;
   }
   function buildPaletteSlot(){
-    var w = el('div');
+    var w = el('div', 'field');
+    w.appendChild(el('span', 'legend', 'Colours'));
     var pals = el('div', 'palettes'); pals.id = 'palettes';
     pals.setAttribute('role', 'radiogroup'); pals.setAttribute('aria-label', 'Colours');
     var stops = el('div', 'stops'); stops.id = 'stops'; stops.hidden = true;
@@ -2680,8 +2833,7 @@
     img.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
     img.src = URL.createObjectURL(blob);
   }
-  // The backdrop's picture only lights the glow, so a photo that would be
-  // wrong in the window can still set the mood behind it.
+  // A picture behind the whole thumbnail, in every template.
   function loadBackdrop(f){
     var img = new Image();
     img.onload = function(){
@@ -2694,7 +2846,7 @@
   }
   function clearBackdrop(){
     bgImg = null; syncControls(); draw();
-    setStatus('The backdrop glows from the window picture again.', 'ok');
+    setStatus('Background picture removed.', 'ok');
   }
 
   // ---- view options (not part of the thumbnail) -------------------------
@@ -3522,11 +3674,22 @@
     var top = m.transformPoint(topL), stem = 26*k, knob = 9*k;
     // the stem stands off the top edge, square to it whichever way it is turned
     var handle = { x:top.x + Math.sin(ang)*stem, y:top.y - Math.cos(ang)*stem };
-    return { L:L, k:k, r:r, corners:corners, top:top, handle:handle, knob:knob, ang:ang, sq:7*k, locked:L.locked };
+    // a stretchable frame also gets a handle in the middle of each side:
+    // n, e, s, w, between the corners on either side
+    var edges = null;
+    if (L.stretch) edges = [[0, 1], [1, 2], [2, 3], [3, 0]].map(function(e, i){
+      var lx = (pts[e[0]][0] + pts[e[1]][0])/2, ly = (pts[e[0]][1] + pts[e[1]][1])/2, t = m.transformPoint({ x:lx, y:ly });
+      return { side:'nesw'[i], x:t.x, y:t.y, lx:lx, ly:ly, off:L.stretch === 'x' && i % 2 === 0 };
+    });
+    return { L:L, k:k, r:r, corners:corners, edges:edges, top:top, handle:handle, knob:knob, ang:ang, sq:7*k, locked:L.locked };
   }
   function drawSelection(){
     var q = selGeom(); if (!q) return;
-    var k = q.k, c4 = q.corners;
+    // a picture that bleeds off the frame would have its outline on the very
+    // edge, half cut away; it is drawn just inside instead
+    var k = q.k, inset = Math.max(1.5, 2.5*k);
+    function inside(p){ return { x:Math.max(inset, Math.min(cv.width - inset, p.x)), y:Math.max(inset, Math.min(cv.height - inset, p.y)) }; }
+    var c4 = q.corners.map(inside);
     function outline(){ ctx.beginPath(); c4.forEach(function(p, i){ ctx[i ? 'lineTo' : 'moveTo'](p.x, p.y); }); ctx.closePath(); }
     ctx.save();
     ctx.lineWidth = Math.max(1.5, 2.5*k);
@@ -3546,6 +3709,14 @@
         ctx.fillRect(-q.sq, -q.sq, 2*q.sq, 2*q.sq); ctx.strokeRect(-q.sq, -q.sq, 2*q.sq, 2*q.sq);
         ctx.restore();
       });
+      // side handles: a bar along the side, so they read apart from corners
+      (q.edges || []).forEach(function(p){
+        if (p.off) return;
+        var along = p.side === 'n' || p.side === 's', w = along ? 2.6*q.sq : 1.3*q.sq, h = along ? 1.3*q.sq : 2.6*q.sq;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(q.ang);
+        ctx.beginPath(); roundRect(ctx, -w, -h, 2*w, 2*h, Math.min(w, h)); ctx.fill(); ctx.stroke();
+        ctx.restore();
+      });
     }
     ctx.restore();
   }
@@ -3555,6 +3726,34 @@
     var slot = selected && /^pic\./.test(selected.el) ? selected.el.slice(4) : 'main';
     return dropHits.some(function(h){ return h.slot === slot; }) ? slot : 'main';
   }
+  // The bar over the preview: what is selected, and one step nearer the
+  // front or the back. Every template stacks.
+  function stackable(){ return true; }
+  function restack(dir){
+    if (!selected || !stackable()) return;
+    var p = current(), key = moveKey(selected.el, p.w, p.h), v = (state.moves[key] || [0, 0]).slice();
+    while (v.length < 7) v.push(v.length === 5 ? 1 : 0);
+    v[6] = Math.max(-8, Math.min(8, v[6] + dir));
+    state.moves[key] = v; persist(); draw();
+  }
+  document.getElementById('stackDown').addEventListener('click', function(){ restack(-1); });
+  document.getElementById('stackUp').addEventListener('click', function(){ restack(1); });
+  function syncElBar(){
+    var on = !!(selected && stackable());
+    document.getElementById('elbar').hidden = !on;
+    if (on) document.getElementById('elName').textContent = elementName(selected.el);
+    if (focusOf(templateById(state.layout).id) !== shownFocus) syncControls();
+  }
+  // Selecting from the panel's list: the drawn element when there is one,
+  // for its outline and handles; a hidden one by name, for its controls.
+  function selectElement(name){
+    var ms = layerMasks();
+    for (var i = ms.length - 1; i >= 0; i--) if (ms[i].L.el === name) { select(ms[i]); draw(); return; }
+    selected = { el:name, box:null }; draw();
+  }
+  document.getElementById('focusBack').addEventListener('click', function(){
+    selected = null; stopAdjusting(); draw();
+  });
   function select(m){
     selected = m ? { el:m.L.el, box:m.box } : null;
   }
@@ -3562,6 +3761,14 @@
   function handleAt(q, pt){
     if (!q.locked && Math.hypot(pt[0] - q.handle.x, pt[1] - q.handle.y) <= q.knob*2.2) return 'turn';
     for (var i = 0; i < 4; i++) if (Math.hypot(pt[0] - q.corners[i].x, pt[1] - q.corners[i].y) <= q.sq*2.4) return i;
+    // a side handle answers anywhere in a box around its bar, turned with it
+    if (q.edges) for (var j = 0; j < 4; j++) {
+      var ed = q.edges[j], dx = pt[0] - ed.x, dy = pt[1] - ed.y;
+      if (ed.off) continue;
+      var u = dx*Math.cos(q.ang) + dy*Math.sin(q.ang), w = -dx*Math.sin(q.ang) + dy*Math.cos(q.ang);
+      var along = ed.side === 'n' || ed.side === 's';
+      if (Math.abs(along ? u : w) <= q.sq*4 && Math.abs(along ? w : u) <= q.sq*2.4) return ed.side;
+    }
     return null;
   }
   // The placement to change, with its pivot fixed at the element's centre
@@ -3617,6 +3824,50 @@
     }
   }
 
+  // A side handle stretches a frame across one axis, the opposite side held
+  // where it is; the picture inside re-crops to fill it.
+  var OPPOSITE = { n:'s', s:'n', e:'w', w:'e' };
+  function startStretch(q, side, e, p){
+    var pl = placement(q, p), v = pl.v;
+    while (v.length < 9) v.push(v.length === 6 ? 0 : 1);
+    var axis = side === 'e' || side === 'w' ? 'x' : 'y', opp = q.edges['nesw'.indexOf(OPPOSITE[side])];
+    var c4 = q.corners, size = axis === 'x' ? Math.abs(c4[1].lx - c4[0].lx) : Math.abs(c4[3].ly - c4[0].ly);
+    return { mode:'stretch', key:pl.key, el:q.L.el, parent:q.L.parent, p:p, axis:axis, side:OPPOSITE[side],
+             idx:axis === 'x' ? 7 : 8, base:size / (v[axis === 'x' ? 7 : 8] || 1),
+             inv:xformOf(q.L.el, p.w, p.h, q.L.parent).inverse(), opp:{ x:opp.x, y:opp.y, lx:opp.lx, ly:opp.ly },
+             moved:false, sx:e.clientX, sy:e.clientY };
+  }
+  function doStretch(d, e){
+    var pt = canvasPoint(e), lp = d.inv.transformPoint({ x:pt[0], y:pt[1] });
+    var size = Math.abs(d.axis === 'x' ? lp.x - d.opp.lx : lp.y - d.opp.ly);
+    var v = state.moves[d.key], W = d.p.w, H = d.p.h;
+    v[d.idx] = Math.max(SCALE_MIN, Math.min(SCALE_MAX, size / (d.base || 1)));
+    // the frame is laid out again at its new size; then the held side is
+    // put back where it was, as a corner is when scaling
+    draw();
+    var L = selLayer(); if (!L) return;
+    // a picture keeps its frame as its shape; text is measured off its paint,
+    // and the selection takes that new box so the outline follows the words
+    var sp = L.shape;
+    if (!sp) {
+      var ms = layerMasks(), b = null;
+      for (var i = ms.length - 1; i >= 0; i--) if (ms[i].L.el === d.el) { b = ms[i].box; break; }
+      if (!b) return;
+      selected.box = b;
+      sp = [[b.x, b.y], [b.x + b.w, b.y], [b.x + b.w, b.y + b.h], [b.x, b.y + b.h]];
+    }
+    var pair = { n:[0, 1], e:[1, 2], s:[2, 3], w:[3, 0] }[d.side];
+    var mid = { x:(sp[pair[0]][0] + sp[pair[1]][0])/2, y:(sp[pair[0]][1] + sp[pair[1]][1])/2 };
+    var now = xformOf(d.el, W, H, d.parent).transformPoint(mid);
+    var ddx = d.opp.x - now.x, ddy = d.opp.y - now.y;
+    if (d.parent) {
+      var inv = xformOf(d.parent, W, H).inverse();
+      var a = inv.transformPoint({ x:0, y:0 }), b2 = inv.transformPoint({ x:ddx, y:ddy });
+      ddx = b2.x - a.x; ddy = b2.y - a.y;
+    }
+    v[0] += ddx / W; v[1] += ddy / H;
+  }
+
   cv.addEventListener('pointerdown', function(e){
     draw();   // refresh shown, dropHits and layers: an export may have drawn at another size since
     var m = layerAt(e), p = current(), rect = cv.getBoundingClientRect();
@@ -3640,6 +3891,7 @@
     var q = !adjusting && selGeom(), hd = q ? handleAt(q, canvasPoint(e)) : null;
     if (hd !== null) {
       drag = hd === 'turn' ? startTurn(q, e, p)
+           : typeof hd === 'string' ? startStretch(q, hd, e, p)
            : (q.L.slot && (q.L.locked || e.altKey)) ? startZoom(q, e)   // the photo inside
            : startScale(q, hd, e, p);                                 // the frame, or the piece
       cv.setPointerCapture(e.pointerId); cv.classList.add('dragging');
@@ -3674,8 +3926,11 @@
         hoverRaf = 0;
         var lm, h = adjusting && hitAt(ev), q = !adjusting && selGeom(), hd = q ? handleAt(q, canvasPoint(ev)) : null;
         // a corner's resize cursor follows the diagonal it sits on, as turned
-        var diag = hd !== null && hd !== 'turn' && ((((hd % 2) ? -45 : 45) + q.ang*180/Math.PI) % 180 + 180) % 180;
-        cv.style.cursor = hd === 'turn' ? 'alias' : hd !== null ? (diag < 90 ? 'nwse-resize' : 'nesw-resize')
+        var side = typeof hd === 'string' && hd !== 'turn';
+        var diag = hd !== null && hd !== 'turn' && ((((side ? ('ns'.indexOf(hd) >= 0 ? 90 : 0) : (hd % 2) ? -45 : 45)) + q.ang*180/Math.PI) % 180 + 180) % 180;
+        cv.style.cursor = hd === 'turn' ? 'alias'
+          : side ? (diag < 22.5 || diag >= 157.5 ? 'ew-resize' : diag < 67.5 ? 'nwse-resize' : diag < 112.5 ? 'ns-resize' : 'nesw-resize')
+          : hd !== null ? (diag < 90 ? 'nwse-resize' : 'nesw-resize')
           : (h && h.slot === adjusting) ? 'grab' : (lm = layerAt(ev)) ? ((lm.L.locked || (ev.altKey && lm.L.slot)) ? 'grab' : 'move') : 'default';
       });
       return;
@@ -3697,6 +3952,8 @@
       state[drag.f.y] = drag.spy + (ddx*sa + ddy*ca) / drag.dh;
     } else if (drag.mode === 'scale') {
       doScale(drag, e);
+    } else if (drag.mode === 'stretch') {
+      doStretch(drag, e);
     } else if (drag.mode === 'zoom') {
       handFramed(drag.slot);
       var zp = canvasPoint(e), c0 = drag.centre;
@@ -3727,8 +3984,8 @@
     });
   });
   // Double-click to change: a picture's image, or a piece of text in its
-  // field - its folded panel opened, the field scrolled into view in the
-  // panel (not the page) and its text selected.
+  // field - scrolled into view in the panel (not the page), its text
+  // selected.
   var TEXT_FIELDS = { headline:'line1', tag:'badge', sticker:'sticker', kicker:'kick1', 'label.before':'beforeLabel', 'label.after':'afterLabel' };
   cv.addEventListener('dblclick', function(e){
     var m = layerAt(e); if (!m) return;
@@ -3736,7 +3993,6 @@
     if (m.L.slot) { pickFor(m.L.slot); return; }
     var inp = TEXT_FIELDS[m.L.el] && document.getElementById(TEXT_FIELDS[m.L.el]);
     if (!inp) return;
-    var d = inp.closest('details'); if (d && !d.open) d.open = true;
     var bench = inp.closest('.bench');
     if (bench) bench.scrollTop += inp.getBoundingClientRect().top - bench.getBoundingClientRect().top - 80;
     inp.focus({ preventScroll:true }); if (inp.select) inp.select();
@@ -3757,6 +4013,10 @@
       v[2] = Math.round((v[2] + ((e.key === '[' || e.key === '{') ? -step2 : step2)) * 10) / 10;
       persist(); syncControls(); draw();
       return;
+    }
+    // Page Up and Page Down stack it
+    if ((e.key === 'PageUp' || e.key === 'PageDown') && selected && stackable() && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault(); restack(e.key === 'PageUp' ? 1 : -1); return;
     }
     // - and = resize it about its centre, 5% a step, Shift 20%
     if (['-', '=', '_', '+'].indexOf(e.key) >= 0 && selected && !adjusting && !e.metaKey && !e.ctrlKey && !e.altKey) {

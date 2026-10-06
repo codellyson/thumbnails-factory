@@ -180,6 +180,25 @@
     padding:14px 4px 0; margin:0;
   }
   .readout .what{ font-weight:600; letter-spacing:-.01em; }
+  /* a pill over the foot of the well: pill buttons in a pill, so the curves nest */
+  .elbar{
+    position:absolute; inset-inline:0; bottom:12px; z-index:3; margin-inline:auto;
+    width:max-content; max-width:calc(100% - 24px);
+    display:flex; align-items:center; gap:2px; padding:4px; padding-inline-start:14px;
+    background:var(--surface); border-radius:var(--pill); box-shadow:0 4px 16px rgb(0 0 0 / .28);
+  }
+  .elbar[hidden]{ display:none; }
+  /* the name sits in its own dark chip, marked with the outline's coral, so
+     it reads as "what is selected" apart from the two actions */
+  .elbar{ padding-inline-start:4px; }
+  .elbar .elname{
+    display:inline-flex; align-items:center; gap:7px; min-height:32px; padding:0 14px 0 11px;
+    margin-inline-end:4px; border-radius:var(--pill); background:var(--ink); color:var(--canvas);
+    font-size:13px; font-weight:600; white-space:nowrap;
+  }
+  .elbar .elname::before{ content:""; width:8px; height:8px; border-radius:50%; background:var(--accent); flex:none; }
+  .elbar .btn{ width:auto; white-space:nowrap; box-shadow:none; min-height:32px; padding:6px 12px; }
+  @media (hover: hover){ .elbar .btn:hover{ background:var(--cream); } }
   .readout .dims{ margin-inline-start:auto; color:var(--muted); }
   .howto{ margin:10px 4px 0; max-width:56ch; color:var(--muted); font-size:14px; }
   .howto p{ margin:0 0 3px; }
@@ -365,6 +384,10 @@
   .row .field.grow{ flex:3; }
   .row .field.narrow{ flex:1; min-width:70px; }
   .row[hidden]{ display:none; }
+  /* colour rows: equal columns, so a gradient's extra stops fill in beside
+     the first one instead of reflowing it */
+  .row.row-arrow{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; }
+  .row-arrow input[type=color]{ width:100%; }
   .field[hidden]{ display:none; }
   /* controls a template does not use; beats each control's own display */
   .fields [hidden], .toggles [hidden]{ display:none !important; }
@@ -401,19 +424,27 @@
   .segs label:has(input:checked){ background:var(--surface); color:var(--ink); box-shadow:var(--shadow-sm); }
   .segs label:has(input:focus-visible){ outline:2px solid var(--ink); outline-offset:1px; }
 
-  /* folding panels */
+  /* the panel narrowed to one element: the way back, then its name */
+  .focushead{ display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .focushead[hidden]{ display:none; }
+  .focushead .btn{ width:auto; flex:none; padding-inline-start:12px; }
+  .focushead .btn::before{ content:"\2039"; margin-inline-end:6px; font-size:16px; line-height:0; }
+  [dir=rtl] .focushead .btn::before{ content:"\203A"; }
+  .focusname{ font-size:16px; font-weight:600; letter-spacing:-.01em; min-width:0; overflow-wrap:anywhere; }
+  /* one element's panels lie open, their titles folded away */
+  .fields.focus .group{ border-top:0; padding-top:0; }
+  .fields.focus .gtitle{ display:none; }
+  .fields.focus .gbody{ padding-top:0; }
+  /* the elements a template has, one press each */
+  .elements{ display:flex; flex-wrap:wrap; gap:6px; }
+  .elements .btn{ width:auto; }
+
+  /* panels: a titled section each */
   .group{ border-top:1px solid var(--line-strong); padding-top:12px; }
   /* a panel's first control hangs closer to its title (10) than controls sit to each other (16) */
   .gbody{ display:flex; flex-direction:column; gap:14px; padding-top:10px; }
   /* a panel's first control hangs closer to its title than controls sit to each other */
-  .group > summary{ font-size:14px; font-weight:500; cursor:pointer;
-    list-style:none; display:flex; align-items:center; gap:8px; min-height:28px; }
-  .group > summary::-webkit-details-marker{ display:none; }
-  .group > summary::after{ content:""; margin-inline-start:auto; width:6px; height:6px; border:solid var(--muted);
-    border-width:0 1.5px 1.5px 0; transform:translateY(-2px) rotate(45deg); transition:transform .16s cubic-bezier(0.2, 0, 0, 1); }
-  .group[open] > summary::after{ transform:translateY(1px) rotate(-135deg); border-width:0 2px 2px 0; }   /* matches the semibold open title */
-  .group[open] > summary{ font-weight:600; }
-  .group > summary:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; border-radius:6px; }
+  .gtitle{ font-size:14px; font-weight:600; margin:0; min-height:28px; display:flex; align-items:center; }
 
   input[type=range]{
     -webkit-appearance:none; appearance:none; width:100%; background:transparent; margin:8px 0;

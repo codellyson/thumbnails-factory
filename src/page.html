@@ -17,6 +17,13 @@
         <canvas id="cv" width="1280" height="720" role="img" tabindex="0"
                 aria-label="Thumbnail preview" aria-describedby="howto"></canvas>
         <div class="drop-hint">Drop the image here</div>
+        <!-- The selected element's own actions, floating over the preview so
+             the layout below doesn't jump; only while one is selected. -->
+        <div class="elbar" id="elbar" hidden>
+          <span class="elname" id="elName"></span>
+          <button class="btn btn-sm" id="stackDown" type="button">Send back</button>
+          <button class="btn btn-sm" id="stackUp" type="button">Bring forward</button>
+        </div>
       </div>
       <p class="readout">
         <span class="what" id="what">YouTube thumbnail</span>
@@ -57,6 +64,11 @@
     <div class="bench">
       <h2 class="sr-only">Options</h2>
       <!-- Built from CONTROLS in app.js: every field, panel and row. -->
+      <!-- Narrowed to the selected element: its name, and the way back. -->
+      <div class="focushead" id="focusHead" hidden>
+        <button class="btn btn-sm" id="focusBack" type="button">All settings</button>
+        <span class="focusname" id="focusName"></span>
+      </div>
       <div class="fields" id="fields"></div>
 
       <div class="toggles" id="toggles">

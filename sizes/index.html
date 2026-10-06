@@ -482,6 +482,13 @@
   .fields.focus .group{ border-top:0; padding-top:0; }
   .fields.focus .gtitle{ display:none; }
   .fields.focus .gbody{ padding-top:0; }
+  /* adding an element of your own */
+  .addrow{ display:flex; gap:6px; margin-top:10px; }
+  .addrow .btn{ width:auto; }
+  .addrow .btn::before{ content:"+"; margin-inline-end:6px; color:var(--muted); }
+  .extrapanel[hidden], .fields[hidden]{ display:none; }
+  .extrapanel .pichead .btn{ width:auto; flex:none; }
+  .extrapanel .btn.danger{ width:auto; align-self:flex-start; color:var(--alert); }
   /* the elements a template has, one press each */
   .elements{ display:flex; flex-wrap:wrap; gap:6px; }
   .elements .btn{ width:auto; }

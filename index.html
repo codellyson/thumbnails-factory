@@ -456,6 +456,13 @@
   .fields.focus .group{ border-top:0; padding-top:0; }
   .fields.focus .gtitle{ display:none; }
   .fields.focus .gbody{ padding-top:0; }
+  /* adding an element of your own */
+  .addrow{ display:flex; gap:6px; margin-top:10px; }
+  .addrow .btn{ width:auto; }
+  .addrow .btn::before{ content:"+"; margin-inline-end:6px; color:var(--muted); }
+  .extrapanel[hidden], .fields[hidden]{ display:none; }
+  .extrapanel .pichead .btn{ width:auto; flex:none; }
+  .extrapanel .btn.danger{ width:auto; align-self:flex-start; color:var(--alert); }
   /* the elements a template has, one press each */
   .elements{ display:flex; flex-wrap:wrap; gap:6px; }
   .elements .btn{ width:auto; }
@@ -855,6 +862,8 @@
         <span class="focusname" id="focusName"></span>
       </div>
       <div class="fields" id="fields"></div>
+      <!-- An added element's own controls, built when it is selected. -->
+      <div class="fields extrapanel" id="extraPanel" hidden></div>
 
       <div class="toggles" id="toggles">
         <label class="tog"><input type="checkbox" id="showFeed"> Show at feed size</label>
@@ -1216,6 +1225,26 @@
   function hasStrip(){ return state.strip; }
   function secondInUse(){ return state.layout !== 'collage' || state.strip; }
 
+  // ---- extras: elements a person adds on top of any template ------------
+  // Each belongs to one template and is an ordinary element on the preview
+  // ('x.' + its id), so it moves, turns, resizes and stacks like the rest.
+  // A picture's image lives only in this tab, as the other pictures do.
+  state.extras = [];
+  var extraImgs = {}, extraShown = {};
+  var EXTRA_DEF = {
+    text:  { text:'NEW TEXT', color:'#ffffff', size:1, pill:false },
+    image: { frame:true, zoom:1, px:0, py:0 }
+  };
+  function validExtra(x){
+    return x && typeof x.id === 'string' && (x.ox === undefined || typeof x.ox === 'number') && (x.oy === undefined || typeof x.oy === 'number') && /^[a-z0-9]{1,12}$/.test(x.id) && EXTRA_DEF[x.type] && typeof x.t === 'string';
+  }
+  function extraOf(name){
+    if (typeof name !== 'string' || name.indexOf('x.') !== 0) return null;
+    var id = name.slice(2);
+    return state.extras.filter(function(x){ return x.id === id; })[0] || null;
+  }
+  function extrasHere(){ return state.extras.filter(function(x){ return x.t === state.layout; }); }
+
   // Defaults first, then whatever was saved - but only where the saved value
   // is the same kind of thing, so a stale or hand-edited entry cannot break
   // the page.
@@ -1242,6 +1271,7 @@
       if (saved.derived) state.derived = saved.derived;
       if (typeof saved.feed === 'boolean') state.feed = saved.feed;
       if (saved.moves && typeof saved.moves === 'object') state.moves = saved.moves;
+      if (Array.isArray(saved.extras)) state.extras = saved.extras.filter(validExtra);
       remembered().forEach(function(ctl){
         var v = saved[ctl.key];
         if (typeof v === typeof ctl.def && (typeof v !== 'number' || isFinite(v))) state[ctl.key] = v;
@@ -2226,8 +2256,9 @@
       // a picture keeps its frame's own shape, for an outline that hugs it
       var shape = o.hit ? (o.hit.poly || [[o.hit.x, o.hit.y], [o.hit.x + o.hit.w, o.hit.y], [o.hit.x + o.hit.w, o.hit.y + o.hit.h], [o.hit.x, o.hit.y + o.hit.h]]) : null;
       layers.push({ el:el, parent:o.parent || null, slot:o.slot || null, draw:draw, m:m, shape:shape, locked:!!o.locked,
+                    bw:o.hit ? o.hit.w : 0,
                     // a frame stretches both ways; the headline's box only in width
-                    stretch:o.stretch ? 'xy' : el === 'headline' ? 'x' : '' });
+                    stretch:o.stretch ? 'xy' : (o.stretchX || el === 'headline') ? 'x' : '' });
       // a picture's box goes where the picture went, turned with it, for
       // drops and framing; bw keeps its own width for framing's arithmetic
       if (o.hit) {
@@ -2857,6 +2888,63 @@
     };
   }
 
+  // Extras start in the middle of the frame; their own placement moves them.
+  function drawExtras(c, p, opts){
+    var g = box(p), W = g.W, H = g.H, k = g.k;
+    extrasHere().forEach(function(x){
+      var name = 'x.' + x.id, sv = stretchOf(name, W, H);
+      if (x.type === 'text') {
+        var px = Math.round(0.1*H*(x.size || 1)), maxW = 0.45*W*sv[0];
+        c.save(); c.font = headlineFont(px);
+        var lines = wrapWords(c, String(x.text || '').toUpperCase(), maxW);
+        var lw = Math.max.apply(null, lines.map(function(l){ return c.measureText(l).width; }).concat([px]));
+        c.restore();
+        var lead = px*1.05, padX = x.pill ? px*0.45 : 0, padY = x.pill ? px*0.28 : 0;
+        var bw = lw + 2*padX, bh = lines.length*lead + 2*padY, cx = W*(0.5 + (x.ox || 0)), x0 = cx - bw/2, y0 = H*(0.5 + (x.oy || 0)) - bh/2;
+        place(c, g, opts, name, function(c){
+          if (x.pill) { c.fillStyle = contrast(x.color, '#111111') >= 3 ? '#111111' : '#ffffff'; roundRect(c, x0, y0, bw, bh, Math.min(bh/2, px*0.4)); c.fill(); }
+          c.font = headlineFont(px); c.fillStyle = x.color; c.textAlign = 'center'; c.textBaseline = 'middle';
+          lines.forEach(function(l, i){ c.fillText(l, cx, y0 + padY + lead*(i + 0.5)); });
+          c.textAlign = 'start'; c.textBaseline = 'alphabetic';
+        }, { stretchX:true });
+      } else {
+        var img = extraImgs[x.id], a = img ? img.width / img.height : 16/9;
+        var w = 0.3*W, h = w / a;
+        if (h > 0.5*H) { h = 0.5*H; w = h*a; }
+        w *= sv[0]; h *= sv[1];
+        var bx = W*(0.5 + (x.ox || 0)) - w/2, by = H*(0.5 + (x.oy || 0)) - h/2, e = x.frame ? Math.max(3, 5*k) : 0;
+        place(c, g, opts, name, function(c){
+          if (x.frame) {
+            c.save(); c.shadowColor = 'rgba(0,0,0,.3)'; c.shadowBlur = 22*k; c.shadowOffsetY = 8*k;
+            c.fillStyle = '#ffffff'; c.fillRect(bx - e, by - e, w + 2*e, h + 2*e); c.restore();
+          }
+          if (img) {
+            c.save(); c.beginPath(); c.rect(bx, by, w, h); c.clip();
+            // the offset is kept as a fraction of the frame's width, and what
+            // the picture's edges allowed is kept for the next drag to start from
+            var got = cover(c, img, bx, by, w, h, x.zoom || 1, (x.px || 0)*w, (x.py || 0)*w);
+            extraShown[x.id] = [got[0]/w, got[1]/w];
+            c.restore();
+          }
+          else {
+            c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(bx, by, w, h);
+            if (opts.preview) placeholderLabel(c, bx, by, w, h, 'Double-click to choose a picture', 'rgba(255,255,255,.85)');
+          }
+        }, { stretch:true, extra:x, hit:{ x:bx, y:by, w:w, h:h } });
+      }
+    });
+  }
+  // Words broken greedily onto lines no wider than maxW.
+  function wrapWords(c, text, maxW){
+    var words = text.split(/\s+/).filter(Boolean), lines = [], cur = '';
+    words.forEach(function(wd){
+      var t = cur ? cur + ' ' + wd : wd;
+      if (cur && c.measureText(t).width > maxW) { lines.push(cur); cur = wd; } else cur = t;
+    });
+    if (cur) lines.push(cur);
+    return lines.length ? lines : [' '];
+  }
+
   function render(c, p, opts){
     opts = opts || {};
     if (opts.preview) { dropHits = []; layers = []; masks = null; }
@@ -2865,7 +2953,7 @@
     // point always stacks; the others only once something has been sent back
     // or brought forward, so until then they paint exactly as designed.
     zq = state.layout === 'talking' || restacked(p.w, p.h) ? [] : null;
-    try { templateById(state.layout).draw(c, p, opts); }
+    try { templateById(state.layout).draw(c, p, opts); drawExtras(c, p, opts); }
     finally { if (zq) flushZ(); }
     if (opts.guides) drawGuides(c, p);
   }
@@ -3271,9 +3359,14 @@
     return seen;
   }
   function focusOf(t){
-    return selected && panelElements(t).indexOf(selected.el) >= 0 ? selected.el : null;
+    return selected && (panelElements(t).indexOf(selected.el) >= 0 || extraOf(selected.el)) ? selected.el : null;
   }
   function elementName(name){
+    var x = extraOf(name);
+    if (x) {
+      var same = extrasHere().filter(function(o){ return o.type === x.type; });
+      return (x.type === 'text' ? 'Text ' : 'Picture ') + (same.indexOf(x) + 1);
+    }
     var t = templateById(state.layout).id;
     var img = CONTROLS.filter(function(c){ return c.type === 'image' && c.on === name; })[0];
     return img ? labelFor(img, t) : EL_NAMES[name] || name;
@@ -3291,7 +3384,7 @@
     fieldsEl.classList.toggle('focus', !!focus);
     var list = document.getElementById('elementList');
     if (list && !focus) {
-      var names = panelElements(t), sig = names.join('|') + '|' + t;
+      var names = panelElements(t).concat(extrasHere().map(function(x){ return 'x.' + x.id; })), sig = names.join('|') + '|' + t;
       if (list.dataset.sig !== sig) {
         list.dataset.sig = sig; list.textContent = '';
         names.forEach(function(n){
@@ -3349,6 +3442,8 @@
     });
     // a panel with nothing for this template steps aside
     Object.keys(groupSeen).forEach(function(k){ groupSeen[k].d.hidden = !groupSeen[k].any; });
+    syncExtraPanel(focus);
+    fieldsEl.hidden = !!extraOf(focus);   // an added element has only its own panel
     if (focus !== shownFocus) {
       var bench = fieldsEl.closest('.bench');
       if (bench && shownFocus !== undefined) bench.scrollTop = 0;
@@ -3377,7 +3472,85 @@
     var list = el('div', 'elements'); list.id = 'elementList'; list.setAttribute('aria-labelledby', 'elementsLabel');
     w.appendChild(list);
     w.appendChild(hintEl('Or click one on the preview.'));
+    var add = el('div', 'addrow');
+    [['text', 'Add text'], ['image', 'Add picture']].forEach(function(o){
+      var b = el('button', 'btn btn-sm', o[1]); b.type = 'button'; b.id = 'add' + o[0];
+      b.addEventListener('click', function(){ addExtra(o[0]); });
+      add.appendChild(b);
+    });
+    w.appendChild(add);
     return w;
+  }
+  function addExtra(type){
+    var id = Date.now().toString(36).slice(-6) + Math.floor(Math.random()*36).toString(36);
+    // each new one lands a step down and right of the last, not on top of it
+    var n = extrasHere().length % 5;
+    var x = { id:id, type:type, t:state.layout, ox:0.07*n - 0.14, oy:0.1*n - 0.2 };
+    Object.keys(EXTRA_DEF[type]).forEach(function(key){ x[key] = EXTRA_DEF[type][key]; });
+    state.extras.push(x); persist();
+    draw(); selectElement('x.' + id);
+    if (type === 'image') pickExtra(x);
+  }
+  function removeExtra(x){
+    state.extras = state.extras.filter(function(o){ return o !== x; });
+    delete extraImgs[x.id];
+    Object.keys(state.moves).forEach(function(key){ if (key.slice(-(x.id.length + 3)) === '.x.' + x.id) delete state.moves[key]; });
+    selected = null; persist(); draw();
+  }
+  var extraFile = el('input'); extraFile.type = 'file'; extraFile.accept = 'image/*'; extraFile.hidden = true;
+  document.body.appendChild(extraFile);
+  var extraFor = null;
+  function pickExtra(x){ extraFor = x; extraFile.value = ''; extraFile.click(); }
+  extraFile.addEventListener('change', function(){
+    var f = extraFile.files && extraFile.files[0], x = extraFor; if (!f || !x) return;
+    var img = new Image();
+    img.onload = function(){ extraImgs[x.id] = img; draw(); setStatus('Picture loaded.', 'ok'); };
+    img.onerror = function(){ setStatus('That file could not be read as an image.', 'err'); };
+    img.src = URL.createObjectURL(f);
+  });
+  // The panel for one extra, built when it is selected.
+  function syncExtraPanel(focus){
+    var box = document.getElementById('extraPanel'), x = extraOf(focus);
+    box.hidden = !x;
+    if (!x) { box.dataset.id = ''; return; }
+    if (box.dataset.id === x.id) return;
+    box.dataset.id = x.id; box.textContent = '';
+    function field(label, input){ var f = el('div', 'field'), l = el('label', null, label); l.htmlFor = input.id; f.appendChild(l); f.appendChild(input); return f; }
+    function set(key, v){ x[key] = v; persist(); draw(); }
+    if (x.type === 'text') {
+      var line = el('div', 'inline'), tx = el('input'), sw = el('input');
+      tx.type = 'text'; tx.id = 'extraText'; tx.maxLength = 60; tx.value = x.text; tx.autocomplete = 'off';
+      tx.addEventListener('input', function(){ set('text', tx.value); syncControls(); });
+      sw.type = 'color'; sw.value = x.color; sw.setAttribute('aria-label', 'Text colour');
+      sw.addEventListener('input', function(){ set('color', sw.value); });
+      line.appendChild(tx); line.appendChild(sw);
+      var tf = el('div', 'field'), tl = el('label', null, 'Text'); tl.htmlFor = 'extraText'; tf.appendChild(tl); tf.appendChild(line);
+      box.appendChild(tf);
+      var rg = el('input'); rg.type = 'range'; rg.id = 'extraSize'; rg.min = 40; rg.max = 300; rg.value = Math.round(x.size*100);
+      var out = el('output', null, rg.value + '%');
+      rg.addEventListener('input', function(){ out.textContent = rg.value + '%'; set('size', rg.value/100); });
+      var sf = field('Size', rg); sf.classList.add('slide'); sf.appendChild(out); box.appendChild(sf);
+      var tog = el('label', 'tog'), cb = el('input'); cb.type = 'checkbox'; cb.checked = !!x.pill;
+      cb.addEventListener('change', function(){ set('pill', cb.checked); });
+      tog.appendChild(cb); tog.appendChild(document.createTextNode(' On a solid pill')); box.appendChild(tog);
+    } else {
+      var row = el('div', 'pichead'), lg = el('span', 'legend', 'Picture'), pick = el('button', 'btn btn-sm', 'Choose');
+      pick.type = 'button'; pick.addEventListener('click', function(){ pickExtra(x); });
+      row.appendChild(lg); row.appendChild(pick); box.appendChild(row);
+      var zr = el('input'); zr.type = 'range'; zr.id = 'extraZoom'; zr.min = 100; zr.max = 250; zr.value = Math.round((x.zoom || 1)*100);
+      var zo = el('output', null, zr.value + '%');
+      zr.addEventListener('input', function(){ zo.textContent = zr.value + '%'; set('zoom', zr.value/100); });
+      zr.addEventListener('sync', function(){ zo.textContent = zr.value + '%'; });
+      var zf = field('Zoom', zr); zf.classList.add('slide'); zf.appendChild(zo); box.appendChild(zf);
+      box.appendChild(hintEl('Alt-drag moves the picture inside its frame; Alt on a corner zooms it.'));
+      var tog2 = el('label', 'tog'), cb2 = el('input'); cb2.type = 'checkbox'; cb2.checked = !!x.frame;
+      cb2.addEventListener('change', function(){ set('frame', cb2.checked); });
+      tog2.appendChild(cb2); tog2.appendChild(document.createTextNode(' White edge and shadow')); box.appendChild(tog2);
+    }
+    var del = el('button', 'btn btn-sm danger', 'Delete'); del.type = 'button';
+    del.addEventListener('click', function(){ removeExtra(x); });
+    box.appendChild(del);
+    box.appendChild(hintEl('Delete or Backspace on the preview removes it too.'));
   }
   function buildPictureHint(){
     var p = hintEl('Alt-drag pans a photo in its frame; Alt on a corner zooms it.');
@@ -3783,7 +3956,7 @@
     var out = {
       preset:state.preset, customW:state.customW, customH:state.customH,
       palette:state.palette, customStops:state.customStops, logoSrc:state.logoSrc,
-      derived:state.derived, feed:state.feed, moves:state.moves
+      derived:state.derived, feed:state.feed, moves:state.moves, extras:state.extras
     };
     remembered().forEach(function(ctl){ out[ctl.key] = state[ctl.key]; });
     try { localStorage.setItem('tf-state', JSON.stringify(out)); } catch(e) {
@@ -4717,6 +4890,11 @@
     var cx = (c4[0].x + c4[1].x + c4[2].x + c4[3].x)/4, cy = (c4[0].y + c4[1].y + c4[2].y + c4[3].y)/4;
     return { mode:'zoom', slot:q.L.slot, zkey:f.zoom, z0:state[f.zoom], centre:{ x:cx, y:cy }, start:canvasPoint(e), moved:false, sx:e.clientX, sy:e.clientY };
   }
+  function startExtraZoom(q, e){
+    var c4 = q.corners, x = extraOf(q.L.el);
+    var cx = (c4[0].x + c4[1].x + c4[2].x + c4[3].x)/4, cy = (c4[0].y + c4[1].y + c4[2].y + c4[3].y)/4;
+    return { mode:'xzoom', x:x, z0:x.zoom || 1, centre:{ x:cx, y:cy }, start:canvasPoint(e), moved:false, sx:e.clientX, sy:e.clientY };
+  }
   var ZOOM_MIN = 0.4, ZOOM_MAX = 2.5;
   var SCALE_MIN = 0.2, SCALE_MAX = 5;
   function doScale(d, e){
@@ -4783,6 +4961,30 @@
     v[0] += ddx / W; v[1] += ddy / H;
   }
 
+  // Shift + scroll over a picture zooms the picture inside its frame; the
+  // frame stays put. (With Shift held, some systems turn the wheel sideways.)
+  var wheelSave = 0;
+  cv.addEventListener('wheel', function(e){
+    if (!e.shiftKey) return;
+    var m = layerAt(e); if (!m) return;
+    var x = extraOf(m.L.el), slot = m.L.slot;
+    if (!(x && x.type === 'image') && !slot) return;
+    e.preventDefault();
+    var delta = e.deltaY || e.deltaX, f = Math.exp(-delta * 0.0015);
+    if (x && x.type === 'image') {
+      x.zoom = Math.round(Math.max(1, Math.min(ZOOM_MAX, (x.zoom || 1) * f)) * 100) / 100;
+      var zr = document.getElementById('extraZoom');
+      if (zr && extraOf(selected && selected.el) === x) { zr.value = Math.round(x.zoom*100); zr.dispatchEvent(new Event('sync')); }
+    } else {
+      var key = FRAMING[slot].zoom;
+      handFramed(slot);
+      state[key] = Math.round(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state[key] * f)) * 100) / 100;
+      syncControls();
+    }
+    redrawSoon();
+    clearTimeout(wheelSave); wheelSave = setTimeout(persist, 300);
+  }, { passive:false });
+
   cv.addEventListener('pointerdown', function(e){
     draw();   // refresh shown, dropHits and layers: an export may have drawn at another size since
     var m = layerAt(e), p = current(), rect = cv.getBoundingClientRect();
@@ -4807,12 +5009,23 @@
     if (hd !== null) {
       drag = hd === 'turn' ? startTurn(q, e, p)
            : typeof hd === 'string' ? startStretch(q, hd, e, p)
+           : (e.altKey && extraOf(q.L.el) && extraOf(q.L.el).type === 'image') ? startExtraZoom(q, e)
            : (q.L.slot && (q.L.locked || e.altKey)) ? startZoom(q, e)   // the photo inside
            : startScale(q, hd, e, p);                                 // the frame, or the piece
       cv.setPointerCapture(e.pointerId); cv.classList.add('dragging');
       return;
     }
     select(m);
+    // a picture of your own: Alt-drag moves the picture inside its frame
+    var xp = m && extraOf(m.L.el);
+    if (xp && xp.type === 'image' && e.altKey && extraImgs[xp.id]) {
+      var sh = extraShown[xp.id] || [0, 0];
+      drag = { mode:'xpan', x:xp, sx:e.clientX, sy:e.clientY, p0:sh.slice(), m:m.L.m, bw:m.L.bw || 1,
+               k:cv.width / (rect.width || 1), moved:false };
+      cv.setPointerCapture(e.pointerId); cv.classList.add('dragging');
+      draw();
+      return;
+    }
     if (m && m.L.slot && (m.L.locked || e.altKey)) {
       // the photo inside: a fixed picture's drag, or any picture's Alt-drag
       var hl = null;
@@ -4846,7 +5059,7 @@
         cv.style.cursor = hd === 'turn' ? 'alias'
           : side ? (diag < 22.5 || diag >= 157.5 ? 'ew-resize' : diag < 67.5 ? 'nwse-resize' : diag < 112.5 ? 'ns-resize' : 'nesw-resize')
           : hd !== null ? (diag < 90 ? 'nwse-resize' : 'nesw-resize')
-          : (h && h.slot === adjusting) ? 'grab' : (lm = layerAt(ev)) ? ((lm.L.locked || (ev.altKey && lm.L.slot)) ? 'grab' : 'move') : 'default';
+          : (h && h.slot === adjusting) ? 'grab' : (lm = layerAt(ev)) ? ((lm.L.locked || (ev.altKey && (lm.L.slot || lm.L.bw && extraOf(lm.L.el)))) ? 'grab' : 'move') : 'default';
       });
       return;
     }
@@ -4869,6 +5082,17 @@
       doScale(drag, e);
     } else if (drag.mode === 'stretch') {
       doStretch(drag, e);
+    } else if (drag.mode === 'xpan') {
+      // the pointer's travel, carried into the frame's own turned, scaled axes
+      var mm = drag.m, sc = Math.hypot(mm.a, mm.b) || 1, an = Math.atan2(mm.b, mm.a);
+      var fx = (e.clientX - drag.sx)*drag.k / sc, fy = (e.clientY - drag.sy)*drag.k / sc;
+      var lx = fx*Math.cos(-an) - fy*Math.sin(-an), ly = fx*Math.sin(-an) + fy*Math.cos(-an);
+      drag.x.px = drag.p0[0] + lx / drag.bw; drag.x.py = drag.p0[1] + ly / drag.bw;
+    } else if (drag.mode === 'xzoom') {
+      var xz = canvasPoint(e), xc = drag.centre;
+      var zz = drag.z0 * Math.hypot(xz[0] - xc.x, xz[1] - xc.y) / (Math.hypot(drag.start[0] - xc.x, drag.start[1] - xc.y) || 1);
+      drag.x.zoom = Math.round(Math.max(1, Math.min(ZOOM_MAX, zz)) * 100) / 100;
+      var zr = document.getElementById('extraZoom'); if (zr) { zr.value = Math.round(drag.x.zoom*100); zr.dispatchEvent(new Event('sync')); }
     } else if (drag.mode === 'zoom') {
       handFramed(drag.slot);
       var zp = canvasPoint(e), c0 = drag.centre;
@@ -4905,6 +5129,9 @@
   cv.addEventListener('dblclick', function(e){
     var m = layerAt(e); if (!m) return;
     e.preventDefault();
+    var ex = extraOf(m.L.el);
+    if (ex && ex.type === 'image') { pickExtra(ex); return; }
+    if (ex) { var ti = document.getElementById('extraText'); if (ti) { ti.focus(); ti.select(); } return; }
     if (m.L.slot) { pickFor(m.L.slot); return; }
     var inp = TEXT_FIELDS[m.L.el] && document.getElementById(TEXT_FIELDS[m.L.el]);
     if (!inp) return;
@@ -4918,6 +5145,8 @@
   var PAN_KEYS = { ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1] };
   cv.addEventListener('keydown', function(e){
     if (e.key === 'Escape' && (adjusting || selected)) { stopAdjusting(); selected = null; draw(); return; }
+    var ex = selected && extraOf(selected.el);
+    if (ex && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); removeExtra(ex); return; }
     // a locked picture's arrows move its photo, and it doesn't turn
     var selL = selected && selLayer(), lockedSlot = selL && selL.locked ? selL.slot : null;
     // [ and ] turn the selection a degree at a time, Shift 15

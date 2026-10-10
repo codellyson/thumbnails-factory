@@ -4434,7 +4434,7 @@
       draw();
       if (!blob) { saveBtn.disabled = false; setStatus('Could not render the image. Try a smaller size.', 'err'); return; }
       offer(blob, fileName(p));
-      track('thumbnail_downloaded', { preset:p.id, layout:state.layout });
+      track('thumbnail_downloaded', { preset:p.id, layout:state.layout }); document.getElementById('thanks').hidden = false;
     }, 'image/png');
   });
 
@@ -4451,7 +4451,7 @@
   allBtn.textContent = 'Download all ' + allList.length + ' sizes';
   allBtn.addEventListener('click', function(){
     allBtn.disabled = true; saveBtn.disabled = true;
-    track('all_sizes_downloaded', { layout:state.layout });
+    track('all_sizes_downloaded', { layout:state.layout }); document.getElementById('thanks').hidden = false;
     var i = 0;
     (function step(){
       if (i >= allList.length) {

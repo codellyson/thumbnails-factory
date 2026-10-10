@@ -114,6 +114,16 @@
     transform:translateX(-50%); border-radius:50%; background:var(--accent);   /* centred: same either way round */
   }
   header nav a:focus-visible{ outline:2px solid var(--ink); outline-offset:1px; }
+  /* the one filled thing in the masthead, so the tip is never hunted for */
+  header .tip{
+    display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:var(--pill);
+    background:var(--ink); color:var(--canvas); font-size:14px; font-weight:600; text-decoration:none; white-space:nowrap;
+    transition:opacity .14s linear, transform .14s cubic-bezier(0.2, 0, 0, 1);
+  }
+  header .tip svg{ color:var(--accent); flex:none; }
+  @media (hover: hover){ header .tip:hover{ opacity:.85; } }
+  header .tip:active{ transform:scale(0.96); }
+  header .tip:focus-visible{ outline:2px solid var(--ink); outline-offset:3px; }
 
   h1{
     font-size:clamp(30px,4.4vw,48px); line-height:1.08;
@@ -598,6 +608,9 @@
   .status{ font-size:13px; min-height:19px; font-weight:500; color:var(--muted); }
   .status.ok{ color:var(--ok); }
   .status.err{ color:var(--alert); }
+  .thanks{ margin:0; font-size:13px; color:var(--muted); text-align:center; }
+  .thanks[hidden]{ display:none; }
+  .thanks a{ color:var(--ink); text-decoration:underline; text-underline-offset:2px; }
 
   .fallback[hidden]{ display:none; }
   .fallback p{ font-size:13px; margin:0 0 8px; }
@@ -789,6 +802,7 @@
       <a href="sizes/">Sizes</a>
       <a href="privacy/">Privacy</a>
     </nav>
+    <a class="tip" href="https://checkout.bachs.io/pay/pl_9ba95d1583c5" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 21s-7.5-4.6-9.6-9.2C.9 8.5 2.9 4.5 6.7 4.5c2.2 0 3.7 1.2 4.6 2.6.9-1.4 2.4-2.6 4.6-2.6 3.8 0 5.8 4 4.3 7.3C19.5 16.4 12 21 12 21z"/></svg>Leave a tip</a>
   </header>
   <main>
   <!-- The editor fills the window: sizes on the left, the preview in the
@@ -875,6 +889,8 @@
         <button class="btn btn-go" id="save">Download PNG</button>
         <button class="btn" id="saveAll">Download every size</button>
         <div class="status" id="status" role="status"></div>
+        <!-- shown once something has been downloaded, never before -->
+        <p class="thanks" id="thanks" hidden>Glad it helped. <a href="https://checkout.bachs.io/pay/pl_9ba95d1583c5" target="_blank" rel="noopener">Leave a tip</a> to keep it free.</p>
       </div>
 
       <div class="fallback" id="fallback" hidden>
@@ -915,6 +931,7 @@
        <a href="sizes/">Every size, with safe areas</a> &middot;
        <a href="privacy/">What happens to your image</a></p>
     <p class="by">A free tool by <a href="https://kreativekorna.com/">KreativeKorna</a>. Nothing you open here is uploaded.</p>
+    <p class="by">Free, and staying free. If it saved you some time, <a href="https://checkout.bachs.io/pay/pl_9ba95d1583c5" target="_blank" rel="noopener">leave a tip</a>.</p>
   </footer>
 </div>
 
@@ -5358,7 +5375,7 @@
       draw();
       if (!blob) { saveBtn.disabled = false; setStatus('Could not render the image. Try a smaller size.', 'err'); return; }
       offer(blob, fileName(p));
-      track('thumbnail_downloaded', { preset:p.id, layout:state.layout });
+      track('thumbnail_downloaded', { preset:p.id, layout:state.layout }); document.getElementById('thanks').hidden = false;
     }, 'image/png');
   });
 
@@ -5375,7 +5392,7 @@
   allBtn.textContent = 'Download all ' + allList.length + ' sizes';
   allBtn.addEventListener('click', function(){
     allBtn.disabled = true; saveBtn.disabled = true;
-    track('all_sizes_downloaded', { layout:state.layout });
+    track('all_sizes_downloaded', { layout:state.layout }); document.getElementById('thanks').hidden = false;
     var i = 0;
     (function step(){
       if (i >= allList.length) {

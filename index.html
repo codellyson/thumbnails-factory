@@ -598,6 +598,9 @@
   .status{ font-size:13px; min-height:19px; font-weight:500; color:var(--muted); }
   .status.ok{ color:var(--ok); }
   .status.err{ color:var(--alert); }
+  .thanks{ margin:0; font-size:13px; color:var(--muted); text-align:center; }
+  .thanks[hidden]{ display:none; }
+  .thanks a{ color:var(--ink); text-decoration:underline; text-underline-offset:2px; }
 
   .fallback[hidden]{ display:none; }
   .fallback p{ font-size:13px; margin:0 0 8px; }
@@ -875,6 +878,8 @@
         <button class="btn btn-go" id="save">Download PNG</button>
         <button class="btn" id="saveAll">Download every size</button>
         <div class="status" id="status" role="status"></div>
+        <!-- shown once something has been downloaded, never before -->
+        <p class="thanks" id="thanks" hidden>Glad it helped. <a href="https://checkout.bachs.io/pay/pl_9ba95d1583c5" target="_blank" rel="noopener">Leave a tip</a> to keep it free.</p>
       </div>
 
       <div class="fallback" id="fallback" hidden>
@@ -915,6 +920,7 @@
        <a href="sizes/">Every size, with safe areas</a> &middot;
        <a href="privacy/">What happens to your image</a></p>
     <p class="by">A free tool by <a href="https://kreativekorna.com/">KreativeKorna</a>. Nothing you open here is uploaded.</p>
+    <p class="by">Free, and staying free. If it saved you some time, <a href="https://checkout.bachs.io/pay/pl_9ba95d1583c5" target="_blank" rel="noopener">leave a tip</a>.</p>
   </footer>
 </div>
 
@@ -5358,7 +5364,7 @@
       draw();
       if (!blob) { saveBtn.disabled = false; setStatus('Could not render the image. Try a smaller size.', 'err'); return; }
       offer(blob, fileName(p));
-      track('thumbnail_downloaded', { preset:p.id, layout:state.layout });
+      track('thumbnail_downloaded', { preset:p.id, layout:state.layout }); document.getElementById('thanks').hidden = false;
     }, 'image/png');
   });
 
@@ -5375,7 +5381,7 @@
   allBtn.textContent = 'Download all ' + allList.length + ' sizes';
   allBtn.addEventListener('click', function(){
     allBtn.disabled = true; saveBtn.disabled = true;
-    track('all_sizes_downloaded', { layout:state.layout });
+    track('all_sizes_downloaded', { layout:state.layout }); document.getElementById('thanks').hidden = false;
     var i = 0;
     (function step(){
       if (i >= allList.length) {

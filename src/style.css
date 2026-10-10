@@ -542,6 +542,9 @@
   .status{ font-size:13px; min-height:19px; font-weight:500; color:var(--muted); }
   .status.ok{ color:var(--ok); }
   .status.err{ color:var(--alert); }
+  .thanks{ margin:0; font-size:13px; color:var(--muted); text-align:center; }
+  .thanks[hidden]{ display:none; }
+  .thanks a{ color:var(--ink); text-decoration:underline; text-underline-offset:2px; }
 
   .fallback[hidden]{ display:none; }
   .fallback p{ font-size:13px; margin:0 0 8px; }
